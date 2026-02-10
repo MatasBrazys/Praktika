@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base
+from app.routers import form, forms  # ← ADD forms
 
 # Create tables on startup
 Base.metadata.create_all(bind=engine)
@@ -27,3 +28,7 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+# Include routers
+app.include_router(form.router)
+app.include_router(forms.router)  # ← ADD this
