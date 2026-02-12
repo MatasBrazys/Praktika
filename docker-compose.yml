@@ -39,6 +39,8 @@ services:
     ports:
     - "3000:80"
     - "3001:443"  # HTTPS port
+    volumes:
+      - ./certs:/etc/nginx/ssl:ro
       
     depends_on:
       - backend
