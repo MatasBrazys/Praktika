@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { formAPI, type FormDefinition } from '../../services/api';
+import { formAPI,  } from '../../services/api'; //type FormDefinition
 import FieldEditor from '../../components/admin/FieldEditor';
 import FormPreview from '../../components/admin/FormPreview';
 import '../../styles/pages/FormBuilderPage.css';

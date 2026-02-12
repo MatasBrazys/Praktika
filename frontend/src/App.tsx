@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import FormList from './pages/admin/FormListPage';
 import FormBuilder from './pages/admin/FormBuilderPage';
 import SubmissionList from './pages/admin/SubmissionListPage';
