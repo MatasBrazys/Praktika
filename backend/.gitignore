@@ -1,0 +1,15 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment / secrets
+.env
+*.sqlite3
+
+# Docker-related files (optional)
+*.log
+
+# OS files
+.DS_Store
