@@ -1,7 +1,8 @@
 // frontend/src/components/admin/SubmissionList.tsx
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import '../../styles/SubmissionList.css';
+import '../../styles/pages/SubmissionListPage.css';
+import Navbar from '../../components/shared/Navbar';
 
 interface Submission {
   id: number;
@@ -78,6 +79,8 @@ export default function SubmissionList() {
   if (loading) return <div className="page-loading">Loading submissions...</div>;
 
   return (
+    <>
+    <Navbar /> 
     <div className="page-container">
       <div className="submissions-wrapper">
         <div className="page-header">
@@ -133,5 +136,7 @@ export default function SubmissionList() {
         )}
       </div>
     </div>
+    </>
+    
   );
 }

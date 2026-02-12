@@ -5,9 +5,9 @@ import { Model } from 'survey-core';
 import { Survey } from 'survey-react-ui';
 import "survey-core/survey-core.min.css";
 import { formAPI } from '../../services/api';
-import '../../styles/PublicForm.css';
+import '../../styles/pages/PublicFormPage.css';
 
-export default function PublicForm() {
+export default function PublicFormPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   
@@ -51,7 +51,7 @@ export default function PublicForm() {
 
       if (!response.ok) throw new Error('Submission failed');
       
-      navigate(`/forms/${id}/success`);
+      navigate(`/user/forms/${id}/success`);
     } catch (err) {
       alert('Failed to submit form. Please try again.');
     }

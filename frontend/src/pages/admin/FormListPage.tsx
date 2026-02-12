@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { formAPI, type FormDefinition } from '../../services/api';
-import '../../styles/FormList.css';
-
+import '../../styles/pages/FormListPage.css';
+import Navbar from '../../components/shared/Navbar';
 export default function FormList() {
   const [forms, setForms] = useState<FormDefinition[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +49,8 @@ export default function FormList() {
   if (error) return <div className="page-error">{error}</div>;
 
   return (
+    <>
+    <Navbar />
     <div className="page-container">
       <div className="form-list-wrapper">
         <div className="page-header">
@@ -120,5 +122,7 @@ export default function FormList() {
         )}
       </div>
     </div>
+    </>
+    
   );
 }

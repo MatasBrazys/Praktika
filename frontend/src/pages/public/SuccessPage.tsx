@@ -1,6 +1,6 @@
 // frontend/src/components/public/SuccessPage.tsx
 import { useNavigate } from 'react-router-dom';
-import '../../styles/SuccessPage.css';
+import '../../styles/pages/SuccessPage.css';
 
 export default function SuccessPage() {
   const navigate = useNavigate();

@@ -1,21 +1,25 @@
+/* frontend/src/styles/FieldEditor.css */
+
+/* ======================
+   MODAL OVERLAY
+   ====================== */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 20px;
-  backdrop-filter: blur(4px);
 }
 
 .modal-content {
   background: white;
-  border-radius: 20px;
+  border-radius: 16px;
   max-width: 600px;
   width: 100%;
   max-height: 90vh;
@@ -25,11 +29,14 @@
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
+/* ======================
+   MODAL HEADER
+   ====================== */
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 32px;
+  padding: 20px 24px;
   border-bottom: 1px solid #e9ecef;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
@@ -37,7 +44,7 @@
 
 .modal-header h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
 }
 
@@ -45,31 +52,34 @@
   background: rgba(255, 255, 255, 0.2);
   border: none;
   color: white;
-  font-size: 28px;
-  width: 36px;
-  height: 36px;
+  font-size: 24px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: background 0.2s ease; /* ← NO ROTATION! */
   line-height: 1;
 }
 
 .close-btn:hover {
   background: rgba(255, 255, 255, 0.3);
-  transform: rotate(90deg);
+  /* ← REMOVED: transform: rotate(90deg); */
 }
 
+/* ======================
+   MODAL BODY
+   ====================== */
 .modal-body {
-  padding: 32px;
+  padding: 24px;
   overflow-y: auto;
   flex: 1;
 }
 
 .form-group {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .form-group:last-child {
@@ -78,21 +88,22 @@
 
 .form-group label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-weight: 600;
   color: #333;
   font-size: 14px;
 }
 
 .form-group input[type="text"],
+.form-group input[type="number"],
 .form-group select,
 .form-group textarea {
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 12px;
   border: 2px solid #e9ecef;
-  border-radius: 10px;
-  font-size: 15px;
-  transition: all 0.2s;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s ease;
   font-family: inherit;
 }
 
@@ -107,56 +118,82 @@
 .form-group textarea {
   resize: vertical;
   font-family: monospace;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .form-group small {
   display: block;
-  margin-top: 6px;
+  margin-top: 4px;
   color: #6c757d;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .checkbox-group {
-  margin-top: 20px;
-  padding: 16px;
+  margin-top: 16px;
+  padding: 12px;
   background: #f8f9fa;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .checkbox-group label {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   font-weight: 500;
   cursor: pointer;
   margin: 0;
 }
 
 .checkbox-group input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   cursor: pointer;
   accent-color: #667eea;
 }
 
+/* ======================
+   INFO BOX
+   ====================== */
+.info-box {
+  background: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+}
+
+.info-box p {
+  margin: 0 0 6px 0;
+  color: #004085;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.info-box small {
+  color: #004085;
+  font-size: 12px;
+}
+
+/* ======================
+   MODAL FOOTER
+   ====================== */
 .modal-footer {
-  padding: 20px 32px;
+  padding: 16px 24px;
   border-top: 1px solid #e9ecef;
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 10px;
   background: #f8f9fa;
 }
 
 .modal-footer button {
   border: none;
-  padding: 12px 28px;
-  border-radius: 10px;
-  font-size: 15px;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .btn-secondary {
@@ -166,21 +203,21 @@
 
 .btn-secondary:hover {
   background: #5a6268;
-  transform: translateY(-1px);
 }
 
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
-/* Responsive */
+/* ======================
+   RESPONSIVE
+   ====================== */
 @media (max-width: 640px) {
   .modal-content {
     max-width: 100%;
@@ -191,8 +228,8 @@
   .modal-header,
   .modal-body,
   .modal-footer {
-    padding-left: 20px;
-    padding-right: 20px;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 
   .modal-footer {
