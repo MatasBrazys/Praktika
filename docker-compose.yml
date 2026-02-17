@@ -17,6 +17,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
   backend:
     build: ./backend
     container_name: it-services-backend
@@ -32,17 +33,20 @@ services:
     volumes:
       - ./backend:/app
       - ./certs:/certs:ro
-    
+
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend      # ← build: su context
+      args:
+        VITE_API_URL: ${VITE_API_URL}  # ← args po build
     container_name: it-services-frontend
     ports:
-    - "3000:80"
-    - "3001:443"  # HTTPS port
+      - "3000:80"
+      - "3001:443"
     volumes:
       - ./certs:/etc/nginx/ssl:ro
-      
     depends_on:
       - backend
+
 volumes:
   postgres_data:
