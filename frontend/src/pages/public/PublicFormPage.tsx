@@ -38,24 +38,13 @@ export default function PublicFormPage() {
   };
 
   const handleComplete = async (survey: any) => {
-    try {
-      const response = await fetch('http://localhost:8000/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          form_type: form.title,
-          form_id: form.id,
-          data: survey.data,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Submission failed');
-      
-      navigate(`/user/forms/${id}/success`);
-    } catch (err) {
-      alert('Failed to submit form. Please try again.');
-    }
-  };
+  try {
+    await formAPI.submitForm(form.id, form.title, survey.data); // ← naudoja API_URL
+    navigate(`/user/forms/${id}/success`);
+  } catch (err) {
+    alert('Failed to submit form. Please try again.');
+  }
+};
 
   if (loading) {
     return (
