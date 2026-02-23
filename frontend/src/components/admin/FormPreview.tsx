@@ -6,10 +6,15 @@ import '../../styles/FormPreview.css';
 
 interface Props {
   surveyJson: any;
+  activePageIndex?: number; // ← NAUJAS prop
 }
 
-export default function FormPreview({ surveyJson }: Props) {
-  if (!surveyJson.elements || surveyJson.elements.length === 0) {
+export default function FormPreview({ surveyJson, activePageIndex = 0 }: Props) {
+  // Single page arba multi-page
+  const pages = surveyJson.pages || [{ elements: surveyJson.elements || [] }];
+  const activePage = pages[activePageIndex];
+
+  if (!activePage?.elements || activePage.elements.length === 0) {
     return (
       <div className="preview-empty">
         <div className="empty-icon">📝</div>
@@ -18,8 +23,13 @@ export default function FormPreview({ surveyJson }: Props) {
     );
   }
 
-  const survey = new Model(surveyJson);
-  survey.mode = 'display'; // Read-only preview
+  // Rodyti TIK active page
+  const previewJson = {
+    elements: activePage.elements
+  };
+
+  const survey = new Model(previewJson);
+  survey.mode = 'display';
   
   return (
     <div className="preview-container">

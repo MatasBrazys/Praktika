@@ -444,4 +444,372 @@
     width: 100%;
     justify-content: flex-end;
   }
+  
+}
+/* Pridėk prie esamo FormBuilder.css */
+
+/* Page Tabs */
+.page-tabs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.page-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: white;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.page-tab.active {
+  border-color: #667eea;
+  background: #f0f3ff;
+  color: #667eea;
+}
+
+.page-tab-input {
+  border: none;
+  background: transparent;
+  font-weight: 500;
+  color: #667eea;
+  width: 100px;
+  outline: none;
+  font-size: 14px;
+}
+
+.page-tab-delete {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+.page-tab-delete:hover { color: #dc3545; }
+
+.btn-add-page {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.btn-add-page:hover { background: #5568d3; }
+
+/* Header meta inputs */
+.builder-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.form-meta-inputs {
+  display: flex;
+  gap: 12px;
+}
+
+.meta-input {
+  padding: 8px 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.meta-input:focus { outline: none; border-color: #667eea; }
+
+.title-input { font-weight: 600; font-size: 15px; min-width: 200px; }
+
+/* Field badges */
+.field-type-badge {
+  background: #e7f1ff;
+  color: #667eea;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.condition-badge {
+  background: #fff3cd;
+  color: #856404;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.validator-badge {
+  background: #d4edda;
+  color: #155724;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Modal wide */
+.modal-wide {
+  max-width: 800px !important;
+}
+
+/* Tabs */
+.modal-tabs {
+  display: flex;
+  border-bottom: 2px solid #e9ecef;
+  background: #f8f9fa;
+}
+
+.tab-btn {
+  padding: 14px 24px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6c757d;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover { color: #667eea; }
+.tab-btn.active {
+  color: #667eea;
+  border-bottom-color: #667eea;
+  background: white;
+}
+
+/* Form rows */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+/* Validators */
+.validator-add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.validator-item {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.validator-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.validator-type-label {
+  font-weight: 600;
+  color: #495057;
+}
+
+.btn-add-small {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.btn-add-small:hover { background: #5568d3; }
+
+.btn-delete-small {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.btn-delete-small:hover { background: #c82333; }
+
+.code-input { font-family: monospace; font-size: 13px; }
+
+.validator-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.validator-examples code {
+  background: #e9ecef;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.validator-examples code:hover { background: #dee2e6; }
+
+.empty-validators, .empty-conditions {
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+  background: #f8f9fa;
+  border-radius: 10px;
+}
+
+/* Conditions */
+.conditions-info {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.logic-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.logic-btn {
+  padding: 6px 14px;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.logic-btn.active {
+  border-color: #667eea;
+  background: #667eea;
+  color: white;
+}
+
+.condition-row { margin-bottom: 12px; }
+
+.condition-logic-label {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #667eea;
+  margin: 4px 0;
+  letter-spacing: 1px;
+}
+
+.condition-inputs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.condition-inputs select,
+.condition-inputs input {
+  padding: 8px 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  flex: 1;
+}
+
+.condition-inputs select:focus,
+.condition-inputs input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.btn-add-condition {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  margin-top: 8px;
+  transition: all 0.2s;
+}
+
+.btn-add-condition:hover { background: #218838; }
+
+.condition-preview {
+  margin-top: 16px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.condition-preview code {
+  display: block;
+  margin-top: 6px;
+  font-family: monospace;
+  color: #667eea;
+  word-break: break-all;
+}
+
+/* Template section */
+.template-section {
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.template-section h3 { margin: 0 0 16px 0; font-size: 16px; }
+
+.template-field-row {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+}
+
+.empty-template {
+  text-align: center;
+  padding: 24px;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .form-row { grid-template-columns: 1fr; }
+  .condition-inputs { flex-wrap: wrap; }
+  .form-meta-inputs { flex-direction: column; }
 }

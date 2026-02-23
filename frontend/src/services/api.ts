@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL ;
+const API_URL = import.meta.env.VITE_API_URL;
 
 console.log(API_URL);
 
@@ -16,6 +16,14 @@ export interface Submission {
   form_type: string;
   data: any;
   created_at: string;
+}
+export interface CRMLookupResult {
+  found: boolean;
+  crm_id: string;
+  name: string;
+  street: string;
+  postcode: string;
+  state: string;
 }
 export const formAPI = {
   // List all forms
@@ -70,13 +78,13 @@ export const formAPI = {
     if (!response.ok) throw new Error('Failed to toggle form');
   },
 
-    async getSubmissions(formId: number): Promise<Submission[]> {
+  async getSubmissions(formId: number): Promise<Submission[]> {
     const response = await fetch(`${API_URL}/api/forms/${formId}/submissions`);
     if (!response.ok) throw new Error('Failed to fetch submissions');
     return response.json();
   },
 
-  
+
   async submitForm(formId: number, formTitle: string, data: any): Promise<void> {
     const response = await fetch(`${API_URL}/submit`, {
       method: 'POST',
@@ -88,5 +96,16 @@ export const formAPI = {
       }),
     });
     if (!response.ok) throw new Error('Submission failed');
+  },
+};
+
+export const crmAPI = {
+  // Look up client by CRM ID — check result.found, never throws on "not found"
+  async lookup(crmId: string): Promise<CRMLookupResult> {
+    const response = await fetch(
+      `${API_URL}/api/crm/lookup/${encodeURIComponent(crmId.trim().toUpperCase())}`
+    );
+    if (!response.ok) throw new Error('CRM lookup failed');
+    return response.json();
   },
 };
