@@ -74,7 +74,7 @@ export default function SubmissionList() {
   return (
     <>
       <Navbar />
-      <div className="page-container">
+      <div className="page-container-admin">
         <div className="submissions-wrapper">
           <div className="page-header">
             <div>

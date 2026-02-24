@@ -1,80 +1,92 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import '../../styles/components/navbar.css';
 
 interface NavbarProps {
-  userRole?: 'admin' | 'user'; // Will be used later for auth
+  userRole?: 'admin' | 'user';
+}
+
+function NavDropdown({ label, active, children }: {
+  label: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleEnter = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setOpen(true);
+  };
+
+  const handleLeave = () => {
+    timerRef.current = setTimeout(() => setOpen(false), 150);
+  };
+
+  return (
+    <div
+      className="nav-dropdown"
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+    >
+      <button className={active ? 'active' : ''}>
+        {label} ▾
+      </button>
+      {open && (
+        <div className="dropdown-menu">
+          <div className="dropdown-menu-inner">
+            {children}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Navbar({ userRole = 'admin' }: NavbarProps) {
   const location = useLocation();
-  const [showAdminMenu, setShowAdminMenu] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-
   const isActive = (path: string) => location.pathname.startsWith(path);
 
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        {/* Logo */}
+
         <div className="navbar-brand">
           <a href="/">
-            <img 
-              src="https://www.datagroup.de/hubfs/dg-logo-standard-cmyk.svg" 
+            <img
+              src="https://www.datagroup.de/hubfs/dg-logo-standard-cmyk.svg"
               alt="DataGroup Logo"
               className="brand-logo"
             />
           </a>
         </div>
 
-        {/* Navigation */}
         <div className="navbar-menu">
-          {/* Home */}
-          <a href="/" className={isActive('/') && location.pathname === '/' ? 'active' : ''}>
-            🏠 Home
+          <a href="/" className={location.pathname === '/' ? 'active' : ''}>
+            Home
           </a>
 
-          {/* Admin Section - Only visible to admins */}
           {userRole === 'admin' && (
-            <div 
-              className="nav-dropdown"
-              onMouseEnter={() => setShowAdminMenu(true)}
-              onMouseLeave={() => setShowAdminMenu(false)}
-            >
-              <button className={isActive('/admin') ? 'active' : ''}>
-                ⚙️ Admin
-              </button>
-              {showAdminMenu && (
-                <div className="dropdown-menu">
-                  <a href="/admin/forms">📋 Manage Forms</a>
-                  <a href="/admin/form-builder">➕ Create Form</a>
-                </div>
-              )}
-            </div>
+            <NavDropdown label="Admin" active={isActive('/admin')}>
+              <a href="/admin/forms">Manage Forms</a>
+              <a href="/admin/form-builder">Create Form</a>
+            </NavDropdown>
           )}
 
-          {/* User Section - Available to all */}
-          <div 
-            className="nav-dropdown"
-            onMouseEnter={() => setShowUserMenu(true)}
-            onMouseLeave={() => setShowUserMenu(false)}
-          >
-            <button className={isActive('/user') ? 'active' : ''}>
-              👤 Forms
-            </button>
-            {showUserMenu && (
-              <div className="dropdown-menu">
-                <a href="/user/forms">📝 Fill Forms</a>
-                <a href="/user/submissions">📊 My Submissions</a>
-              </div>
-            )}
+          {/* My Submissions hidden until page is implemented */}
+          <NavDropdown label="Forms" active={isActive('/user')}>
+            <a href="/user/forms">Fill Forms</a>
+            {/* TODO: <a href="/user/submissions">My Submissions</a> */}
+          </NavDropdown>
+        </div>
+
+        <div className="navbar-user">
+          <div className="user-chip">
+            <div className="user-avatar">A</div>
+            <span className="user-name">Admin</span>
           </div>
         </div>
 
-        {/* User Info (placeholder for future) */}
-        <div className="navbar-user">
-          <span className="user-name">Admin</span>
-        </div>
       </div>
     </nav>
   );

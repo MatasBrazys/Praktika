@@ -5,6 +5,7 @@ import Navbar from '../../components/shared/Navbar';
 import FieldEditor from '../../components/admin/FieldEditor';
 import FormPreview from '../../components/admin/FormPreview';
 import '../../styles/pages/admin/form-builder.css';
+import '../../styles/components/modal.css';
 
 interface Validator {
   type: 'regex' | 'numeric' | 'text';
@@ -366,7 +367,7 @@ export default function FormBuilder() {
   return (
     <>
       <Navbar />
-      <div className="page-container">
+      <div className="page-container-admin">
         <div className="builder-wrapper">
 
           <div className="builder-header">

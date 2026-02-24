@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import type { FieldConfig } from '../../pages/admin/FormBuilder';
 import '../../styles/components/field-editor.css';
+import '../../styles/components/modal.css';
 
 interface Validator {
   type: 'regex' | 'numeric' | 'text';
@@ -28,48 +29,17 @@ interface Props {
 
 type Tab = 'basic' | 'validators' | 'conditions';
 
-// ═══ VALIDATOR PRESETS ═══
 const VALIDATOR_PRESETS: Record<string, { regex: string; text: string }> = {
-  ipv4: {
-    regex: '^(?:(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)$',
-    text: 'Enter valid IPv4 (e.g., 192.168.1.1)'
-  },
-  cidr: {
-    regex: '^(?:(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)/(?:[0-9]|[12]\\d|3[0-2])$',
-    text: 'Enter valid CIDR (e.g., 10.0.0.0/24)'
-  },
-  mac: {
-    regex: '^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$',
-    text: 'Enter valid MAC (e.g., AA:BB:CC:DD:EE:FF)'
-  },
-  email: {
-    regex: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
-    text: 'Enter valid email address'
-  },
-  phone: {
-    regex: '^\\+?[1-9]\\d{1,14}$',
-    text: 'Enter phone with country code (e.g., +37061234567)'
-  },
-  url: {
-    regex: '^https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(/.*)?$',
-    text: 'Enter valid URL (http:// or https://)'
-  },
-  number: {
-    regex: '^-?\\d+(\\.\\d+)?$',
-    text: 'Enter valid number (e.g., 42 or 3.14)'
-  },
-  date: {
-    regex: '^\\d{4}-\\d{2}-\\d{2}$',
-    text: 'Enter date in YYYY-MM-DD format'
-  },
-  abbrev3: {
-    regex: '^[A-Z]{3}$',
-    text: 'Enter exactly 3 capital letters (e.g., ABC)'
-  },
-  hostname: {
-    regex: '^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$',
-    text: 'Enter valid hostname or FQDN'
-  },
+  ipv4:     { regex: '^(?:(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)$', text: 'Enter valid IPv4 (e.g., 192.168.1.1)' },
+  cidr:     { regex: '^(?:(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)/(?:[0-9]|[12]\\d|3[0-2])$', text: 'Enter valid CIDR (e.g., 10.0.0.0/24)' },
+  mac:      { regex: '^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$', text: 'Enter valid MAC (e.g., AA:BB:CC:DD:EE:FF)' },
+  email:    { regex: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$', text: 'Enter valid email address' },
+  phone:    { regex: '^\\+?[1-9]\\d{1,14}$', text: 'Enter phone with country code (e.g., +37061234567)' },
+  url:      { regex: '^https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(/.*)?$', text: 'Enter valid URL (http:// or https://)' },
+  number:   { regex: '^-?\\d+(\\.\\d+)?$', text: 'Enter valid number (e.g., 42 or 3.14)' },
+  date:     { regex: '^\\d{4}-\\d{2}-\\d{2}$', text: 'Enter date in YYYY-MM-DD format' },
+  abbrev3:  { regex: '^[A-Z]{3}$', text: 'Enter exactly 3 capital letters (e.g., ABC)' },
+  hostname: { regex: '^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$', text: 'Enter valid hostname or FQDN' },
 };
 
 export default function FieldEditor({ field, allFields, onSave, onCancel }: Props) {
@@ -91,100 +61,63 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
   });
   const isCrmLookup = config.type === 'crmlookup';
 
-  // ═══ AUTO-ADD VALIDATORS WHEN INPUT TYPE CHANGES ═══
   useEffect(() => {
     const autoPresetRegexes = Object.values(VALIDATOR_PRESETS).map(p => p.regex);
-
     if (config.type === 'text' && config.inputType) {
       const inputType = config.inputType;
       const needsValidator = ['email', 'phone', 'ipv4', 'cidr', 'mac', 'url', 'hostname', 'number', 'date'].includes(inputType);
-
       if (needsValidator && VALIDATOR_PRESETS[inputType]) {
         const preset = VALIDATOR_PRESETS[inputType];
-        const manualValidators = validators.filter(v =>
-          v.type !== 'regex' || !autoPresetRegexes.includes(v.regex || '')
-        );
+        const manualValidators = validators.filter(v => v.type !== 'regex' || !autoPresetRegexes.includes(v.regex || ''));
         setValidators([...manualValidators, { type: 'regex', ...preset }]);
       } else {
-        setValidators(prev => prev.filter(v =>
-          v.type !== 'regex' || !autoPresetRegexes.includes(v.regex || '')
-        ));
+        setValidators(prev => prev.filter(v => v.type !== 'regex' || !autoPresetRegexes.includes(v.regex || '')));
       }
     } else if (config.type !== 'text') {
-      setValidators(prev => prev.filter(v =>
-        v.type !== 'regex' || !autoPresetRegexes.includes(v.regex || '')
-      ));
+      setValidators(prev => prev.filter(v => v.type !== 'regex' || !autoPresetRegexes.includes(v.regex || '')));
     }
   }, [config.inputType, config.type]);
 
-  // ═══ FIELD TYPES ═══
   const fieldTypes = [
-    { value: 'text', label: '📝 Text Input' },
-    { value: 'comment', label: '📄 Text Area' },
-    { value: 'dropdown', label: '🔽 Dropdown' },
-    { value: 'radiogroup', label: '◉ Radio Buttons' },
-    { value: 'checkbox', label: '☑️ Checkboxes' },
-    { value: 'boolean', label: '✓ Yes/No' },
+    { value: 'text',         label: '📝 Text Input' },
+    { value: 'comment',      label: '📄 Text Area' },
+    { value: 'dropdown',     label: '🔽 Dropdown' },
+    { value: 'radiogroup',   label: '◉ Radio Buttons' },
+    { value: 'checkbox',     label: '☑️ Checkboxes' },
+    { value: 'boolean',      label: '✓ Yes/No' },
     { value: 'paneldynamic', label: '🔁 Repeated Group' },
     { value: 'crmlookup',    label: '🔍 CRM Lookup' },
   ];
 
-  // ═══ TEXT INPUT TYPES ═══
   const textInputTypes = [
-    { value: 'text', label: 'Plain Text' },
-    { value: 'email', label: '📧 Email Address' },
-    { value: 'phone', label: '📞 Phone Number' },
-    { value: 'ipv4', label: '🌐 IPv4 Address' },
-    { value: 'cidr', label: '🔗 CIDR Subnet' },
-    { value: 'mac', label: '🔌 MAC Address' },
-    { value: 'url', label: '🔗 URL' },
+    { value: 'text',   label: 'Plain Text' },
+    { value: 'email',  label: '📧 Email Address' },
+    { value: 'phone',  label: '📞 Phone Number' },
+    { value: 'ipv4',   label: '🌐 IPv4 Address' },
+    { value: 'cidr',   label: '🔗 CIDR Subnet' },
+    { value: 'mac',    label: '🔌 MAC Address' },
+    { value: 'url',    label: '🔗 URL' },
     { value: 'number', label: '🔢 Number' },
-    { value: 'date', label: '📅 Date' },
+    { value: 'date',   label: '📅 Date' },
   ];
 
-  // ═══ TEMPLATE FIELDS ═══
   const addTemplateField = () => {
-    const newField: FieldConfig = {
-      id: `template_${Date.now()}`,
-      name: `field_${templateFields.length + 1}`,
-      title: 'New Field',
-      type: 'text',
-      isRequired: false,
-    };
-    setTemplateFields(prev => [...prev, newField]);
+    setTemplateFields(prev => [...prev, { id: `template_${Date.now()}`, name: `field_${templateFields.length + 1}`, title: 'New Field', type: 'text', isRequired: false }]);
   };
-
   const updateTemplateField = (index: number, updates: Partial<FieldConfig>) => {
     setTemplateFields(prev => prev.map((f, i) => i === index ? { ...f, ...updates } : f));
   };
-
-  const deleteTemplateField = (index: number) => {
-    setTemplateFields(prev => prev.filter((_, i) => i !== index));
-  };
+  const deleteTemplateField = (index: number) => setTemplateFields(prev => prev.filter((_, i) => i !== index));
 
   const handleTemplateInputTypeChange = (templateIdx: number, inputType: string) => {
     updateTemplateField(templateIdx, { inputType });
-
     const needsValidator = ['email', 'phone', 'ipv4', 'cidr', 'mac', 'url', 'hostname', 'number', 'date'].includes(inputType);
-
+    const autoPresetRegexes = Object.values(VALIDATOR_PRESETS).map(p => p.regex);
+    const tf = templateFields[templateIdx];
+    const manualValidators = (tf.validators || []).filter(v => v.type !== 'regex' || !autoPresetRegexes.includes(v.regex || ''));
     if (needsValidator && VALIDATOR_PRESETS[inputType]) {
-      const tf = templateFields[templateIdx];
-      const preset = VALIDATOR_PRESETS[inputType];
-      const autoPresetRegexes = Object.values(VALIDATOR_PRESETS).map(p => p.regex);
-
-      const manualValidators = (tf.validators || []).filter(v =>
-        v.type !== 'regex' || !autoPresetRegexes.includes(v.regex || '')
-      );
-
-      updateTemplateField(templateIdx, {
-        validators: [...manualValidators, { type: 'regex', ...preset }]
-      });
+      updateTemplateField(templateIdx, { validators: [...manualValidators, { type: 'regex', ...VALIDATOR_PRESETS[inputType] }] });
     } else if (inputType === 'text') {
-      const tf = templateFields[templateIdx];
-      const autoPresetRegexes = Object.values(VALIDATOR_PRESETS).map(p => p.regex);
-      const manualValidators = (tf.validators || []).filter(v =>
-        v.type !== 'regex' || !autoPresetRegexes.includes(v.regex || '')
-      );
       updateTemplateField(templateIdx, { validators: manualValidators });
     }
   };
@@ -192,170 +125,89 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
   const handleTemplateTypeChange = (templateIdx: number, newType: string) => {
     const tf = templateFields[templateIdx];
     const autoPresetRegexes = Object.values(VALIDATOR_PRESETS).map(p => p.regex);
-
-    if (newType !== 'text') {
-      const manualValidators = (tf.validators || []).filter(v =>
-        v.type !== 'regex' || !autoPresetRegexes.includes(v.regex || '')
-      );
-      updateTemplateField(templateIdx, {
-        type: newType,
-        inputType: undefined,
-        validators: manualValidators
-      });
-    } else {
-      updateTemplateField(templateIdx, { type: newType });
-    }
+    const manualValidators = (tf.validators || []).filter(v => v.type !== 'regex' || !autoPresetRegexes.includes(v.regex || ''));
+    updateTemplateField(templateIdx, newType !== 'text'
+      ? { type: newType, inputType: undefined, validators: manualValidators }
+      : { type: newType }
+    );
   };
 
-  // ═══ TEMPLATE VALIDATORS ═══
   const addTemplateValidator = (templateIdx: number, presetKey?: string) => {
     const tf = templateFields[templateIdx];
-
-    if (presetKey && VALIDATOR_PRESETS[presetKey]) {
-      const preset = VALIDATOR_PRESETS[presetKey];
-      updateTemplateField(templateIdx, {
-        validators: [...(tf.validators || []), { type: 'regex', ...preset }]
-      });
-    } else {
-      updateTemplateField(templateIdx, {
-        validators: [...(tf.validators || []), { type: 'regex', text: 'Invalid format', regex: '' }]
-      });
-    }
+    const newV = presetKey && VALIDATOR_PRESETS[presetKey]
+      ? { type: 'regex' as const, ...VALIDATOR_PRESETS[presetKey] }
+      : { type: 'regex' as const, text: 'Invalid format', regex: '' };
+    updateTemplateField(templateIdx, { validators: [...(tf.validators || []), newV] });
+  };
+  const updateTemplateValidator = (ti: number, vi: number, updates: Partial<Validator>) => {
+    const tf = templateFields[ti];
+    updateTemplateField(ti, { validators: (tf.validators || []).map((v, i) => i === vi ? { ...v, ...updates } : v) });
+  };
+  const deleteTemplateValidator = (ti: number, vi: number) => {
+    updateTemplateField(ti, { validators: (templateFields[ti].validators || []).filter((_, i) => i !== vi) });
   };
 
-  const updateTemplateValidator = (templateIdx: number, validatorIdx: number, updates: Partial<Validator>) => {
-    const tf = templateFields[templateIdx];
-    const updatedValidators = (tf.validators || []).map((v, i) =>
-      i === validatorIdx ? { ...v, ...updates } : v
-    );
-    updateTemplateField(templateIdx, { validators: updatedValidators });
-  };
-
-  const deleteTemplateValidator = (templateIdx: number, validatorIdx: number) => {
-    const tf = templateFields[templateIdx];
-    const updatedValidators = (tf.validators || []).filter((_, i) => i !== validatorIdx);
-    updateTemplateField(templateIdx, { validators: updatedValidators });
-  };
-
-  // ═══ TEMPLATE CONDITIONS ═══
   const addTemplateCondition = (templateIdx: number) => {
-    const tf = templateFields[templateIdx];
     const otherFields = templateFields.filter((_, i) => i !== templateIdx);
-
-    if (otherFields.length === 0) {
-      alert('Add more fields first to create conditions');
-      return;
-    }
-
-    updateTemplateField(templateIdx, {
-      conditions: [
-        ...(tf.conditions || []),
-        { fieldName: otherFields[0].name, operator: 'equals', value: '' }
-      ]
-    });
-  };
-
-  const updateTemplateCondition = (templateIdx: number, condIdx: number, updates: Partial<Condition>) => {
+    if (!otherFields.length) { alert('Add more fields first to create conditions'); return; }
     const tf = templateFields[templateIdx];
-    const updatedConditions = (tf.conditions || []).map((c, i) =>
-      i === condIdx ? { ...c, ...updates } : c
-    );
-    updateTemplateField(templateIdx, { conditions: updatedConditions });
+    updateTemplateField(templateIdx, { conditions: [...(tf.conditions || []), { fieldName: otherFields[0].name, operator: 'equals', value: '' }] });
   };
-
-  const deleteTemplateCondition = (templateIdx: number, condIdx: number) => {
-    const tf = templateFields[templateIdx];
-    const updatedConditions = (tf.conditions || []).filter((_, i) => i !== condIdx);
-    updateTemplateField(templateIdx, { conditions: updatedConditions });
+  const updateTemplateCondition = (ti: number, ci: number, updates: Partial<Condition>) => {
+    const tf = templateFields[ti];
+    updateTemplateField(ti, { conditions: (tf.conditions || []).map((c, i) => i === ci ? { ...c, ...updates } : c) });
   };
-
-  const updateTemplateConditionLogic = (templateIdx: number, logic: 'and' | 'or') => {
-    updateTemplateField(templateIdx, { conditionLogic: logic });
+  const deleteTemplateCondition = (ti: number, ci: number) => {
+    updateTemplateField(ti, { conditions: (templateFields[ti].conditions || []).filter((_, i) => i !== ci) });
   };
+  const updateTemplateConditionLogic = (ti: number, logic: 'and' | 'or') => updateTemplateField(ti, { conditionLogic: logic });
 
-  // ═══ VALIDATORS ═══
-  const addValidatorPreset = (presetKey: string) => {
-    const preset = VALIDATOR_PRESETS[presetKey];
-    if (!preset) return;
-    setValidators(prev => [...prev, { type: 'regex', ...preset }]);
+  const addValidatorPreset = (key: string) => {
+    if (VALIDATOR_PRESETS[key]) setValidators(prev => [...prev, { type: 'regex', ...VALIDATOR_PRESETS[key] }]);
   };
-
   const addValidator = (type: Validator['type']) => {
     const defaults: Record<string, Validator> = {
-      regex: { type: 'regex', text: 'Invalid format', regex: '' },
+      regex:   { type: 'regex',   text: 'Invalid format', regex: '' },
       numeric: { type: 'numeric', text: 'Invalid number', minValue: 0, maxValue: 100 },
-      text: { type: 'text', text: 'Invalid length', minLength: 1, maxLength: 100 },
+      text:    { type: 'text',    text: 'Invalid length',  minLength: 1, maxLength: 100 },
     };
     setValidators(prev => [...prev, defaults[type]]);
   };
+  const updateValidator = (i: number, updates: Partial<Validator>) => setValidators(prev => prev.map((v, idx) => idx === i ? { ...v, ...updates } : v));
+  const deleteValidator = (i: number) => setValidators(prev => prev.filter((_, idx) => idx !== i));
 
-  const updateValidator = (index: number, updates: Partial<Validator>) => {
-    setValidators(prev => prev.map((v, i) => i === index ? { ...v, ...updates } : v));
-  };
+  const addCondition = () => setConditions(prev => [...prev, { fieldName: allFields[0]?.name || '', operator: 'equals', value: '' }]);
+  const updateCondition = (i: number, updates: Partial<Condition>) => setConditions(prev => prev.map((c, idx) => idx === i ? { ...c, ...updates } : c));
+  const deleteCondition = (i: number) => setConditions(prev => prev.filter((_, idx) => idx !== i));
 
-  const deleteValidator = (index: number) => {
-    setValidators(prev => prev.filter((_, i) => i !== index));
-  };
-
-  // ═══ CONDITIONS ═══
-  const addCondition = () => {
-    setConditions(prev => [...prev, {
-      fieldName: allFields[0]?.name || '',
-      operator: 'equals',
-      value: '',
-    }]);
-  };
-
-  const updateCondition = (index: number, updates: Partial<Condition>) => {
-    setConditions(prev => prev.map((c, i) => i === index ? { ...c, ...updates } : c));
-  };
-
-  const deleteCondition = (index: number) => {
-    setConditions(prev => prev.filter((_, i) => i !== index));
-  };
-
-  // ═══ SAVE ═══
   const handleSave = () => {
     if (!config.title.trim()) { alert('Please enter a field title'); return; }
-
     const finalConfig: FieldConfig = { ...config };
-
-    // ── CRM Lookup: save labels, skip choices/validators ──
     if (isCrmLookup) {
       finalConfig.crmFieldLabels = { ...crmLabels };
       delete finalConfig.choices;
       onSave(finalConfig);
       return;
     }
-
     if (['dropdown', 'radiogroup', 'checkbox'].includes(config.type)) {
       finalConfig.choices = choicesText.split('\n').map(c => c.trim()).filter(Boolean);
       if (!finalConfig.choices.length) { alert('Please add at least one choice'); return; }
     } else {
       delete finalConfig.choices;
     }
-
-    if (config.type === 'paneldynamic') {
-      finalConfig.templateElements = templateFields;
-    }
-
-    finalConfig.validators = validators.filter(v =>
-      v.type !== 'regex' || (v.regex && v.regex.trim())
-    );
-
+    if (config.type === 'paneldynamic') finalConfig.templateElements = templateFields;
+    finalConfig.validators = validators.filter(v => v.type !== 'regex' || (v.regex && v.regex.trim()));
     finalConfig.conditions = conditions.filter(c => c.fieldName);
     finalConfig.conditionLogic = conditionLogic;
-
     onSave(finalConfig);
   };
 
-  // ═══ HELPERS ═══
-  const needsChoices = ['dropdown', 'radiogroup', 'checkbox'].includes(config.type);
+  const needsChoices    = ['dropdown', 'radiogroup', 'checkbox'].includes(config.type);
   const showPlaceholder = config.type === 'text' || config.type === 'comment';
-  const showDefaultValue = config.type === 'text' || config.type === 'comment';
+  const showDefaultValue = showPlaceholder;
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
+    <div className="modal-overlay">
       <div className="modal-content modal-wide" onClick={e => e.stopPropagation()}>
 
         <div className="modal-header">
@@ -363,131 +215,76 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
           <button className="close-btn" onClick={onCancel}>×</button>
         </div>
 
-        {/* TABS */}
         <div className="modal-tabs">
           {(['basic', 'validators', 'conditions'] as Tab[]).map(tab => (
-            <button
-              key={tab}
-              className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab === 'basic' && '⚙️ Basic'}
+            <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
+              {tab === 'basic'      && '⚙️ Basic'}
               {tab === 'validators' && `✓ Validators ${validators.length ? `(${validators.length})` : ''}`}
-              {tab === 'conditions' && `⚡ Conditions ${conditions.length ? `(${conditions.length})` : ''}`}
+              {tab === 'conditions' && ` Conditions ${conditions.length ? `(${conditions.length})` : ''}`}
             </button>
           ))}
         </div>
 
         <div className="modal-body">
 
-          {/* ══════════════════════════════════════
-              BASIC TAB
-          ══════════════════════════════════════ */}
           {activeTab === 'basic' && (
             <>
-              {/* Title & Name */}
               <div className="form-row">
                 <div className="form-group">
                   <label>Field Title *</label>
-                  <input
-                    type="text"
-                    value={config.title}
-                    onChange={e => setConfig({ ...config, title: e.target.value })}
-                    placeholder="e.g., Customer Name"
-                  />
+                  <input type="text" value={config.title} onChange={e => setConfig({ ...config, title: e.target.value })} placeholder="e.g., Customer Name" />
                 </div>
                 <div className="form-group">
                   <label>Field Name (internal) *</label>
-                  <input
-                    type="text"
-                    value={config.name}
-                    onChange={e => setConfig({ ...config, name: e.target.value })}
-                    placeholder="e.g., customerName"
-                  />
+                  <input type="text" value={config.name} onChange={e => setConfig({ ...config, name: e.target.value })} placeholder="e.g., customerName" />
                   <small>No spaces or special characters</small>
                 </div>
               </div>
 
-              {/* Field Type */}
               <div className="form-group">
                 <label>Field Type *</label>
-                <select
-                  value={config.type}
-                  onChange={e => setConfig({ ...config, type: e.target.value })}
-                >
-                  {fieldTypes.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
+                <select value={config.type} onChange={e => setConfig({ ...config, type: e.target.value })}>
+                  {fieldTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </div>
 
-              {/* Text Input Type */}
               {config.type === 'text' && (
                 <div className="form-group">
                   <label>Input Type</label>
-                  <select
-                    value={config.inputType || 'text'}
-                    onChange={e => setConfig({ ...config, inputType: e.target.value })}
-                  >
-                    {textInputTypes.map(t => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
-                    ))}
+                  <select value={config.inputType || 'text'} onChange={e => setConfig({ ...config, inputType: e.target.value })}>
+                    {textInputTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                   </select>
                   <small>Select specialized input type for validation</small>
                 </div>
               )}
 
-              {/* Description */}
               <div className="form-group">
                 <label>Description</label>
-                <input
-                  type="text"
-                  value={config.description || ''}
-                  onChange={e => setConfig({ ...config, description: e.target.value })}
-                  placeholder="Help text shown below the field"
-                />
+                <input type="text" value={config.description || ''} onChange={e => setConfig({ ...config, description: e.target.value })} placeholder="Help text shown below the field" />
               </div>
 
-              {/* Placeholder & Default */}
               {showPlaceholder && (
                 <div className="form-row">
                   <div className="form-group">
                     <label>Placeholder</label>
-                    <input
-                      type="text"
-                      value={config.placeholder || ''}
-                      onChange={e => setConfig({ ...config, placeholder: e.target.value })}
-                      placeholder="e.g., Enter value..."
-                    />
+                    <input type="text" value={config.placeholder || ''} onChange={e => setConfig({ ...config, placeholder: e.target.value })} placeholder="e.g., Enter value..." />
                   </div>
                   {showDefaultValue && (
                     <div className="form-group">
                       <label>Default Value</label>
-                      <input
-                        type="text"
-                        value={config.defaultValue || ''}
-                        onChange={e => setConfig({ ...config, defaultValue: e.target.value })}
-                        placeholder="Pre-filled value"
-                      />
+                      <input type="text" value={config.defaultValue || ''} onChange={e => setConfig({ ...config, defaultValue: e.target.value })} placeholder="Pre-filled value" />
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Choices */}
               {needsChoices && (
                 <div className="form-group">
                   <label>Choices (one per line) *</label>
-                  <textarea
-                    value={choicesText}
-                    onChange={e => setChoicesText(e.target.value)}
-                    placeholder="Type each option on a new line"
-                    rows={5}
-                  />
+                  <textarea value={choicesText} onChange={e => setChoicesText(e.target.value)} placeholder="Type each option on a new line" rows={5} />
                 </div>
               )}
 
-              {/* Paneldynamic Template */}
               {config.type === 'paneldynamic' && (
                 <div className="template-section">
                   <div className="section-header">
@@ -497,65 +294,34 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                   <div className="form-row">
                     <div className="form-group">
                       <label>Add Button Text</label>
-                      <input
-                        type="text"
-                        value={config.addPanelText || 'Add'}
-                        onChange={e => setConfig({ ...config, addPanelText: e.target.value })}
-                      />
+                      <input type="text" value={config.addPanelText || 'Add'} onChange={e => setConfig({ ...config, addPanelText: e.target.value })} />
                     </div>
                     <div className="form-group">
                       <label>Remove Button Text</label>
-                      <input
-                        type="text"
-                        value={config.removePanelText || 'Remove'}
-                        onChange={e => setConfig({ ...config, removePanelText: e.target.value })}
-                      />
+                      <input type="text" value={config.removePanelText || 'Remove'} onChange={e => setConfig({ ...config, removePanelText: e.target.value })} />
                     </div>
                     <div className="form-group">
                       <label>Min Panels</label>
-                      <input
-                        type="number"
-                        value={config.minPanelCount || 1}
-                        min={1}
-                        onChange={e => setConfig({ ...config, minPanelCount: parseInt(e.target.value) })}
-                      />
+                      <input type="number" value={config.minPanelCount || 1} min={1} onChange={e => setConfig({ ...config, minPanelCount: parseInt(e.target.value) })} />
                     </div>
                   </div>
 
-                  {templateFields.length === 0 && (
-                    <div className="empty-template">
-                      <p>Add fields that will repeat in each panel</p>
-                    </div>
-                  )}
+                  {templateFields.length === 0 && <div className="empty-template"><p>Add fields that will repeat in each panel</p></div>}
 
                   {templateFields.map((tf, idx) => (
                     <div key={tf.id} className="template-field-row">
-                      {/* Main row */}
                       <div className="form-row">
                         <div className="form-group">
                           <label>Title</label>
-                          <input
-                            type="text"
-                            value={tf.title}
-                            onChange={e => updateTemplateField(idx, { title: e.target.value })}
-                            placeholder="Field title"
-                          />
+                          <input type="text" value={tf.title} onChange={e => updateTemplateField(idx, { title: e.target.value })} placeholder="Field title" />
                         </div>
                         <div className="form-group">
                           <label>Name</label>
-                          <input
-                            type="text"
-                            value={tf.name}
-                            onChange={e => updateTemplateField(idx, { name: e.target.value })}
-                            placeholder="fieldName"
-                          />
+                          <input type="text" value={tf.name} onChange={e => updateTemplateField(idx, { name: e.target.value })} placeholder="fieldName" />
                         </div>
                         <div className="form-group">
                           <label>Type</label>
-                          <select
-                            value={tf.type}
-                            onChange={e => handleTemplateTypeChange(idx, e.target.value)}
-                          >
+                          <select value={tf.type} onChange={e => handleTemplateTypeChange(idx, e.target.value)}>
                             <option value="text">Text Input</option>
                             <option value="comment">Text Area</option>
                             <option value="dropdown">Dropdown</option>
@@ -566,45 +332,28 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                         </div>
                         <div className="form-group">
                           <label>Default</label>
-                          <input
-                            type="text"
-                            value={tf.defaultValue || ''}
-                            onChange={e => updateTemplateField(idx, { defaultValue: e.target.value })}
-                            placeholder="Default value"
-                          />
+                          <input type="text" value={tf.defaultValue || ''} onChange={e => updateTemplateField(idx, { defaultValue: e.target.value })} placeholder="Default value" />
                         </div>
-                        <button
-                          className="btn-delete-small"
-                          onClick={() => deleteTemplateField(idx)}
-                        >×</button>
+                        <button className="btn-delete-small" onClick={() => deleteTemplateField(idx)}>×</button>
                       </div>
 
-                      {/* Input Type */}
                       {tf.type === 'text' && (
                         <div className="form-group">
                           <label>Input Type</label>
-                          <select
-                            value={tf.inputType || 'text'}
-                            onChange={e => handleTemplateInputTypeChange(idx, e.target.value)}
-                          >
-                            {textInputTypes.map(t => (
-                              <option key={t.value} value={t.value}>{t.label}</option>
-                            ))}
+                          <select value={tf.inputType || 'text'} onChange={e => handleTemplateInputTypeChange(idx, e.target.value)}>
+                            {textInputTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                           </select>
                         </div>
                       )}
 
-                      {/* Choices (dropdown, radio, checkbox) */}
-                      {(tf.type === 'dropdown' || tf.type === 'radiogroup' || tf.type === 'checkbox') && (
+                      {['dropdown', 'radiogroup', 'checkbox'].includes(tf.type) && (
                         <div className="form-group">
                           <label>Choices (one per line)</label>
                           <textarea
                             value={templateChoicesText[idx] ?? tf.choices?.join('\n') ?? ''}
                             onChange={e => {
                               setTemplateChoicesText(prev => ({ ...prev, [idx]: e.target.value }));
-                              updateTemplateField(idx, {
-                                choices: e.target.value.split('\n').map(c => c.trim()).filter(Boolean)
-                              });
+                              updateTemplateField(idx, { choices: e.target.value.split('\n').map(c => c.trim()).filter(Boolean) });
                             }}
                             rows={3}
                             placeholder="Type each option on a new line"
@@ -612,73 +361,38 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                         </div>
                       )}
 
-                      {/* Required */}
                       <div className="template-required-section">
                         <label className="template-checkbox-label">
-                          <input
-                            type="checkbox"
-                            checked={tf.isRequired || false}
-                            onChange={e => updateTemplateField(idx, { isRequired: e.target.checked })}
-                          />
+                          <input type="checkbox" checked={tf.isRequired || false} onChange={e => updateTemplateField(idx, { isRequired: e.target.checked })} />
                           Required field
                         </label>
                       </div>
 
-                      {/* Validators toggle */}
                       <div className="template-validators-section">
-                        <button
-                          className="btn-toggle-validators"
-                          onClick={() => setExpandedTemplateField(expandedTemplateField === idx ? null : idx)}
-                        >
-                          {expandedTemplateField === idx ? '▼' : '▶'} Validators
-                          {tf.validators?.length ? ` (${tf.validators.length})` : ''}
+                        <button className="btn-toggle-validators" onClick={() => setExpandedTemplateField(expandedTemplateField === idx ? null : idx)}>
+                          {expandedTemplateField === idx ? '▼' : '▶'} Validators{tf.validators?.length ? ` (${tf.validators.length})` : ''}
                         </button>
-
                         {expandedTemplateField === idx && (
                           <div className="template-validators-content">
                             <div className="validator-presets-compact">
                               <label>Quick add:</label>
-                              <code onClick={() => addTemplateValidator(idx, 'ipv4')}>IPv4</code>
-                              <code onClick={() => addTemplateValidator(idx, 'email')}>Email</code>
-                              <code onClick={() => addTemplateValidator(idx, 'phone')}>Phone</code>
-                              <code onClick={() => addTemplateValidator(idx, 'mac')}>MAC</code>
-                              <code onClick={() => addTemplateValidator(idx, 'url')}>URL</code>
-                              <button
-                                className="btn-add-small"
-                                onClick={() => addTemplateValidator(idx)}
-                              >+ Custom Regex</button>
+                              {['ipv4', 'email', 'phone', 'mac', 'url'].map(key => (
+                                <code key={key} onClick={() => addTemplateValidator(idx, key)}>{key.toUpperCase()}</code>
+                              ))}
+                              <button className="btn-add-small" onClick={() => addTemplateValidator(idx)}>+ Custom Regex</button>
                             </div>
-
-                            {(tf.validators || []).length === 0 && (
-                              <p className="no-validators">No validators</p>
-                            )}
-
+                            {!(tf.validators || []).length && <p className="no-validators">No validators</p>}
                             {(tf.validators || []).map((v, vIdx) => (
                               <div key={vIdx} className="template-validator-item">
                                 <div className="form-group">
                                   <label>Error Message</label>
-                                  <input
-                                    type="text"
-                                    value={v.text}
-                                    onChange={e => updateTemplateValidator(idx, vIdx, { text: e.target.value })}
-                                    placeholder="Validation error message"
-                                  />
+                                  <input type="text" value={v.text} onChange={e => updateTemplateValidator(idx, vIdx, { text: e.target.value })} />
                                 </div>
                                 <div className="form-group">
                                   <label>Regex Pattern</label>
                                   <div style={{ display: 'flex', gap: '8px' }}>
-                                    <input
-                                      type="text"
-                                      value={v.regex || ''}
-                                      onChange={e => updateTemplateValidator(idx, vIdx, { regex: e.target.value })}
-                                      placeholder="^pattern$"
-                                      className="code-input"
-                                      style={{ flex: 1 }}
-                                    />
-                                    <button
-                                      className="btn-delete-small"
-                                      onClick={() => deleteTemplateValidator(idx, vIdx)}
-                                    >×</button>
+                                    <input type="text" value={v.regex || ''} onChange={e => updateTemplateValidator(idx, vIdx, { regex: e.target.value })} className="code-input" style={{ flex: 1 }} />
+                                    <button className="btn-delete-small" onClick={() => deleteTemplateValidator(idx, vIdx)}>×</button>
                                   </div>
                                 </div>
                               </div>
@@ -687,97 +401,48 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                         )}
                       </div>
 
-                      {/* Conditions toggle */}
                       <div className="template-validators-section">
-                        <button
-                          className="btn-toggle-validators"
-                          onClick={() => setExpandedTemplateConditions(expandedTemplateConditions === idx ? null : idx)}
-                        >
-                          {expandedTemplateConditions === idx ? '▼' : '▶'} Conditionals
-                          {tf.conditions?.length ? ` (${tf.conditions.length})` : ''}
+                        <button className="btn-toggle-validators" onClick={() => setExpandedTemplateConditions(expandedTemplateConditions === idx ? null : idx)}>
+                          {expandedTemplateConditions === idx ? '▼' : '▶'} Conditionals{tf.conditions?.length ? ` (${tf.conditions.length})` : ''}
                         </button>
-
                         {expandedTemplateConditions === idx && (
                           <div className="template-validators-content">
-                            <div className="conditions-info-compact">
-                              <p>This field will be <strong>hidden</strong> until conditions are met.</p>
-                            </div>
-
+                            <div className="conditions-info-compact"><p>This field will be <strong>hidden</strong> until conditions are met.</p></div>
                             {(tf.conditions || []).length > 1 && (
                               <div className="logic-toggle-compact">
                                 <span>Match:</span>
-                                <button
-                                  className={`logic-btn-small ${(tf.conditionLogic || 'and') === 'and' ? 'active' : ''}`}
-                                  onClick={() => updateTemplateConditionLogic(idx, 'and')}
-                                >AND</button>
-                                <button
-                                  className={`logic-btn-small ${(tf.conditionLogic || 'and') === 'or' ? 'active' : ''}`}
-                                  onClick={() => updateTemplateConditionLogic(idx, 'or')}
-                                >OR</button>
+                                {(['and', 'or'] as const).map(l => (
+                                  <button key={l} className={`logic-btn-small ${(tf.conditionLogic || 'and') === l ? 'active' : ''}`} onClick={() => updateTemplateConditionLogic(idx, l)}>{l.toUpperCase()}</button>
+                                ))}
                               </div>
                             )}
-
-                            {(tf.conditions || []).length === 0 && (
-                              <p className="no-validators">No conditions - field is always visible</p>
-                            )}
-
+                            {!(tf.conditions || []).length && <p className="no-validators">No conditions - field is always visible</p>}
                             {(tf.conditions || []).map((c, cIdx) => {
                               const otherFields = templateFields.filter((_, i) => i !== idx);
                               return (
                                 <div key={cIdx} className="template-condition-row">
-                                  {cIdx > 0 && (
-                                    <div className="condition-logic-label-small">
-                                      {(tf.conditionLogic || 'and').toUpperCase()}
-                                    </div>
-                                  )}
+                                  {cIdx > 0 && <div className="condition-logic-label-small">{(tf.conditionLogic || 'and').toUpperCase()}</div>}
                                   <div className="condition-inputs-compact">
-                                    <select
-                                      value={c.fieldName}
-                                      onChange={e => updateTemplateCondition(idx, cIdx, { fieldName: e.target.value })}
-                                    >
+                                    <select value={c.fieldName} onChange={e => updateTemplateCondition(idx, cIdx, { fieldName: e.target.value })}>
                                       <option value="">Select field...</option>
-                                      {otherFields.map(f => (
-                                        <option key={f.id} value={f.name}>{f.title}</option>
-                                      ))}
+                                      {otherFields.map(f => <option key={f.id} value={f.name}>{f.title}</option>)}
                                     </select>
-
-                                    <select
-                                      value={c.operator}
-                                      onChange={e => updateTemplateCondition(idx, cIdx, { operator: e.target.value as Condition['operator'] })}
-                                    >
+                                    <select value={c.operator} onChange={e => updateTemplateCondition(idx, cIdx, { operator: e.target.value as Condition['operator'] })}>
                                       <option value="equals">equals</option>
                                       <option value="notEquals">not equals</option>
                                       <option value="contains">contains</option>
                                       <option value="notEmpty">is not empty</option>
                                       <option value="empty">is empty</option>
                                     </select>
-
                                     {!['empty', 'notEmpty'].includes(c.operator) && (
-                                      <input
-                                        type="text"
-                                        value={c.value}
-                                        onChange={e => updateTemplateCondition(idx, cIdx, { value: e.target.value })}
-                                        placeholder="Value..."
-                                        className="condition-value-input"
-                                      />
+                                      <input type="text" value={c.value} onChange={e => updateTemplateCondition(idx, cIdx, { value: e.target.value })} placeholder="Value..." className="condition-value-input" />
                                     )}
-
-                                    <button
-                                      className="btn-delete-small"
-                                      onClick={() => deleteTemplateCondition(idx, cIdx)}
-                                    >×</button>
+                                    <button className="btn-delete-small" onClick={() => deleteTemplateCondition(idx, cIdx)}>×</button>
                                   </div>
                                 </div>
                               );
                             })}
-
-                            <button
-                              className="btn-add-small"
-                              onClick={() => addTemplateCondition(idx)}
-                              style={{ marginTop: '8px', width: '100%' }}
-                            >
-                              + Add Condition
-                            </button>
+                            <button className="btn-add-small" onClick={() => addTemplateCondition(idx)} style={{ marginTop: '8px', width: '100%' }}>+ Add Condition</button>
                           </div>
                         )}
                       </div>
@@ -786,34 +451,25 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                 </div>
               )}
 
-              {/* CRM Lookup Config */}
+              {/* ── CRM Lookup — CSS classes only, no inline styles ── */}
               {isCrmLookup && (
-                <div className="template-section" style={{ background: '#f0f7ff', borderRadius: 8, padding: 16, marginBottom: 16 }}>
-                  <h3 style={{ marginBottom: 12 }}>🔍 CRM Lookup – Auto-fill Fields</h3>
-                  <p style={{ color: '#555', marginBottom: 16, fontSize: 14 }}>
-                    When a user enters a valid CRM ID, the fields below will be auto-populated and made read-only.
-                  </p>
+                <div className="crm-section">
+                  <h3>🔍 CRM Lookup – Auto-fill Fields</h3>
+                  <p>When a user enters a valid CRM ID, the fields below will be auto-populated and made read-only.</p>
+
                   <div className="form-group">
                     <label>Description / Help text</label>
-                    <input
-                      type="text"
-                      value={config.description || ''}
-                      onChange={e => setConfig({ ...config, description: e.target.value })}
-                      placeholder="e.g., Enter the client CRM ID to auto-fill details"
-                    />
+                    <input type="text" value={config.description || ''} onChange={e => setConfig({ ...config, description: e.target.value })} placeholder="e.g., Enter the client CRM ID to auto-fill details" />
                   </div>
+
                   <div className="form-row">
                     <div className="form-group">
                       <label>CRM ID Placeholder</label>
-                      <input
-                        type="text"
-                        value={config.placeholder || ''}
-                        onChange={e => setConfig({ ...config, placeholder: e.target.value })}
-                        placeholder="e.g., CRM001"
-                      />
+                      <input type="text" value={config.placeholder || ''} onChange={e => setConfig({ ...config, placeholder: e.target.value })} placeholder="e.g., CRM001" />
                     </div>
                   </div>
-                  <p style={{ fontWeight: 600, marginBottom: 8 }}>Auto-fill field labels:</p>
+
+                  <p className="crm-labels-title">Auto-fill field labels:</p>
                   <div className="form-row">
                     <div className="form-group">
                       <label>Name label</label>
@@ -834,9 +490,10 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                       <input type="text" value={crmLabels.state} onChange={e => setCrmLabels(prev => ({ ...prev, state: e.target.value }))} />
                     </div>
                   </div>
-                  <div style={{ background: '#e8f4fd', border: '1px solid #b3d9f7', borderRadius: 6, padding: '10px 14px', fontSize: 13, color: '#1a5276', marginTop: 8 }}>
+
+                  <div className="crm-field-names">
                     <strong>Generated field names (auto):</strong>
-                    <ul style={{ margin: '6px 0 0 16px' }}>
+                    <ul>
                       <li><code>{config.name || 'crm_id'}</code> – CRM ID input</li>
                       <li><code>{config.name || 'crm_id'}_name</code> – {crmLabels.name}</li>
                       <li><code>{config.name || 'crm_id'}_street</code> – {crmLabels.street}</li>
@@ -847,37 +504,26 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                 </div>
               )}
 
-              {/* Required checkbox */}
               <div className="form-group checkbox-group">
                 <label>
-                  <input
-                    type="checkbox"
-                    checked={config.isRequired}
-                    onChange={e => setConfig({ ...config, isRequired: e.target.checked })}
-                  />
+                  <input type="checkbox" checked={config.isRequired} onChange={e => setConfig({ ...config, isRequired: e.target.checked })} />
                   Required field
                 </label>
               </div>
             </>
           )}
 
-          {/* ══════════════════════════════════════
-              VALIDATORS TAB
-          ══════════════════════════════════════ */}
           {activeTab === 'validators' && (
             <div className="validators-section">
               {validators.length === 0 && (
                 <div className="empty-validators">
                   <p>Click a pattern below to add validation:</p>
-
                   <div className="validator-examples">
                     <strong>Network & Infrastructure:</strong>
-                    <code onClick={() => addValidatorPreset('ipv4')}>IPv4 Address</code>
-                    <code onClick={() => addValidatorPreset('cidr')}>CIDR Subnet</code>
-                    <code onClick={() => addValidatorPreset('mac')}>MAC Address</code>
-                    <code onClick={() => addValidatorPreset('hostname')}>Hostname/FQDN</code>
+                    {['ipv4', 'cidr', 'mac', 'hostname'].map(k => (
+                      <code key={k} onClick={() => addValidatorPreset(k)}>{k.charAt(0).toUpperCase() + k.slice(1)}</code>
+                    ))}
                   </div>
-
                   <div className="validator-examples">
                     <strong>Contact & Business:</strong>
                     <code onClick={() => addValidatorPreset('email')}>Email Address</code>
@@ -885,7 +531,6 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                     <code onClick={() => addValidatorPreset('url')}>URL</code>
                     <code onClick={() => addValidatorPreset('abbrev3')}>3-Letter Code (ABC)</code>
                   </div>
-
                   <div className="validator-manual">
                     <p>Or create custom validator:</p>
                     <div className="validator-add-row">
@@ -896,7 +541,6 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                   </div>
                 </div>
               )}
-
               {validators.map((v, idx) => (
                 <div key={idx} className="validator-item">
                   <div className="validator-header">
@@ -907,56 +551,37 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                     </span>
                     <button className="btn-delete-small" onClick={() => deleteValidator(idx)}>×</button>
                   </div>
-
                   <div className="form-group">
                     <label>Error Message</label>
-                    <input
-                      type="text"
-                      value={v.text}
-                      onChange={e => updateValidator(idx, { text: e.target.value })}
-                      placeholder="Shown when validation fails"
-                    />
+                    <input type="text" value={v.text} onChange={e => updateValidator(idx, { text: e.target.value })} placeholder="Shown when validation fails" />
                   </div>
-
                   {v.type === 'regex' && (
                     <div className="form-group">
                       <label>Regex Pattern</label>
-                      <input
-                        type="text"
-                        value={v.regex || ''}
-                        onChange={e => updateValidator(idx, { regex: e.target.value })}
-                        placeholder="e.g., ^[A-Z]{3}$"
-                        className="code-input"
-                      />
+                      <input type="text" value={v.regex || ''} onChange={e => updateValidator(idx, { regex: e.target.value })} placeholder="e.g., ^[A-Z]{3}$" className="code-input" />
                     </div>
                   )}
-
                   {v.type === 'numeric' && (
                     <div className="form-row">
                       <div className="form-group">
                         <label>Min Value</label>
-                        <input type="number" value={v.minValue ?? 0}
-                          onChange={e => updateValidator(idx, { minValue: parseFloat(e.target.value) })} />
+                        <input type="number" value={v.minValue ?? 0} onChange={e => updateValidator(idx, { minValue: parseFloat(e.target.value) })} />
                       </div>
                       <div className="form-group">
                         <label>Max Value</label>
-                        <input type="number" value={v.maxValue ?? 100}
-                          onChange={e => updateValidator(idx, { maxValue: parseFloat(e.target.value) })} />
+                        <input type="number" value={v.maxValue ?? 100} onChange={e => updateValidator(idx, { maxValue: parseFloat(e.target.value) })} />
                       </div>
                     </div>
                   )}
-
                   {v.type === 'text' && (
                     <div className="form-row">
                       <div className="form-group">
                         <label>Min Length</label>
-                        <input type="number" value={v.minLength ?? 1}
-                          onChange={e => updateValidator(idx, { minLength: parseInt(e.target.value) })} />
+                        <input type="number" value={v.minLength ?? 1} onChange={e => updateValidator(idx, { minLength: parseInt(e.target.value) })} />
                       </div>
                       <div className="form-group">
                         <label>Max Length</label>
-                        <input type="number" value={v.maxLength ?? 100}
-                          onChange={e => updateValidator(idx, { maxLength: parseInt(e.target.value) })} />
+                        <input type="number" value={v.maxLength ?? 100} onChange={e => updateValidator(idx, { maxLength: parseInt(e.target.value) })} />
                       </div>
                     </div>
                   )}
@@ -965,97 +590,57 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
             </div>
           )}
 
-          {/* ══════════════════════════════════════
-              CONDITIONS TAB
-          ══════════════════════════════════════ */}
           {activeTab === 'conditions' && (
             <div className="conditions-section">
               <div className="conditions-info">
                 <p>This field will be <strong>hidden by default</strong> and shown only when conditions are met.</p>
               </div>
-
               {conditions.length > 1 && (
                 <div className="logic-toggle">
                   <span>Match:</span>
-                  <button
-                    className={`logic-btn ${conditionLogic === 'and' ? 'active' : ''}`}
-                    onClick={() => setConditionLogic('and')}
-                  >ALL conditions (AND)</button>
-                  <button
-                    className={`logic-btn ${conditionLogic === 'or' ? 'active' : ''}`}
-                    onClick={() => setConditionLogic('or')}
-                  >ANY condition (OR)</button>
+                  <button className={`logic-btn ${conditionLogic === 'and' ? 'active' : ''}`} onClick={() => setConditionLogic('and')}>ALL conditions (AND)</button>
+                  <button className={`logic-btn ${conditionLogic === 'or' ? 'active' : ''}`} onClick={() => setConditionLogic('or')}>ANY condition (OR)</button>
                 </div>
               )}
-
               {conditions.length === 0 && (
                 <div className="empty-conditions">
                   <p>No conditions - field is always visible.</p>
-                  {allFields.length === 0 && (
-                    <small>⚠️ Add other fields first to create conditions.</small>
-                  )}
+                  {allFields.length === 0 && <small>⚠️ Add other fields first to create conditions.</small>}
                 </div>
               )}
-
               {conditions.map((c, idx) => (
                 <div key={idx} className="condition-row">
-                  {idx > 0 && (
-                    <div className="condition-logic-label">
-                      {conditionLogic.toUpperCase()}
-                    </div>
-                  )}
+                  {idx > 0 && <div className="condition-logic-label">{conditionLogic.toUpperCase()}</div>}
                   <div className="condition-inputs">
-                    <select
-                      value={c.fieldName}
-                      onChange={e => updateCondition(idx, { fieldName: e.target.value })}
-                    >
+                    <select value={c.fieldName} onChange={e => updateCondition(idx, { fieldName: e.target.value })}>
                       <option value="">Select field...</option>
-                      {allFields.map(f => (
-                        <option key={f.id} value={f.name}>{f.title} ({f.name})</option>
-                      ))}
+                      {allFields.map(f => <option key={f.id} value={f.name}>{f.title} ({f.name})</option>)}
                     </select>
-
-                    <select
-                      value={c.operator}
-                      onChange={e => updateCondition(idx, { operator: e.target.value as Condition['operator'] })}
-                    >
+                    <select value={c.operator} onChange={e => updateCondition(idx, { operator: e.target.value as Condition['operator'] })}>
                       <option value="equals">equals</option>
                       <option value="notEquals">not equals</option>
                       <option value="contains">contains</option>
                       <option value="notEmpty">is not empty</option>
                       <option value="empty">is empty</option>
                     </select>
-
                     {!['empty', 'notEmpty'].includes(c.operator) && (
-                      <input
-                        type="text"
-                        value={c.value}
-                        onChange={e => updateCondition(idx, { value: e.target.value })}
-                        placeholder="Value..."
-                      />
+                      <input type="text" value={c.value} onChange={e => updateCondition(idx, { value: e.target.value })} placeholder="Value..." />
                     )}
-
                     <button className="btn-delete-small" onClick={() => deleteCondition(idx)}>×</button>
                   </div>
                 </div>
               ))}
-
-              {allFields.length > 0 && (
-                <button className="btn-add-condition" onClick={addCondition}>
-                  + Add Condition
-                </button>
-              )}
-
+              {allFields.length > 0 && <button className="btn-add-condition" onClick={addCondition}>+ Add Condition</button>}
               {conditions.length > 0 && (
                 <div className="condition-preview">
                   <strong>SurveyJS expression:</strong>
                   <code>
                     {conditions.filter(c => c.fieldName).map(c => {
-                      if (c.operator === 'empty') return `{${c.fieldName}} empty`;
-                      if (c.operator === 'notEmpty') return `{${c.fieldName}} notempty`;
-                      if (c.operator === 'equals') return `{${c.fieldName}} = '${c.value}'`;
+                      if (c.operator === 'empty')     return `{${c.fieldName}} empty`;
+                      if (c.operator === 'notEmpty')  return `{${c.fieldName}} notempty`;
+                      if (c.operator === 'equals')    return `{${c.fieldName}} = '${c.value}'`;
                       if (c.operator === 'notEquals') return `{${c.fieldName}} != '${c.value}'`;
-                      if (c.operator === 'contains') return `{${c.fieldName}} contains '${c.value}'`;
+                      if (c.operator === 'contains')  return `{${c.fieldName}} contains '${c.value}'`;
                       return '';
                     }).join(` ${conditionLogic} `)}
                   </code>

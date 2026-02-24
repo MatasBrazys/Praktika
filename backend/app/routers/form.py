@@ -32,8 +32,3 @@ async def submit_form(form_data: dict, db: Session = Depends(get_db)):
 
     return {"message": "Form submitted successfully", "submission_id": survey_entry.id}
 
-@router.get("/forms")
-def get_forms(db: Session = Depends(get_db)):
-    """Get all form definitions"""
-    forms = db.query(FormDefinition).all()
-    return {"forms": forms}

@@ -1,82 +1,79 @@
-/* ======================
+/* ============================================================
    NAVBAR
-   ====================== */
+   ============================================================ */
 .navbar {
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  background: var(--slate-900);
+  border-bottom: 1px solid var(--slate-800);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: var(--z-navbar);
 }
 
 .navbar-container {
-  max-width: 1600px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 var(--sp-8);
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  height: 70px;
+  justify-content: space-between;
+  height: 64px;
 }
 
-/* ======================
-   LOGO
-   ====================== */
+/* ── Logo ── */
 .navbar-brand a {
   display: flex;
   align-items: center;
-  text-decoration: none;
 }
 
 .brand-logo {
-  height: 40px;
+  height: 32px;
   width: auto;
-  transition: transform 0.2s;
+  /* invert + hue trick: makes dark SVG white on dark navbar */
+  filter: brightness(0) invert(1);
+  transition: opacity var(--t-fast);
 }
 
-.brand-logo:hover {
-  transform: scale(1.05);
-}
+.brand-logo:hover { opacity: 0.8; }
 
-/* ======================
-   MENU
-   ====================== */
+/* ── Nav items ── */
 .navbar-menu {
   display: flex;
-  gap: 8px;
   align-items: center;
+  gap: var(--sp-1);
 }
 
 .navbar-menu > a,
-.navbar-menu button {
-  text-decoration: none;
-  color: #555;
-  font-weight: 500;
-  padding: 10px 20px;
-  border-radius: 8px;
-  transition: all 0.2s;
-  font-size: 15px;
+.navbar-menu > .nav-dropdown > button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-md);
+  font-weight: var(--fw-medium);
+  color: rgba(255,255,255,0.65);
   background: none;
   border: none;
   cursor: pointer;
-  font-family: inherit;
+  font-family: var(--font-sans);
+  transition: all var(--t-fast);
+  white-space: nowrap;
 }
 
 .navbar-menu > a:hover,
-.navbar-menu button:hover {
-  background: #f8f9fa;
-  color: #1a1a1a;
+.navbar-menu > .nav-dropdown > button:hover {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.95);
 }
 
 .navbar-menu > a.active,
-.navbar-menu button.active {
-  background: linear-gradient(135deg, #e28b8b 0%, #a51a01 100%);
-  color: white;
+.navbar-menu > .nav-dropdown > button.active {
+  background: rgba(45, 107, 228, 0.30);
+  color: #fff;
+  font-weight: var(--fw-semibold);
 }
 
-/* ======================
-   DROPDOWN 
-   ====================== */
+/* ── Dropdown ── */
 .nav-dropdown {
   position: relative;
 }
@@ -85,97 +82,93 @@
   position: absolute;
   top: 100%;
   left: 0;
-  margin-top: 0;  
-  padding-top: 8px;  
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  padding-top: var(--sp-2);
   min-width: 200px;
-  animation: fadeIn 0.2s;
-  /* CRITICAL: Extend hover area */
-  padding: 8px;
+  z-index: var(--z-navbar);
 }
 
-/* Add invisible bridge */
-.nav-dropdown::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  height: 8px;  /* Bridge height */
-  background: transparent;
+.dropdown-menu-inner {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  padding: var(--sp-2);
+  animation: dropdownIn var(--t-fast) ease;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+@keyframes dropdownIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .dropdown-menu a {
-  display: block;
-  padding: 12px 16px;
-  color: #555;
-  text-decoration: none;
-  border-radius: 8px;
-  transition: all 0.2s;
-  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 10px var(--sp-3);
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  font-size: var(--text-base);
+  font-weight: var(--fw-medium);
+  transition: all var(--t-fast);
 }
 
 .dropdown-menu a:hover {
-  background: #f8f9fa;
-  color: #1a1a1a;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
-/* ======================
-   USER INFO
-   ====================== */
+/* ── Bottom accent line ── */
+.navbar::after {
+  content: '';
+  display: block;
+  height: 2px;
+  background: linear-gradient(90deg, var(--teal-500) 0%, var(--teal-400) 50%, var(--teal-600) 100%);
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  opacity: 1;
+}
+
+/* ── User chip ── */
 .navbar-user {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--sp-2);
 }
 
-.user-name {
-  font-weight: 500;
-  color: #666;
-  font-size: 14px;
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: rgba(255,255,255,0.75);
 }
 
-/* ======================
-   RESPONSIVE
-   ====================== */
+.user-avatar {
+  width: 24px;
+  height: 24px;
+  background: var(--blue-600);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: var(--fw-bold);
+  color: white;
+}
+
+/* ── Responsive ── */
 @media (max-width: 768px) {
-  .navbar-container {
-    padding: 0 16px;
-    height: 60px;
-  }
-
-  .brand-logo {
-    height: 32px;
-  }
-
-  .navbar-menu {
-    gap: 4px;
-  }
-
-  .navbar-menu > a,
-  .navbar-menu button {
-    padding: 8px 12px;
-    font-size: 13px;
-  }
-
-  .dropdown-menu {
-    min-width: 160px;
-  }
-
-  .user-name {
-    display: none;
-  }
+  .navbar-container { padding: 0 var(--sp-4); height: 56px; }
+  .brand-logo { height: 26px; }
+  .navbar-menu > a span,
+  .navbar-menu > .nav-dropdown > button span { display: none; }
+  .user-chip .user-name { display: none; }
 }

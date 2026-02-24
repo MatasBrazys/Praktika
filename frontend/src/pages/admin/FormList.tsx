@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { formAPI, type FormDefinition } from '../../services/api';
 import Navbar from '../../components/shared/Navbar';
 import '../../styles/pages/admin/form-list.css';
@@ -28,7 +29,6 @@ function DeleteConfirmModal({ form, onConfirm, onCancel, deleting }: DeleteModal
     <div className="delete-modal-overlay" onClick={() => { if (!deleting) onCancel(); }}>
       <div className="delete-modal" onClick={e => e.stopPropagation()}>
 
-        {/* Header */}
         <div className="delete-modal-header">
           <div className="delete-modal-title-row">
             <div className="delete-modal-icon-wrap">
@@ -48,12 +48,10 @@ function DeleteConfirmModal({ form, onConfirm, onCancel, deleting }: DeleteModal
           </button>
         </div>
 
-        {/* Body */}
         <div className="delete-modal-body">
           <p className="delete-modal-desc">
             This action <strong>cannot be undone</strong>. The following will be permanently deleted:
           </p>
-
           <ul className="delete-consequences">
             <li>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
@@ -64,7 +62,6 @@ function DeleteConfirmModal({ form, onConfirm, onCancel, deleting }: DeleteModal
               All submissions associated with this form
             </li>
           </ul>
-
           <div className="delete-modal-field">
             <label htmlFor="confirm-input">
               Type <span className="delete-modal-name-inline">{form.title}</span> to confirm
@@ -84,13 +81,8 @@ function DeleteConfirmModal({ form, onConfirm, onCancel, deleting }: DeleteModal
           </div>
         </div>
 
-        {/* Footer */}
         <div className="delete-modal-footer">
-          <button
-            className="btn-modal-cancel"
-            onClick={onCancel}
-            disabled={deleting}
-          >
+          <button className="btn-modal-cancel" onClick={onCancel} disabled={deleting}>
             Cancel
           </button>
           <button
@@ -99,10 +91,7 @@ function DeleteConfirmModal({ form, onConfirm, onCancel, deleting }: DeleteModal
             disabled={!isMatch || deleting}
           >
             {deleting ? (
-              <>
-                <span className="delete-spinner" />
-                Deleting…
-              </>
+              <><span className="delete-spinner" />Deleting…</>
             ) : (
               'Delete form'
             )}
@@ -116,6 +105,7 @@ function DeleteConfirmModal({ form, onConfirm, onCancel, deleting }: DeleteModal
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function FormList() {
+  const navigate = useNavigate();
   const [forms, setForms] = useState<FormDefinition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -160,17 +150,15 @@ export default function FormList() {
       alert('Failed to toggle form status');
     }
   };
+
   const getFieldCount = (form: FormDefinition) => {
     const json = form.surveyjs_json;
     if (!json) return 0;
-
     if (json.pages) {
       return json.pages.reduce(
-        (total: number, page: any) => total + (page.elements?.length || 0),
-        0
+        (total: number, page: any) => total + (page.elements?.length || 0), 0
       );
     }
-
     return json.elements?.length || 0;
   };
 
@@ -180,14 +168,14 @@ export default function FormList() {
   return (
     <>
       <Navbar />
-      <div className="page-container">
+      <div className="page-container-admin">
         <div className="form-list-wrapper">
           <div className="page-header">
             <div>
               <h1>Form Management</h1>
               <p className="subtitle">Create and manage your forms</p>
             </div>
-            <button className="btn-create" onClick={() => window.location.href = '/admin/form-builder'}>
+            <button className="btn-create" onClick={() => navigate('/admin/form-builder')}>
               + Create New Form
             </button>
           </div>
@@ -197,7 +185,7 @@ export default function FormList() {
               <div className="empty-icon">📋</div>
               <h2>No forms yet</h2>
               <p>Create your first form to get started</p>
-              <button className="btn-create" onClick={() => window.location.href = '/admin/form-builder'}>
+              <button className="btn-create" onClick={() => navigate('/admin/form-builder')}>
                 Create Form
               </button>
             </div>
@@ -217,12 +205,21 @@ export default function FormList() {
                     <span>📅 {new Date(form.created_at!).toLocaleDateString()}</span>
                   </div>
                   <div className="card-actions">
-                    <button className="btn-edit" onClick={() => window.location.href = `/admin/form-builder/${form.id}`}>Edit</button>
-                    <button className="btn-view" onClick={() => window.location.href = `/admin/forms/${form.id}/submissions`}>📊 Submissions</button>
-                    <button className={`btn-toggle ${form.is_active ? '' : 'activate'}`} onClick={() => handleToggleActive(form.id!)}>
+                    <button className="btn-edit" onClick={() => navigate(`/admin/form-builder/${form.id}`)}>
+                      Edit
+                    </button>
+                    <button className="btn-view" onClick={() => navigate(`/admin/forms/${form.id}/submissions`)}>
+                      Submissions
+                    </button>
+                    <button
+                      className={`btn-toggle ${form.is_active ? '' : 'activate'}`}
+                      onClick={() => handleToggleActive(form.id!)}
+                    >
                       {form.is_active ? 'Deactivate' : 'Activate'}
                     </button>
-                    <button className="btn-delete" onClick={() => setFormToDelete(form)}>Delete</button>
+                    <button className="btn-delete" onClick={() => setFormToDelete(form)}>
+                      Delete
+                    </button>
                   </div>
                 </div>
               ))}

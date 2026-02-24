@@ -1,10 +1,12 @@
-/* frontend/src/styles/FormPreview.css */
-
+/* ============================================================
+   FORM PREVIEW
+   ============================================================ */
 .preview-container {
-  background: white;
-  border-radius: 8px;
-  padding: 20px;
-  min-height: 400px;
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--sp-5);
+  min-height: 300px;
+  border: 1px solid var(--color-border);
 }
 
 .preview-empty {
@@ -12,7 +14,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 400px;
-  color: #999;
+  min-height: 300px;
+  color: var(--color-text-muted);
   text-align: center;
+  gap: var(--sp-3);
 }
+
+.preview-empty .empty-icon { font-size: 40px; opacity: 0.4; }
+.preview-empty p { font-size: var(--text-base); }
