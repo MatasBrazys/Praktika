@@ -1,7 +1,7 @@
 // frontend/src/components/admin/FieldEditor.tsx
 import { useState, useEffect } from 'react';
-import type { FieldConfig } from '../../pages/admin/FormBuilderPage';
-import '../../styles/FieldEditor.css';
+import type { FieldConfig } from '../../pages/admin/FormBuilder';
+import '../../styles/components/field-editor.css';
 
 interface Validator {
   type: 'regex' | 'numeric' | 'text';
@@ -83,6 +83,13 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
   const [templateFields, setTemplateFields] = useState<FieldConfig[]>(field.templateElements || []);
   const [expandedTemplateField, setExpandedTemplateField] = useState<number | null>(null);
   const [expandedTemplateConditions, setExpandedTemplateConditions] = useState<number | null>(null);
+  const [crmLabels, setCrmLabels] = useState({
+    name:     field.crmFieldLabels?.name     || 'Company Name',
+    street:   field.crmFieldLabels?.street   || 'Street Address',
+    postcode: field.crmFieldLabels?.postcode || 'Postcode',
+    state:    field.crmFieldLabels?.state    || 'City / State',
+  });
+  const isCrmLookup = config.type === 'crmlookup';
 
   // ═══ AUTO-ADD VALIDATORS WHEN INPUT TYPE CHANGES ═══
   useEffect(() => {
@@ -119,6 +126,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
     { value: 'checkbox', label: '☑️ Checkboxes' },
     { value: 'boolean', label: '✓ Yes/No' },
     { value: 'paneldynamic', label: '🔁 Repeated Group' },
+    { value: 'crmlookup',    label: '🔍 CRM Lookup' },
   ];
 
   // ═══ TEXT INPUT TYPES ═══
@@ -311,6 +319,14 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
     if (!config.title.trim()) { alert('Please enter a field title'); return; }
 
     const finalConfig: FieldConfig = { ...config };
+
+    // ── CRM Lookup: save labels, skip choices/validators ──
+    if (isCrmLookup) {
+      finalConfig.crmFieldLabels = { ...crmLabels };
+      delete finalConfig.choices;
+      onSave(finalConfig);
+      return;
+    }
 
     if (['dropdown', 'radiogroup', 'checkbox'].includes(config.type)) {
       finalConfig.choices = choicesText.split('\n').map(c => c.trim()).filter(Boolean);
@@ -767,6 +783,67 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* CRM Lookup Config */}
+              {isCrmLookup && (
+                <div className="template-section" style={{ background: '#f0f7ff', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+                  <h3 style={{ marginBottom: 12 }}>🔍 CRM Lookup – Auto-fill Fields</h3>
+                  <p style={{ color: '#555', marginBottom: 16, fontSize: 14 }}>
+                    When a user enters a valid CRM ID, the fields below will be auto-populated and made read-only.
+                  </p>
+                  <div className="form-group">
+                    <label>Description / Help text</label>
+                    <input
+                      type="text"
+                      value={config.description || ''}
+                      onChange={e => setConfig({ ...config, description: e.target.value })}
+                      placeholder="e.g., Enter the client CRM ID to auto-fill details"
+                    />
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>CRM ID Placeholder</label>
+                      <input
+                        type="text"
+                        value={config.placeholder || ''}
+                        onChange={e => setConfig({ ...config, placeholder: e.target.value })}
+                        placeholder="e.g., CRM001"
+                      />
+                    </div>
+                  </div>
+                  <p style={{ fontWeight: 600, marginBottom: 8 }}>Auto-fill field labels:</p>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Name label</label>
+                      <input type="text" value={crmLabels.name} onChange={e => setCrmLabels(prev => ({ ...prev, name: e.target.value }))} />
+                    </div>
+                    <div className="form-group">
+                      <label>Street label</label>
+                      <input type="text" value={crmLabels.street} onChange={e => setCrmLabels(prev => ({ ...prev, street: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Postcode label</label>
+                      <input type="text" value={crmLabels.postcode} onChange={e => setCrmLabels(prev => ({ ...prev, postcode: e.target.value }))} />
+                    </div>
+                    <div className="form-group">
+                      <label>City / State label</label>
+                      <input type="text" value={crmLabels.state} onChange={e => setCrmLabels(prev => ({ ...prev, state: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div style={{ background: '#e8f4fd', border: '1px solid #b3d9f7', borderRadius: 6, padding: '10px 14px', fontSize: 13, color: '#1a5276', marginTop: 8 }}>
+                    <strong>Generated field names (auto):</strong>
+                    <ul style={{ margin: '6px 0 0 16px' }}>
+                      <li><code>{config.name || 'crm_id'}</code> – CRM ID input</li>
+                      <li><code>{config.name || 'crm_id'}_name</code> – {crmLabels.name}</li>
+                      <li><code>{config.name || 'crm_id'}_street</code> – {crmLabels.street}</li>
+                      <li><code>{config.name || 'crm_id'}_postcode</code> – {crmLabels.postcode}</li>
+                      <li><code>{config.name || 'crm_id'}_state</code> – {crmLabels.state}</li>
+                    </ul>
+                  </div>
                 </div>
               )}
 

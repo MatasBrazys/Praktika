@@ -20,7 +20,7 @@ class FormSubmission(Base):
     __tablename__ = "form_submissions"
     
     id = Column(Integer, primary_key=True, index=True)
-    form_id = Column(Integer, ForeignKey('form_definitions.id'), nullable=False, index=True)  # ← PRIDĖTA!
-    form_type = Column(String(50), nullable=False)  # Keep for backward compatibility
+    form_id = Column(Integer, ForeignKey('form_definitions.id', ondelete='CASCADE'), nullable=False, index=True)  
+    form_type = Column(String(50), nullable=False)  
     data = Column(JSON, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -1,0 +1,10 @@
+alembic upgrade head
+
+
+backend:
+snake_case
+
+frontend:
+tsx -> PascalCase
+ts -> camalCase
+.css -> kebab-case

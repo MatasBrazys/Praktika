@@ -3,6 +3,14 @@
 /* ======================
    LAYOUT
    ====================== */
+
+.page-container {
+  min-height: 100vh;
+  width: 100%;
+  background: linear-gradient(135deg, #e28b8b 0%, #a51a01 100%);
+  padding: 40px 20px;
+  overflow-x: hidden;
+}
 .builder-wrapper {
   max-width: 1400px;
   margin: 0 auto;
@@ -446,7 +454,6 @@
   }
   
 }
-/* Pridėk prie esamo FormBuilder.css */
 
 /* Page Tabs */
 .page-tabs {

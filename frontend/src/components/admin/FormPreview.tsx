@@ -2,7 +2,7 @@
 import { Model } from 'survey-core';
 import { Survey } from 'survey-react-ui';
 import "survey-core/survey-core.min.css";
-import '../../styles/FormPreview.css';
+import '../../styles/components/form-preview.css';
 
 interface Props {
   surveyJson: any;

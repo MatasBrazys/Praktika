@@ -1,5 +1,5 @@
 import Navbar from '../components/shared/Navbar';
-import '../styles/pages/HomePage.css';
+import '../styles/pages/home.css';
 
 export default function Home() {
   return (

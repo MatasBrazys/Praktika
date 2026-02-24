@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { formAPI, type FormDefinition } from '../../services/api';
 import Navbar from '../../components/shared/Navbar';
-import '../../styles/pages/UserFormsPage.css';
+import '../../styles/pages/public/form-list.css';
 import { Link } from "react-router-dom";
 
-export default function UserFormsPage() {
+export default function FormList() {
     const [forms, setForms] = useState<FormDefinition[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -24,6 +24,19 @@ export default function UserFormsPage() {
         } finally {
             setLoading(false);
         }
+    };
+    const getFieldCount = (form: FormDefinition) => {
+        const json = form.surveyjs_json;
+        if (!json) return 0;
+
+        if (json.pages) {
+            return json.pages.reduce(
+                (total: number, page: any) => total + (page.elements?.length || 0),
+                0
+            );
+        }
+
+        return json.elements?.length || 0;
     };
 
     if (loading) {
@@ -67,7 +80,7 @@ export default function UserFormsPage() {
                                         {form.description || 'Click to fill out this form'}
                                     </p>
                                     <div className="form-item-meta">
-                                        <span>📝 {form.surveyjs_json?.elements?.length || 0} fields</span>
+                                        <span>📝 {getFieldCount(form)} fields</span>
                                     </div>
                                 </Link>
                             ))}

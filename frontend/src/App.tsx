@@ -1,11 +1,11 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import FormList from './pages/admin/FormListPage';
-import FormBuilder from './pages/admin/FormBuilderPage';
-import SubmissionList from './pages/admin/SubmissionListPage';
-import UserFormsPage from './pages/public/UserFormsPage';  
-import PublicForm from './pages/public/PublicFormPage';
-import SuccessPage from './pages/public/SuccessPage';
-import Home from './pages/HomePage';
+import FormList from './pages/admin/FormList';
+import FormBuilder from './pages/admin/FormBuilder';
+import SubmissionList from './pages/admin/SubmissionList';
+import UserFormsPage from './pages/public/FormList.tsx';  
+import PublicForm from './pages/public/Form.tsx';
+import SuccessPage from './pages/public/Success.tsx';
+import Home from './pages/Home.tsx';
 
 export default function App() {
   return (

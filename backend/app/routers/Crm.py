@@ -1,10 +1,4 @@
-"""
-CRM Lookup Router
-Mocks an external CRM system. In production, replace the data layer
-with an actual HTTP call to your CRM's REST API.
-"""
-
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 from app.mock_crm_data import MOCK_CRM_DB
 

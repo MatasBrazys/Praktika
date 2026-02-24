@@ -100,7 +100,6 @@ export const formAPI = {
 };
 
 export const crmAPI = {
-  // Look up client by CRM ID — check result.found, never throws on "not found"
   async lookup(crmId: string): Promise<CRMLookupResult> {
     const response = await fetch(
       `${API_URL}/api/crm/lookup/${encodeURIComponent(crmId.trim().toUpperCase())}`

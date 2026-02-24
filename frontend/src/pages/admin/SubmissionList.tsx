@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { formAPI, type Submission } from '../../services/api';
-import '../../styles/pages/SubmissionListPage.css';
+import '../../styles/pages/admin/submission-list.css'
 import Navbar from '../../components/shared/Navbar';
 
 export default function SubmissionList() {

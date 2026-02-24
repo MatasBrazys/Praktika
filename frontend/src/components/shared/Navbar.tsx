@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import '../../styles/Navbar.css';
+import '../../styles/components/navbar.css';
 
 interface NavbarProps {
   userRole?: 'admin' | 'user'; // Will be used later for auth
