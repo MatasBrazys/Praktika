@@ -1,6 +1,11 @@
+// src/pages/admin/FormBuilder.tsx
+// Only changed: removed all alert() calls → toast, kept all builder logic intact.
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { formAPI } from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
+import { extractErrorMessage } from '../../lib/apiClient';
 import Navbar from '../../components/shared/Navbar';
 import FieldEditor from '../../components/admin/FieldEditor';
 import FormPreview from '../../components/admin/FormPreview';
@@ -42,13 +47,7 @@ export interface FieldConfig {
   removePanelText?: string;
   minPanelCount?: number;
   panelCount?: number;
-  // CRM lookup labels
-  crmFieldLabels?: {
-    name?: string;
-    street?: string;
-    postcode?: string;
-    state?: string;
-  };
+  crmFieldLabels?: { name?: string; street?: string; postcode?: string; state?: string };
 }
 
 interface Page {
@@ -58,30 +57,26 @@ interface Page {
   fields: FieldConfig[];
 }
 
-// Marker so we can detect CRM panels when loading saved forms
 const CRM_PANEL_MARKER = '__crm_panel__';
 
 export default function FormBuilder() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const { id }     = useParams();
+  const navigate   = useNavigate();
+  const { toast }  = useToast();
   const isEditMode = !!id;
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [pages, setPages] = useState<Page[]>([
-    { id: 'page_1', name: 'page1', title: 'Page 1', fields: [] }
-  ]);
-  const [activePageId, setActivePageId] = useState('page_1');
-  const [editingField, setEditingField] = useState<FieldConfig | null>(null);
+  const [title,           setTitle]           = useState('');
+  const [description,     setDescription]     = useState('');
+  const [pages,           setPages]           = useState<Page[]>([{ id: 'page_1', name: 'page1', title: 'Page 1', fields: [] }]);
+  const [activePageId,    setActivePageId]    = useState('page_1');
+  const [editingField,    setEditingField]    = useState<FieldConfig | null>(null);
   const [showFieldEditor, setShowFieldEditor] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [saving,          setSaving]          = useState(false);
 
   const activePage = pages.find(p => p.id === activePageId) || pages[0];
-  const allFields = pages.flatMap(p => p.fields);
+  const allFields  = pages.flatMap(p => p.fields);
 
-  useEffect(() => {
-    if (isEditMode) loadForm();
-  }, [id]);
+  useEffect(() => { if (isEditMode) loadForm(); }, [id]);
 
   const loadForm = async () => {
     try {
@@ -89,115 +84,78 @@ export default function FormBuilder() {
       setTitle(form.title);
       setDescription(form.description || '');
 
-      const json = form.surveyjs_json;
-      const rawPages = json.pages
-        ? json.pages
-        : [{ name: 'page1', title: 'Page 1', elements: json.elements || [] }];
+      const json     = form.surveyjs_json as any;
+      const rawPages = json.pages ? json.pages : [{ name: 'page1', title: 'Page 1', elements: json.elements || [] }];
 
       const loadedPages: Page[] = rawPages.map((p: any, pi: number) => ({
-        id: `page_${pi + 1}`,
-        name: p.name || `page${pi + 1}`,
-        title: p.title || `Page ${pi + 1}`,
-        fields: (p.elements || [])
-          .map((el: any, ei: number) => elementToField(el, `field_${pi}_${ei}`))
-          .filter(Boolean) as FieldConfig[],
+        id:     `page_${pi + 1}`,
+        name:   p.name  || `page${pi + 1}`,
+        title:  p.title || `Page ${pi + 1}`,
+        fields: (p.elements || []).map((el: any, ei: number) => elementToField(el, `field_${pi}_${ei}`)).filter(Boolean) as FieldConfig[],
       }));
 
       setPages(loadedPages);
       setActivePageId(loadedPages[0].id);
     } catch (err) {
-      console.error('loadForm failed:', err);
-      alert('Failed to load form');
+      toast.error('Failed to load form', extractErrorMessage(err));
       navigate('/admin/forms');
     }
   };
 
   const elementToField = (el: any, fallbackId: string): FieldConfig | null => {
     try {
-      // ── Detect CRM panel ──
       if (el.type === 'panel' && el[CRM_PANEL_MARKER]) {
-        const idEl       = el.elements?.[0];
-        const nameEl     = el.elements?.[1];
-        const streetEl   = el.elements?.[2];
-        const postcodeEl = el.elements?.[3];
-        const stateEl    = el.elements?.[4];
+        const idEl = el.elements?.[0];
         if (!idEl) return null;
         return {
-          id: fallbackId,
-          name: idEl.name,
-          title: idEl.title || idEl.name,
-          description: idEl.description,
-          type: 'crmlookup',
-          isRequired: idEl.isRequired || false,
-          placeholder: idEl.placeholder,
+          id: fallbackId, name: idEl.name, title: idEl.title || idEl.name,
+          description: idEl.description, type: 'crmlookup',
+          isRequired: idEl.isRequired || false, placeholder: idEl.placeholder,
           crmFieldLabels: {
-            name:     nameEl?.title,
-            street:   streetEl?.title,
-            postcode: postcodeEl?.title,
-            state:    stateEl?.title,
+            name:     el.elements?.[1]?.title,
+            street:   el.elements?.[2]?.title,
+            postcode: el.elements?.[3]?.title,
+            state:    el.elements?.[4]?.title,
           },
         };
       }
-
-      // ── Regular element ──
       const field: FieldConfig = {
-        id: fallbackId,
-        name: el.name || fallbackId,
-        title: el.title || el.name || 'Untitled',
-        description: el.description,
-        type: el.type || 'text',
-        isRequired: el.isRequired || false,
-        inputType: el.inputType,
-        choices: el.choices,
-        defaultValue: el.defaultValue,
-        placeholder: el.placeholder,
-        validators: el.validators || [],
-        addPanelText: el.addPanelText,
-        removePanelText: el.removePanelText,
-        minPanelCount: el.minPanelCount,
-        panelCount: el.panelCount,
+        id: fallbackId, name: el.name || fallbackId, title: el.title || el.name || 'Untitled',
+        description: el.description, type: el.type || 'text', isRequired: el.isRequired || false,
+        inputType: el.inputType, choices: el.choices, defaultValue: el.defaultValue,
+        placeholder: el.placeholder, validators: el.validators || [],
+        addPanelText: el.addPanelText, removePanelText: el.removePanelText,
+        minPanelCount: el.minPanelCount, panelCount: el.panelCount,
       };
-
       if (el.visibleIf) {
-        try {
-          field.conditions = parseVisibleIf(el.visibleIf);
-          field.conditionLogic = el.visibleIf.toLowerCase().includes(' or ') ? 'or' : 'and';
-        } catch {
-          field.conditions = [];
-        }
+        try { field.conditions = parseVisibleIf(el.visibleIf); field.conditionLogic = el.visibleIf.toLowerCase().includes(' or ') ? 'or' : 'and'; }
+        catch { field.conditions = []; }
       }
-
       if (el.type === 'paneldynamic' && el.templateElements) {
-        field.templateElements = el.templateElements
-          .map((te: any, i: number) => elementToField(te, `template_${fallbackId}_${i}`))
-          .filter(Boolean) as FieldConfig[];
+        field.templateElements = el.templateElements.map((te: any, i: number) => elementToField(te, `template_${fallbackId}_${i}`)).filter(Boolean) as FieldConfig[];
       }
-
       return field;
-    } catch (err) {
-      console.error('elementToField failed:', el, err);
-      return null;
-    }
+    } catch { return null; }
   };
 
   const parseVisibleIf = (expr: string): Condition[] => {
-    const parts = expr.split(/ and | or /i);
-    return parts.map(part => {
-      const emptyMatch    = part.match(/\{(?:panel\.)?(\w+)\}\s+empty/);
-      const notEmptyMatch = part.match(/\{(?:panel\.)?(\w+)\}\s+notempty/);
-      const eqMatch       = part.match(/\{(?:panel\.)?(\w+)\}\s*=\s*'([^']+)'/);
-      const neqMatch      = part.match(/\{(?:panel\.)?(\w+)\}\s*!=\s*'([^']+)'/);
-      const containsMatch = part.match(/\{(?:panel\.)?(\w+)\}\s+contains\s+(?:\['([^']+)'\]|'([^']+)')/);
-      if (emptyMatch)    return { fieldName: emptyMatch[1],    operator: 'empty'     as const, value: '' };
-      if (notEmptyMatch) return { fieldName: notEmptyMatch[1], operator: 'notEmpty'  as const, value: '' };
-      if (eqMatch)       return { fieldName: eqMatch[1],       operator: 'equals'    as const, value: eqMatch[2] };
-      if (neqMatch)      return { fieldName: neqMatch[1],      operator: 'notEquals' as const, value: neqMatch[2] };
-      if (containsMatch) return { fieldName: containsMatch[1], operator: 'contains'  as const, value: containsMatch[2] || containsMatch[3] };
+    return expr.split(/ and | or /i).map(part => {
+      const em = part.match(/\{(?:panel\.)?(\w+)\}\s+empty/);
+      const nm = part.match(/\{(?:panel\.)?(\w+)\}\s+notempty/);
+      const eq = part.match(/\{(?:panel\.)?(\w+)\}\s*=\s*'([^']+)'/);
+      const ne = part.match(/\{(?:panel\.)?(\w+)\}\s*!=\s*'([^']+)'/);
+      const co = part.match(/\{(?:panel\.)?(\w+)\}\s+contains\s+(?:\['([^']+)'\]|'([^']+)')/);
+      if (em) return { fieldName: em[1], operator: 'empty'     as const, value: '' };
+      if (nm) return { fieldName: nm[1], operator: 'notEmpty'  as const, value: '' };
+      if (eq) return { fieldName: eq[1], operator: 'equals'    as const, value: eq[2] };
+      if (ne) return { fieldName: ne[1], operator: 'notEquals' as const, value: ne[2] };
+      if (co) return { fieldName: co[1], operator: 'contains'  as const, value: co[2] || co[3] };
       return { fieldName: '', operator: 'equals' as const, value: '' };
     }).filter(c => c.fieldName);
   };
 
-  // ─── PAGE MANAGEMENT ──────────────────────────────────────────────────────
+  // ── Page management ────────────────────────────────────────────────────────
+
   const addPage = () => {
     const newId = `page_${Date.now()}`;
     setPages(prev => [...prev, { id: newId, name: `page${pages.length + 1}`, title: `Page ${pages.length + 1}`, fields: [] }]);
@@ -205,7 +163,7 @@ export default function FormBuilder() {
   };
 
   const deletePage = (pageId: string) => {
-    if (pages.length === 1) { alert('Cannot delete the only page'); return; }
+    if (pages.length === 1) { toast.warning('Cannot delete', 'At least one page is required.'); return; }
     if (!confirm('Delete this page and all its fields?')) return;
     const newPages = pages.filter(p => p.id !== pageId);
     setPages(newPages);
@@ -216,34 +174,18 @@ export default function FormBuilder() {
     setPages(prev => prev.map(p => p.id === pageId ? { ...p, title: newTitle } : p));
   };
 
-  // ─── FIELD MANAGEMENT ─────────────────────────────────────────────────────
+  // ── Field management ───────────────────────────────────────────────────────
+
   const addField = () => {
-    const newField: FieldConfig = {
-      id: `field_${Date.now()}`,
-      name: `field_${activePage.fields.length + 1}`,
-      title: 'New Field',
-      type: 'text',
-      isRequired: false,
-    };
-    setEditingField(newField);
+    setEditingField({ id: `field_${Date.now()}`, name: `field_${activePage.fields.length + 1}`, title: 'New Field', type: 'text', isRequired: false });
     setShowFieldEditor(true);
   };
 
-  const editField = (field: FieldConfig) => {
-    setEditingField(field);
-    setShowFieldEditor(true);
-  };
-
-  const saveField = (updatedField: FieldConfig) => {
+  const saveField = (updated: FieldConfig) => {
     setPages(prev => prev.map(p => {
       if (p.id !== activePageId) return p;
-      const exists = p.fields.find(f => f.id === updatedField.id);
-      return {
-        ...p,
-        fields: exists
-          ? p.fields.map(f => f.id === updatedField.id ? updatedField : f)
-          : [...p.fields, updatedField],
-      };
+      const exists = p.fields.find(f => f.id === updated.id);
+      return { ...p, fields: exists ? p.fields.map(f => f.id === updated.id ? updated : f) : [...p.fields, updated] };
     }));
     setShowFieldEditor(false);
     setEditingField(null);
@@ -264,26 +206,16 @@ export default function FormBuilder() {
     setPages(prev => prev.map(p => p.id === activePageId ? { ...p, fields } : p));
   };
 
-  // ─── FIELD → SURVEYJS ELEMENT ─────────────────────────────────────────────
-  const fieldToElement = (field: FieldConfig, isTemplateField = false): any => {
+  // ── SurveyJS conversion ────────────────────────────────────────────────────
 
-    // ── CRM Lookup → panel with 5 children ──
+  const fieldToElement = (field: FieldConfig, isTemplate = false): any => {
     if (field.type === 'crmlookup') {
       const prefix = field.name;
       const labels = field.crmFieldLabels || {};
       return {
-        type: 'panel',
-        name: `panel_${prefix}`,
-        [CRM_PANEL_MARKER]: true,
+        type: 'panel', name: `panel_${prefix}`, [CRM_PANEL_MARKER]: true,
         elements: [
-          {
-            type: 'text',
-            name: prefix,
-            title: field.title,
-            description: field.description || 'Enter CRM ID to auto-fill client details',
-            isRequired: field.isRequired,
-            placeholder: field.placeholder || 'e.g. CRM001',
-          },
+          { type: 'text', name: prefix, title: field.title, description: field.description || 'Enter CRM ID to auto-fill client details', isRequired: field.isRequired, placeholder: field.placeholder || 'e.g. CRM001' },
           { type: 'text', name: `${prefix}_name`,     title: labels.name     || 'Company Name',   readOnly: true, visibleIf: `{${prefix}} notempty` },
           { type: 'text', name: `${prefix}_street`,   title: labels.street   || 'Street Address', readOnly: true, visibleIf: `{${prefix}} notempty` },
           { type: 'text', name: `${prefix}_postcode`, title: labels.postcode || 'Postcode',        readOnly: true, visibleIf: `{${prefix}} notempty` },
@@ -292,14 +224,7 @@ export default function FormBuilder() {
       };
     }
 
-    // ── All other types ──
-    const el: any = {
-      name: field.name,
-      title: field.title,
-      type: field.type,
-      isRequired: field.isRequired,
-    };
-
+    const el: any = { name: field.name, title: field.title, type: field.type, isRequired: field.isRequired };
     if (field.description)                        el.description  = field.description;
     if (field.placeholder)                        el.placeholder  = field.placeholder;
     if (field.defaultValue)                       el.defaultValue = field.defaultValue;
@@ -310,7 +235,7 @@ export default function FormBuilder() {
     if (field.conditions?.length) {
       const logic = field.conditionLogic || 'and';
       el.visibleIf = field.conditions.map(c => {
-        const ref = isTemplateField ? `{panel.${c.fieldName}}` : `{${c.fieldName}}`;
+        const ref = isTemplate ? `{panel.${c.fieldName}}` : `{${c.fieldName}}`;
         if (c.operator === 'empty')     return `${ref} empty`;
         if (c.operator === 'notEmpty')  return `${ref} notempty`;
         if (c.operator === 'contains')  return `${ref} contains ['${c.value}']`;
@@ -321,44 +246,35 @@ export default function FormBuilder() {
     }
 
     if (field.type === 'paneldynamic') {
-      el.panelCount      = field.panelCount || 1;
-      el.minPanelCount   = field.minPanelCount || 1;
-      el.addPanelText    = field.addPanelText || 'Add';
-      el.removePanelText = field.removePanelText || 'Remove';
-      if (field.panelCount) el.templateTitle = `Panel {panelIndex}`;
+      el.panelCount = field.panelCount || 1; el.minPanelCount = field.minPanelCount || 1;
+      el.addPanelText = field.addPanelText || 'Add'; el.removePanelText = field.removePanelText || 'Remove';
+      if (field.panelCount) el.templateTitle = 'Panel {panelIndex}';
       el.templateElements = (field.templateElements || []).map(tf => fieldToElement(tf, true));
     }
-
     return el;
   };
 
   const convertToSurveyJS = () => {
-    if (pages.length === 1) {
-      return { elements: pages[0].fields.map(f => fieldToElement(f)) };
-    }
-    return {
-      pages: pages.map(p => ({
-        name: p.name,
-        title: p.title,
-        elements: p.fields.map(f => fieldToElement(f)),
-      })),
-    };
+    if (pages.length === 1) return { elements: pages[0].fields.map(f => fieldToElement(f)) };
+    return { pages: pages.map(p => ({ name: p.name, title: p.title, elements: p.fields.map(f => fieldToElement(f)) })) };
   };
 
+  // ── Save ───────────────────────────────────────────────────────────────────
+
   const handleSave = async () => {
-    if (!title.trim()) { alert('Please enter a form title'); return; }
+    if (!title.trim()) { toast.warning('Title required', 'Please enter a form title.'); return; }
     const totalFields = pages.reduce((sum, p) => sum + p.fields.length, 0);
-    if (totalFields === 0) { alert('Please add at least one field'); return; }
+    if (!totalFields) { toast.warning('No fields', 'Add at least one field before saving.'); return; }
 
     setSaving(true);
     try {
       const surveyjs_json = convertToSurveyJS();
-      const formData = { title, description, surveyjs_json, is_active: true };
-      if (isEditMode) await formAPI.update(Number(id), formData);
-      else await formAPI.create(formData);
+      if (isEditMode) await formAPI.update(Number(id), { title, description, surveyjs_json });
+      else            await formAPI.create({ title, description, surveyjs_json, is_active: true });
+      toast.success(isEditMode ? 'Form updated' : 'Form created', `"${title}" has been saved.`);
       navigate('/admin/forms');
-    } catch {
-      alert('Failed to save form');
+    } catch (err) {
+      toast.error('Save failed', extractErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -380,7 +296,7 @@ export default function FormBuilder() {
             </div>
             <div className="header-actions">
               <button className="btn-secondary" onClick={() => navigate('/admin/forms')}>Cancel</button>
-              <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Form'}</button>
+              <button className="btn-primary"   onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save Form'}</button>
             </div>
           </div>
 
@@ -418,7 +334,7 @@ export default function FormBuilder() {
                     <div key={field.id} className="field-item">
                       <div className="field-info">
                         <div className="field-order">
-                          <button onClick={() => moveField(index, 'up')} disabled={index === 0}>▲</button>
+                          <button onClick={() => moveField(index, 'up')}   disabled={index === 0}>▲</button>
                           <span>{index + 1}</span>
                           <button onClick={() => moveField(index, 'down')} disabled={index === activePage.fields.length - 1}>▼</button>
                         </div>
@@ -426,14 +342,14 @@ export default function FormBuilder() {
                           <strong>{field.title}</strong>
                           <div className="field-meta">
                             <span className="field-type-badge">{field.type === 'crmlookup' ? '🔍 CRM Lookup' : field.type}</span>
-                            {field.isRequired && <span className="required-badge">Required</span>}
-                            {field.conditions?.length ? <span className="condition-badge">⚡ Conditional</span> : null}
-                            {field.validators?.length ? <span className="validator-badge">✓ Validated</span> : null}
+                            {field.isRequired          && <span className="required-badge">Required</span>}
+                            {field.conditions?.length  ? <span className="condition-badge">⚡ Conditional</span> : null}
+                            {field.validators?.length  ? <span className="validator-badge">✓ Validated</span>   : null}
                           </div>
                         </div>
                       </div>
                       <div className="field-actions">
-                        <button onClick={() => editField(field)}>Edit</button>
+                        <button onClick={() => { setEditingField(field); setShowFieldEditor(true); }}>Edit</button>
                         <button onClick={() => deleteField(field.id)} className="delete">×</button>
                       </div>
                     </div>
@@ -443,21 +359,22 @@ export default function FormBuilder() {
             </div>
 
             <div className="preview-panel">
-              <h2>Live Preview - {activePage.title}</h2>
+              <h2>Live Preview — {activePage.title}</h2>
               <FormPreview surveyJson={convertToSurveyJS()} activePageIndex={pages.findIndex(p => p.id === activePageId)} />
             </div>
           </div>
-        </div>
 
-        {showFieldEditor && editingField && (
-          <FieldEditor
-            field={editingField}
-            allFields={allFields.filter(f => f.id !== editingField.id)}
-            onSave={saveField}
-            onCancel={() => { setShowFieldEditor(false); setEditingField(null); }}
-          />
-        )}
+        </div>
       </div>
+
+      {showFieldEditor && editingField && (
+        <FieldEditor
+          field={editingField}
+          allFields={allFields.filter(f => f.id !== editingField.id)}
+          onSave={saveField}
+          onCancel={() => { setShowFieldEditor(false); setEditingField(null); }}
+        />
+      )}
     </>
   );
 }

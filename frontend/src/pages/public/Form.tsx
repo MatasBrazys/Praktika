@@ -4,6 +4,7 @@ import { Model } from 'survey-core';
 import { Survey } from 'survey-react-ui';
 import "survey-core/survey-core.min.css";
 import { formAPI, crmAPI } from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 import '../../styles/pages/public/form.css';
 
 function attachCRMLookup(surveyModel: Model) {
@@ -67,6 +68,7 @@ function attachCRMLookup(surveyModel: Model) {
 export default function Form() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [form, setForm] = useState<any>(null);
   const [surveyModel, setSurveyModel] = useState<Model | null>(null);
@@ -93,13 +95,13 @@ export default function Form() {
       model.onComplete.add(async (s) => {
         try {
           if (!formData.id) {
-            alert('Form ID is missing.');
+            toast.error('Submission failed', 'Form ID is missing.');
             return;
           }
           await formAPI.submitForm(formData.id, formData.title, s.data);
           navigate(`/user/forms/${id}/success`);
         } catch {
-          alert('Failed to submit form. Please try again.');
+          toast.error('Submission failed', 'Please try again or contact support.');
         }
       });
 

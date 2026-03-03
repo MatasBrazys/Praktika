@@ -139,6 +139,11 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--sp-4);
   margin-bottom: var(--sp-5);
+  align-items: start; /* FIX: prevents stretch, keeps all columns top-aligned */
+}
+
+.form-row.three-cols {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 .form-group {
@@ -424,6 +429,17 @@
   text-align: center;
 }
 
+/* ── Validator regex row (replaces inline styles) ── */
+.validator-regex-row {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+.validator-regex-row .code-input {
+  flex: 1;
+}
+
 /* ── Conditions ── */
 .conditions-info {
   background: var(--color-warning-light);
@@ -570,11 +586,16 @@
 
 .template-field-row:hover { border-color: var(--gray-300); }
 
+/* ── Header section: delete button row ── */
+.template-field-row .header-section {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--sp-2);
+}
+
+
 .template-field-row .form-row {
-  display: grid;
-  grid-template-columns: 2fr 2fr 1.5fr 1.5fr auto;
   gap: var(--sp-2);
-  align-items: end;
   margin-bottom: var(--sp-2);
 }
 

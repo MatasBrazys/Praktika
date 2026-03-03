@@ -1,78 +1,53 @@
+// src/pages/public/FormList.tsx
+
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { formAPI, type FormDefinition } from '../../services/api';
+import { formAPI } from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
+import { extractErrorMessage } from '../../lib/apiClient';
 import Navbar from '../../components/shared/Navbar';
+import type { FormDefinition } from '../../types';           // ← iš types, ne api
 import '../../styles/pages/public/form-list.css';
 
 export default function FormList() {
-  const [forms, setForms] = useState<FormDefinition[]>([]);
+  const [forms,   setForms]   = useState<FormDefinition[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { toast }             = useToast();
 
-  useEffect(() => {
-    loadForms();
-  }, []);
+  useEffect(() => { loadForms(); }, []);
 
   const loadForms = async () => {
     try {
       setLoading(true);
-      setError('');
       const data = await formAPI.list();
-      const activeForms = data.filter(f => f.is_active);
-      setForms(activeForms);
+      setForms(data.filter(f => f.is_active));
     } catch (err) {
-      console.error('Failed to load forms:', err);
-      setError('Failed to load forms. Please try again later.');
+      toast.error('Failed to load forms', extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
   const getFieldCount = (form: FormDefinition) => {
-    const json = form.surveyjs_json;
+    const json = form.surveyjs_json as any;
     if (!json) return 0;
-    if (json.pages) {
-      return json.pages.reduce(
-        (total: number, page: any) => total + (page.elements?.length || 0), 0
-      );
-    }
+    if (json.pages) return json.pages.reduce((t: number, p: any) => t + (p.elements?.length || 0), 0);
     return json.elements?.length || 0;
   };
 
-  if (loading) {
-    return (
-      <>
-        <Navbar userRole="user" />
-        <div className="page-loading">Loading available forms...</div>
-      </>
-    );
-  }
-
-  if (error) {
-    return (
-      <>
-        <Navbar userRole="user" />
-        <div className="user-page-container">
-          <div className="user-forms-wrapper">
-            <div className="error-state">
-              <div className="error-icon">⚠️</div>
-              <h2>Something went wrong</h2>
-              <p>{error}</p>
-              <button className="btn-retry" onClick={loadForms}>
-                Try Again
-              </button>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  }
+  if (loading) return (
+    <>
+      <Navbar />                             {/* ← no userRole prop */}
+      <div className="page-loading">Loading available forms…</div>
+    </>
+  );
 
   return (
     <>
-      <Navbar userRole="user" />
+      <Navbar />
       <div className="user-page-container">
         <div className="user-forms-wrapper">
+
           <div className="page-header-simple">
             <h1>Available Forms</h1>
             <p>Select a form to register a client</p>
@@ -87,11 +62,7 @@ export default function FormList() {
           ) : (
             <div className="forms-list-simple">
               {forms.map(form => (
-                <Link
-                  key={form.id}
-                  to={`/user/forms/${form.id}`}
-                  className="form-list-item"
-                >
+                <Link key={form.id} to={`/user/forms/${form.id}`} className="form-list-item">
                   <div className="form-item-header">
                     <h3>{form.title}</h3>
                     <span className="arrow">→</span>
@@ -106,6 +77,7 @@ export default function FormList() {
               ))}
             </div>
           )}
+
         </div>
       </div>
     </>

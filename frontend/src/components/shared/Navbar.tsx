@@ -1,10 +1,9 @@
-import { useRef, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import '../../styles/components/navbar.css';
+// src/components/shared/Navbar.tsx
 
-interface NavbarProps {
-  userRole?: 'admin' | 'user';
-}
+import { useRef, useState } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import '../../styles/components/navbar.css';
 
 function NavDropdown({ label, active, children }: {
   label: string;
@@ -12,79 +11,87 @@ function NavDropdown({ label, active, children }: {
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleEnter = () => {
-    if (timerRef.current) clearTimeout(timerRef.current);
-    setOpen(true);
-  };
-
-  const handleLeave = () => {
-    timerRef.current = setTimeout(() => setOpen(false), 150);
-  };
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   return (
     <div
       className="nav-dropdown"
-      onMouseEnter={handleEnter}
-      onMouseLeave={handleLeave}
+      onMouseEnter={() => { timer.current && clearTimeout(timer.current); setOpen(true); }}
+      onMouseLeave={() => { timer.current = setTimeout(() => setOpen(false), 150); }}
     >
-      <button className={active ? 'active' : ''}>
+      <button className={active ? 'active' : ''} type="button">
         {label} ▾
       </button>
       {open && (
         <div className="dropdown-menu">
-          <div className="dropdown-menu-inner">
-            {children}
-          </div>
+          <div className="dropdown-menu-inner">{children}</div>
         </div>
       )}
     </div>
   );
 }
 
-export default function Navbar({ userRole = 'admin' }: NavbarProps) {
-  const location = useLocation();
+export default function Navbar() {
+  const location  = useLocation();
+  const navigate  = useNavigate();
+  const { user, isAdmin, isAuthenticated, logout } = useAuth();
+
   const isActive = (path: string) => location.pathname.startsWith(path);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const initials = user?.username?.slice(0, 2).toUpperCase() ?? '?';
 
   return (
     <nav className="navbar">
       <div className="navbar-container">
 
         <div className="navbar-brand">
-          <a href="/">
+          <Link to="/">
             <img
               src="https://www.datagroup.de/hubfs/dg-logo-standard-cmyk.svg"
-              alt="DataGroup Logo"
+              alt="DataGroup"
               className="brand-logo"
             />
-          </a>
+          </Link>
         </div>
 
         <div className="navbar-menu">
-          <a href="/" className={location.pathname === '/' ? 'active' : ''}>
+          <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
             Home
-          </a>
+          </Link>
 
-          {userRole === 'admin' && (
+          {isAdmin && (
             <NavDropdown label="Admin" active={isActive('/admin')}>
-              <a href="/admin/forms">Manage Forms</a>
-              <a href="/admin/form-builder">Create Form</a>
+              <Link to="/admin/forms">Manage Forms</Link>
+              <Link to="/admin/form-builder">Create Form</Link>
             </NavDropdown>
           )}
 
-          {/* My Submissions hidden until page is implemented */}
-          <NavDropdown label="Forms" active={isActive('/user')}>
-            <a href="/user/forms">Fill Forms</a>
-            {/* TODO: <a href="/user/submissions">My Submissions</a> */}
-          </NavDropdown>
+          {isAuthenticated && (
+            <NavDropdown label="Forms" active={isActive('/user')}>
+              <Link to="/user/forms">Fill Forms</Link>
+            </NavDropdown>
+          )}
         </div>
 
         <div className="navbar-user">
-          <div className="user-chip">
-            <div className="user-avatar">A</div>
-            <span className="user-name">Admin</span>
-          </div>
+          {isAuthenticated ? (
+            <>
+              <div className="user-chip">
+                <div className="user-avatar">{initials}</div>
+                <span className="user-name">{user?.username}</span>
+              </div>
+              <button type="button" className="btn-signout" onClick={handleLogout}>
+                Sign out
+              </button>
+            </>
+          ) : (
+            <Link to="/login" className="btn-signin-nav">Sign in</Link>
+          )}
         </div>
 
       </div>

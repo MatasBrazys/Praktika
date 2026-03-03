@@ -1,137 +1,110 @@
-from fastapi import APIRouter, Depends, HTTPException
+# app/routers/forms.py
+#
+# WHY this auth split:
+#   GET  /api/forms/        → public (user needs to see available forms)
+#   GET  /api/forms/{id}    → public (user needs to load form to fill it)
+#   POST /api/forms/        → admin only (create form)
+#   PUT  /api/forms/{id}    → admin only (edit form)
+#   DELETE /api/forms/{id}  → admin only
+#   PATCH toggle            → admin only
+#   POST submit             → any authenticated user
+#   GET  submissions        → admin only
+#
+# POST-MVP: move submit to require a "user" role once manager accounts are firmed up.
+
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
-from app.models.form import FormDefinition,FormSubmission
-from app.schemas.form import (
-    FormDefinitionCreate,
-    FormDefinitionUpdate,
-    FormDefinitionResponse,
-    FormSubmissionResponse   
-)
+from app.schemas.form import FormDefinitionCreate, FormDefinitionUpdate, FormDefinitionResponse
+from app.schemas.submission import SubmissionCreate, SubmissionResponse
+from app.services import form_service, submission_service
+from app.auth.dependencies import get_current_user, require_admin
+from app.models.user import User
 
-router = APIRouter(prefix="/api/forms", tags=["Forms Management"])
+router = APIRouter(prefix="/api/forms", tags=["Forms"])
 
+
+# ── Public reads ─────────────────────────────────────────────────────────────
 
 @router.get("/", response_model=List[FormDefinitionResponse])
 def list_forms(
     skip: int = 0,
     limit: int = 100,
     active_only: bool = False,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """List all forms (with optional filtering)"""
-    query = db.query(FormDefinition)
-    
-    if active_only:
-        query = query.filter(FormDefinition.is_active == True)
-    
-    forms = query.offset(skip).limit(limit).all()
-    return forms
+    return form_service.get_all(db, skip, limit, active_only)
 
 
 @router.get("/{form_id}", response_model=FormDefinitionResponse)
 def get_form(form_id: int, db: Session = Depends(get_db)):
-    """Get single form by ID"""
-    form = db.query(FormDefinition).filter(FormDefinition.id == form_id).first()
-    
-    if not form:
-        raise HTTPException(status_code=404, detail="Form not found")
-    
-    return form
+    return form_service.get_by_id(db, form_id)
 
+
+# ── Admin writes ──────────────────────────────────────────────────────────────
 
 @router.post("/", response_model=FormDefinitionResponse)
 def create_form(
-    form_data: FormDefinitionCreate,
-    db: Session = Depends(get_db)
+    data: FormDefinitionCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),          # 403 if not admin
 ):
-    """Create new form"""
-    new_form = FormDefinition(
-        title=form_data.title,
-        description=form_data.description,
-        surveyjs_json=form_data.surveyjs_json,
-        is_active=form_data.is_active
-    )
-    
-    db.add(new_form)
-    db.commit()
-    db.refresh(new_form)
-    
-    return new_form
+    return form_service.create(db, data)
 
 
 @router.put("/{form_id}", response_model=FormDefinitionResponse)
 def update_form(
     form_id: int,
-    form_data: FormDefinitionUpdate,
-    db: Session = Depends(get_db)
+    data: FormDefinitionUpdate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
 ):
-    """Update existing form"""
-    form = db.query(FormDefinition).filter(FormDefinition.id == form_id).first()
-    
-    if not form:
-        raise HTTPException(status_code=404, detail="Form not found")
-    
-    # Update only provided fields
-    update_data = form_data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(form, key, value)
-    
-    db.commit()
-    db.refresh(form)
-    
-    return form
+    return form_service.update(db, form_id, data)
 
 
 @router.delete("/{form_id}")
-def delete_form(form_id: int, db: Session = Depends(get_db)):
-    """Delete form"""
-    form = db.query(FormDefinition).filter(FormDefinition.id == form_id).first()
-    
-    if not form:
-        raise HTTPException(status_code=404, detail="Form not found")
-    
-    db.delete(form)
-    db.commit()
-    
-    return {"message": "Form deleted successfully", "id": form_id}
+def delete_form(
+    form_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    return form_service.delete(db, form_id)
 
 
 @router.patch("/{form_id}/toggle")
-def toggle_form_active(form_id: int, db: Session = Depends(get_db)):
-    """Toggle form active status"""
-    form = db.query(FormDefinition).filter(FormDefinition.id == form_id).first()
-    
-    if not form:
-        raise HTTPException(status_code=404, detail="Form not found")
-    
-    form.is_active = not form.is_active
-    db.commit()
-    db.refresh(form)
-    
-    return {"message": "Form status toggled", "is_active": form.is_active}
+def toggle_active(
+    form_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+):
+    return form_service.toggle_active(db, form_id)
 
-@router.get("/{form_id}/submissions", response_model=List[FormSubmissionResponse])
-def get_form_submissions(
+
+# ── Submissions ───────────────────────────────────────────────────────────────
+
+@router.post("/{form_id}/submit")
+def submit_form(
+    form_id: int,
+    body: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),   # must be logged in, any role
+):
+    submission = submission_service.create(
+        db,
+        form_id=form_id,
+        form_type=body.get("form_type", "unknown"),
+        data=body.get("data", {}),
+    )
+    return {"message": "Form submitted successfully", "submission_id": submission.id}
+
+
+@router.get("/{form_id}/submissions", response_model=List[SubmissionResponse])
+def get_submissions(
     form_id: int,
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
 ):
-    """Get all submissions for a specific form"""
-    # Verify form exists
-    form = db.query(FormDefinition).filter(FormDefinition.id == form_id).first()
-    if not form:
-        raise HTTPException(status_code=404, detail="Form not found")
-    
-    # Get submissions by form_id
-    submissions = db.query(FormSubmission)\
-        .filter(FormSubmission.form_id == form_id)\
-        .order_by(FormSubmission.created_at.desc())\
-        .offset(skip)\
-        .limit(limit)\
-        .all()
-    
-    return submissions
-
+    return submission_service.get_by_form(db, form_id, skip, limit)

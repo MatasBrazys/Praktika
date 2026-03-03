@@ -1,10 +1,16 @@
+// src/pages/admin/FormList.tsx
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { formAPI, type FormDefinition } from '../../services/api';
+import { formAPI } from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
+import { extractErrorMessage } from '../../lib/apiClient';
 import Navbar from '../../components/shared/Navbar';
+import type { FormDefinition } from '../../types';
 import '../../styles/pages/admin/form-list.css';
 
-// ─── Delete Confirmation Modal ────────────────────────────────────────────────
+// ─── Delete Modal ──────────────────────────────────────────────────────────
+
 interface DeleteModalProps {
   form: FormDefinition;
   onConfirm: () => void;
@@ -82,19 +88,13 @@ function DeleteConfirmModal({ form, onConfirm, onCancel, deleting }: DeleteModal
         </div>
 
         <div className="delete-modal-footer">
-          <button className="btn-modal-cancel" onClick={onCancel} disabled={deleting}>
-            Cancel
-          </button>
+          <button className="btn-modal-cancel" onClick={onCancel} disabled={deleting}>Cancel</button>
           <button
             className={`btn-modal-delete ${isMatch && !deleting ? 'enabled' : ''}`}
             onClick={onConfirm}
             disabled={!isMatch || deleting}
           >
-            {deleting ? (
-              <><span className="delete-spinner" />Deleting…</>
-            ) : (
-              'Delete form'
-            )}
+            {deleting ? <><span className="delete-spinner" />Deleting…</> : 'Delete form'}
           </button>
         </div>
 
@@ -103,26 +103,25 @@ function DeleteConfirmModal({ form, onConfirm, onCancel, deleting }: DeleteModal
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main ──────────────────────────────────────────────────────────────────
+
 export default function FormList() {
-  const navigate = useNavigate();
-  const [forms, setForms] = useState<FormDefinition[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const navigate   = useNavigate();
+  const { toast }  = useToast();
+
+  const [forms,        setForms]        = useState<FormDefinition[]>([]);
+  const [loading,      setLoading]      = useState(true);
   const [formToDelete, setFormToDelete] = useState<FormDefinition | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting,     setDeleting]     = useState(false);
 
   useEffect(() => { loadForms(); }, []);
 
   const loadForms = async () => {
     try {
       setLoading(true);
-      const data = await formAPI.list();
-      setForms(data);
-      setError('');
+      setForms(await formAPI.list());
     } catch (err) {
-      setError('Failed to load forms');
-      console.error(err);
+      toast.error('Failed to load forms', extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -135,41 +134,42 @@ export default function FormList() {
       await formAPI.delete(formToDelete.id!);
       setForms(prev => prev.filter(f => f.id !== formToDelete.id));
       setFormToDelete(null);
-    } catch {
-      alert('Failed to delete form');
+      toast.success('Form deleted', `"${formToDelete.title}" has been removed.`);
+    } catch (err) {
+      toast.error('Delete failed', extractErrorMessage(err));
     } finally {
       setDeleting(false);
     }
   };
 
-  const handleToggleActive = async (id: number) => {
+  const handleToggleActive = async (form: FormDefinition) => {
     try {
-      await formAPI.toggleActive(id);
-      loadForms();
-    } catch {
-      alert('Failed to toggle form status');
+      await formAPI.toggleActive(form.id!);
+      await loadForms();
+      toast.success(
+        form.is_active ? 'Form deactivated' : 'Form activated',
+        `"${form.title}" is now ${form.is_active ? 'inactive' : 'active'}.`
+      );
+    } catch (err) {
+      toast.error('Failed to update form', extractErrorMessage(err));
     }
   };
 
   const getFieldCount = (form: FormDefinition) => {
-    const json = form.surveyjs_json;
+    const json = form.surveyjs_json as any;
     if (!json) return 0;
-    if (json.pages) {
-      return json.pages.reduce(
-        (total: number, page: any) => total + (page.elements?.length || 0), 0
-      );
-    }
+    if (json.pages) return json.pages.reduce((t: number, p: any) => t + (p.elements?.length || 0), 0);
     return json.elements?.length || 0;
   };
 
-  if (loading) return <div className="page-loading">Loading forms...</div>;
-  if (error) return <div className="page-error">{error}</div>;
+  if (loading) return <div className="page-loading">Loading forms…</div>;
 
   return (
     <>
       <Navbar />
       <div className="page-container-admin">
         <div className="form-list-wrapper">
+
           <div className="page-header">
             <div>
               <h1>Form Management</h1>
@@ -205,21 +205,12 @@ export default function FormList() {
                     <span>📅 {new Date(form.created_at!).toLocaleDateString()}</span>
                   </div>
                   <div className="card-actions">
-                    <button className="btn-edit" onClick={() => navigate(`/admin/form-builder/${form.id}`)}>
-                      Edit
-                    </button>
-                    <button className="btn-view" onClick={() => navigate(`/admin/forms/${form.id}/submissions`)}>
-                      Submissions
-                    </button>
-                    <button
-                      className={`btn-toggle ${form.is_active ? '' : 'activate'}`}
-                      onClick={() => handleToggleActive(form.id!)}
-                    >
+                    <button className="btn-edit"   onClick={() => navigate(`/admin/form-builder/${form.id}`)}>Edit</button>
+                    <button className="btn-view"   onClick={() => navigate(`/admin/forms/${form.id}/submissions`)}>Submissions</button>
+                    <button className={`btn-toggle ${form.is_active ? '' : 'activate'}`} onClick={() => handleToggleActive(form)}>
                       {form.is_active ? 'Deactivate' : 'Activate'}
                     </button>
-                    <button className="btn-delete" onClick={() => setFormToDelete(form)}>
-                      Delete
-                    </button>
+                    <button className="btn-delete" onClick={() => setFormToDelete(form)}>Delete</button>
                   </div>
                 </div>
               ))}

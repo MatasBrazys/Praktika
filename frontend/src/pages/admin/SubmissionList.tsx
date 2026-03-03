@@ -1,81 +1,77 @@
-// frontend/src/components/admin/SubmissionList.tsx
+// src/pages/admin/SubmissionList.tsx
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { formAPI, type Submission } from '../../services/api';
-import '../../styles/pages/admin/submission-list.css'
+import { formAPI } from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
+import { extractErrorMessage } from '../../lib/apiClient';
 import Navbar from '../../components/shared/Navbar';
+import type { Submission } from '../../types';
+import '../../styles/pages/admin/submission-list.css';
 
 export default function SubmissionList() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  
+  const { id }    = useParams<{ id: string }>();
+  const navigate  = useNavigate();
+  const { toast } = useToast();
+
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [formTitle, setFormTitle] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [formTitle,   setFormTitle]   = useState('');
+  const [loading,     setLoading]     = useState(true);
 
-  useEffect(() => {
-    loadSubmissions();
-  }, [id]);
+  useEffect(() => { loadData(); }, [id]);
 
-  const loadSubmissions = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      setError('');
-
-      // Naudoja formAPI vietoj hardcoded fetch
-      const form = await formAPI.get(Number(id));
+      const [form, subs] = await Promise.all([
+        formAPI.get(Number(id)),
+        formAPI.getSubmissions(Number(id)),
+      ]);
       setFormTitle(form.title);
-
-      const data = await formAPI.getSubmissions(Number(id));
-      setSubmissions(data);
+      setSubmissions(subs);
     } catch (err) {
-      console.error('Failed to load submissions:', err);
-      setError('Failed to load submissions');
+      toast.error('Failed to load submissions', extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
   };
 
   const exportToCSV = () => {
-    if (submissions.length === 0) return;
+    if (!submissions.length) return;
 
-    const allFields = new Set<string>();
-    submissions.forEach(sub => {
-      Object.keys(sub.data).forEach(key => allFields.add(key));
+    const allFields = Array.from(
+      new Set(submissions.flatMap(s => Object.keys(s.data)))
+    );
+
+    const rows = [
+      ['ID', 'Date', ...allFields],
+      ...submissions.map(s => [
+        String(s.id),
+        new Date(s.created_at).toLocaleString(),
+        ...allFields.map(f => String((s.data as Record<string, unknown>)[f] ?? '')),
+      ]),
+    ];
+
+    const csv  = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = Object.assign(document.createElement('a'), {
+      href: url,
+      download: `${formTitle.replace(/\s+/g, '_')}_submissions.csv`,
     });
-
-    const fields = Array.from(allFields);
-    const headers = ['Submission ID', 'Date', ...fields];
-    const rows = submissions.map(sub => [
-      sub.id,
-      new Date(sub.created_at).toLocaleString(),
-      ...fields.map(field => sub.data[field] || '')
-    ]);
-
-    const csv = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${formTitle.replace(/\s+/g, '_')}_submissions.csv`;
     a.click();
-    URL.revokeObjectURL(url); // ← memory cleanup
+    URL.revokeObjectURL(url);
+    toast.success('Export ready', `${submissions.length} submissions downloaded.`);
   };
 
-  if (loading) return <div className="page-loading">Loading submissions...</div>;
-  if (error) return <div className="page-error">{error}</div>;
+  if (loading) return <div className="page-loading">Loading submissions…</div>;
 
   return (
     <>
       <Navbar />
       <div className="page-container-admin">
         <div className="submissions-wrapper">
+
           <div className="page-header">
             <div>
               <button className="btn-back" onClick={() => navigate('/admin/forms')}>
@@ -85,11 +81,7 @@ export default function SubmissionList() {
               <p className="subtitle">{submissions.length} total submissions</p>
             </div>
             <div className="header-actions">
-              <button 
-                className="btn-export" 
-                onClick={exportToCSV} 
-                disabled={submissions.length === 0}
-              >
+              <button className="btn-export" onClick={exportToCSV} disabled={!submissions.length}>
                 📥 Export CSV
               </button>
             </div>
@@ -100,9 +92,7 @@ export default function SubmissionList() {
               <div className="empty-icon">📭</div>
               <h2>No submissions yet</h2>
               <p>Share this form to start collecting responses</p>
-              <code className="share-link">
-                {window.location.origin}/forms/{id}
-              </code>
+              <code className="share-link">{window.location.origin}/user/forms/{id}</code>
             </div>
           ) : (
             <div className="submissions-table">
@@ -131,6 +121,7 @@ export default function SubmissionList() {
               </table>
             </div>
           )}
+
         </div>
       </div>
     </>

@@ -1,31 +1,56 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import FormList from './pages/admin/FormList';
-import FormBuilder from './pages/admin/FormBuilder';
+// src/App.tsx
+
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider }  from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
+import PrivateRoute      from './components/shared/PrivateRoute';
+import ToastStack        from './components/shared/Toast';
+
+import LoginPage      from './pages/LoginPage';
+import Home           from './pages/Home';
+import FormList       from './pages/admin/FormList';
+import FormBuilder    from './pages/admin/FormBuilder';
 import SubmissionList from './pages/admin/SubmissionList';
-import UserFormsPage from './pages/public/FormList.tsx';  
-import PublicForm from './pages/public/Form.tsx';
-import SuccessPage from './pages/public/Success.tsx';
-import Home from './pages/Home.tsx';
+import UserFormList   from './pages/public/FormList';
+import PublicForm     from './pages/public/Form';
+import SuccessPage    from './pages/public/Success';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Home */}
-        <Route path="/" element={<Home />} />
-        
-        {/* Admin routes */}
-        <Route path="/admin/forms" element={<FormList />} />
-        <Route path="/admin/form-builder" element={<FormBuilder />} />
-        <Route path="/admin/form-builder/:id" element={<FormBuilder />} />
-        <Route path="/admin/forms/:id/submissions" element={<SubmissionList />} />
-        
-        {/* User routes */}
-        <Route path="/user/forms" element={<UserFormsPage />} />  
-        <Route path="/user/forms/:id" element={<PublicForm />} />
-        <Route path="/user/forms/:id/success" element={<SuccessPage />} />
-        <Route path="/user/submissions" element={<div>My Submissions - Coming Soon</div>} />
-      </Routes>
-    </BrowserRouter>
+    <ToastProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+
+            {/* ── Public — login only ────────────────────── */}
+            <Route path="/login" element={<LoginPage />} />
+
+            {/* ── Success page — no auth needed ─────────── */}
+            <Route path="/user/forms/:id/success" element={<SuccessPage />} />
+
+            {/* ── Protected: any authenticated user ──────── */}
+            <Route element={<PrivateRoute />}>
+              <Route path="/"             element={<Home />} />
+              <Route path="/user/forms"   element={<UserFormList />} />
+              <Route path="/user/forms/:id" element={<PublicForm />} />
+            </Route>
+
+            {/* ── Protected: admin only ───────────────────── */}
+            <Route element={<PrivateRoute requireAdmin />}>
+              <Route path="/admin/forms"                 element={<FormList />} />
+              <Route path="/admin/form-builder"          element={<FormBuilder />} />
+              <Route path="/admin/form-builder/:id"      element={<FormBuilder />} />
+              <Route path="/admin/forms/:id/submissions" element={<SubmissionList />} />
+            </Route>
+
+            {/* ── Fallback ────────────────────────────────── */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+
+          </Routes>
+
+          <ToastStack />
+        </BrowserRouter>
+      </AuthProvider>
+    </ToastProvider>
   );
 }

@@ -30,16 +30,14 @@ interface Props {
 type Tab = 'basic' | 'validators' | 'conditions';
 
 const VALIDATOR_PRESETS: Record<string, { regex: string; text: string }> = {
-  ipv4:     { regex: '^(?:(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)$', text: 'Enter valid IPv4 (e.g., 192.168.1.1)' },
-  cidr:     { regex: '^(?:(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)/(?:[0-9]|[12]\\d|3[0-2])$', text: 'Enter valid CIDR (e.g., 10.0.0.0/24)' },
-  mac:      { regex: '^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$', text: 'Enter valid MAC (e.g., AA:BB:CC:DD:EE:FF)' },
-  email:    { regex: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$', text: 'Enter valid email address' },
-  phone:    { regex: '^\\+?[1-9]\\d{1,14}$', text: 'Enter phone with country code (e.g., +37061234567)' },
-  url:      { regex: '^https?://[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}(/.*)?$', text: 'Enter valid URL (http:// or https://)' },
-  number:   { regex: '^-?\\d+(\\.\\d+)?$', text: 'Enter valid number (e.g., 42 or 3.14)' },
-  date:     { regex: '^\\d{4}-\\d{2}-\\d{2}$', text: 'Enter date in YYYY-MM-DD format' },
-  abbrev3:  { regex: '^[A-Z]{3}$', text: 'Enter exactly 3 capital letters (e.g., ABC)' },
-  hostname: { regex: '^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$', text: 'Enter valid hostname or FQDN' },
+  ipv4: { regex: '^(?:(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)$', text: 'Enter valid IPv4 (e.g., 192.168.1.1)' },
+  cidr: { regex: '^(?:(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)\\.){3}(?:25[0-5]|2[0-4]\\d|1?\\d?\\d)/(?:[0-9]|[12]\\d|3[0-2])$', text: 'Enter valid CIDR (e.g., 10.0.0.0/24)' },
+  mac: { regex: '^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$', text: 'Enter valid MAC (e.g., AA:BB:CC:DD:EE:FF)' },
+  email: { regex: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$', text: 'Enter valid email address' },
+  phone: { regex: '^\\+?[1-9]\\d{1,14}$', text: 'Enter phone with country code (e.g., +37061234567)' },
+  number: { regex: '^-?\\d+(\\.\\d+)?$', text: 'Enter valid number (e.g., 42 or 3.14)' },
+  date: { regex: '^\\d{4}-\\d{2}-\\d{2}$', text: 'Enter date in YYYY-MM-DD format' },
+  abbrev3: { regex: '^[A-Z]{3}$', text: 'Enter exactly 3 capital letters (e.g., ABC)' },
 };
 
 export default function FieldEditor({ field, allFields, onSave, onCancel }: Props) {
@@ -54,10 +52,10 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
   const [expandedTemplateField, setExpandedTemplateField] = useState<number | null>(null);
   const [expandedTemplateConditions, setExpandedTemplateConditions] = useState<number | null>(null);
   const [crmLabels, setCrmLabels] = useState({
-    name:     field.crmFieldLabels?.name     || 'Company Name',
-    street:   field.crmFieldLabels?.street   || 'Street Address',
+    name: field.crmFieldLabels?.name || 'Company Name',
+    street: field.crmFieldLabels?.street || 'Street Address',
     postcode: field.crmFieldLabels?.postcode || 'Postcode',
-    state:    field.crmFieldLabels?.state    || 'City / State',
+    state: field.crmFieldLabels?.state || 'City / State',
   });
   const isCrmLookup = config.type === 'crmlookup';
 
@@ -65,7 +63,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
     const autoPresetRegexes = Object.values(VALIDATOR_PRESETS).map(p => p.regex);
     if (config.type === 'text' && config.inputType) {
       const inputType = config.inputType;
-      const needsValidator = ['email', 'phone', 'ipv4', 'cidr', 'mac', 'url', 'hostname', 'number', 'date'].includes(inputType);
+      const needsValidator = ['email', 'phone', 'ipv4', 'cidr', 'mac', 'number', 'date'].includes(inputType);
       if (needsValidator && VALIDATOR_PRESETS[inputType]) {
         const preset = VALIDATOR_PRESETS[inputType];
         const manualValidators = validators.filter(v => v.type !== 'regex' || !autoPresetRegexes.includes(v.regex || ''));
@@ -79,26 +77,25 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
   }, [config.inputType, config.type]);
 
   const fieldTypes = [
-    { value: 'text',         label: '📝 Text Input' },
-    { value: 'comment',      label: '📄 Text Area' },
-    { value: 'dropdown',     label: '🔽 Dropdown' },
-    { value: 'radiogroup',   label: '◉ Radio Buttons' },
-    { value: 'checkbox',     label: '☑️ Checkboxes' },
-    { value: 'boolean',      label: '✓ Yes/No' },
+    { value: 'text', label: '📝 Text Input' },
+    { value: 'comment', label: '📄 Text Area' },
+    { value: 'dropdown', label: '🔽 Dropdown' },
+    { value: 'radiogroup', label: '◉ Radio Buttons' },
+    { value: 'checkbox', label: '☑️ Checkboxes' },
+    { value: 'boolean', label: '✓ Yes/No' },
     { value: 'paneldynamic', label: '🔁 Repeated Group' },
-    { value: 'crmlookup',    label: '🔍 CRM Lookup' },
+    { value: 'crmlookup', label: '🔍 CRM Lookup' },
   ];
 
   const textInputTypes = [
-    { value: 'text',   label: 'Plain Text' },
-    { value: 'email',  label: '📧 Email Address' },
-    { value: 'phone',  label: '📞 Phone Number' },
-    { value: 'ipv4',   label: '🌐 IPv4 Address' },
-    { value: 'cidr',   label: '🔗 CIDR Subnet' },
-    { value: 'mac',    label: '🔌 MAC Address' },
-    { value: 'url',    label: '🔗 URL' },
+    { value: 'text', label: 'Plain Text' },
+    { value: 'email', label: '📧 Email Address' },
+    { value: 'phone', label: '📞 Phone Number' },
+    { value: 'ipv4', label: '🌐 IPv4 Address' },
+    { value: 'cidr', label: '🔗 CIDR Subnet' },
+    { value: 'mac', label: '🔌 MAC Address' },
     { value: 'number', label: '🔢 Number' },
-    { value: 'date',   label: '📅 Date' },
+    { value: 'date', label: '📅 Date' },
   ];
 
   const addTemplateField = () => {
@@ -111,7 +108,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
 
   const handleTemplateInputTypeChange = (templateIdx: number, inputType: string) => {
     updateTemplateField(templateIdx, { inputType });
-    const needsValidator = ['email', 'phone', 'ipv4', 'cidr', 'mac', 'url', 'hostname', 'number', 'date'].includes(inputType);
+    const needsValidator = ['email', 'phone', 'ipv4', 'cidr', 'mac', 'number', 'date'].includes(inputType);
     const autoPresetRegexes = Object.values(VALIDATOR_PRESETS).map(p => p.regex);
     const tf = templateFields[templateIdx];
     const manualValidators = (tf.validators || []).filter(v => v.type !== 'regex' || !autoPresetRegexes.includes(v.regex || ''));
@@ -167,9 +164,9 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
   };
   const addValidator = (type: Validator['type']) => {
     const defaults: Record<string, Validator> = {
-      regex:   { type: 'regex',   text: 'Invalid format', regex: '' },
+      regex: { type: 'regex', text: 'Invalid format', regex: '' },
       numeric: { type: 'numeric', text: 'Invalid number', minValue: 0, maxValue: 100 },
-      text:    { type: 'text',    text: 'Invalid length',  minLength: 1, maxLength: 100 },
+      text: { type: 'text', text: 'Invalid length', minLength: 1, maxLength: 100 },
     };
     setValidators(prev => [...prev, defaults[type]]);
   };
@@ -202,7 +199,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
     onSave(finalConfig);
   };
 
-  const needsChoices    = ['dropdown', 'radiogroup', 'checkbox'].includes(config.type);
+  const needsChoices = ['dropdown', 'radiogroup', 'checkbox'].includes(config.type);
   const showPlaceholder = config.type === 'text' || config.type === 'comment';
   const showDefaultValue = showPlaceholder;
 
@@ -218,7 +215,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
         <div className="modal-tabs">
           {(['basic', 'validators', 'conditions'] as Tab[]).map(tab => (
             <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
-              {tab === 'basic'      && '⚙️ Basic'}
+              {tab === 'basic' && '⚙️ Basic'}
               {tab === 'validators' && `✓ Validators ${validators.length ? `(${validators.length})` : ''}`}
               {tab === 'conditions' && ` Conditions ${conditions.length ? `(${conditions.length})` : ''}`}
             </button>
@@ -226,7 +223,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
         </div>
 
         <div className="modal-body">
-
+          {/* Basic tab----------------------------------------------- */}
           {activeTab === 'basic' && (
             <>
               <div className="form-row">
@@ -310,7 +307,11 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
 
                   {templateFields.map((tf, idx) => (
                     <div key={tf.id} className="template-field-row">
-                      <div className="form-row">
+                      <div className="header-section">
+                        <button className="btn-delete-small" onClick={() => deleteTemplateField(idx)}>×</button>
+                      </div>
+
+                      <div className="form-row three-cols">
                         <div className="form-group">
                           <label>Title</label>
                           <input type="text" value={tf.title} onChange={e => updateTemplateField(idx, { title: e.target.value })} placeholder="Field title" />
@@ -330,11 +331,17 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                             <option value="boolean">Yes/No</option>
                           </select>
                         </div>
+                      </div>
+
+                      <div className="form-row">
                         <div className="form-group">
                           <label>Default</label>
                           <input type="text" value={tf.defaultValue || ''} onChange={e => updateTemplateField(idx, { defaultValue: e.target.value })} placeholder="Default value" />
                         </div>
-                        <button className="btn-delete-small" onClick={() => deleteTemplateField(idx)}>×</button>
+                        <div className="form-group">
+                          <label>Placeholder</label>
+                          <input type="text" value={tf.placeholder || ''} onChange={e => updateTemplateField(idx, { placeholder: e.target.value })} placeholder="e.g. Enter value..." />
+                        </div>
                       </div>
 
                       {tf.type === 'text' && (
@@ -376,7 +383,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                           <div className="template-validators-content">
                             <div className="validator-presets-compact">
                               <label>Quick add:</label>
-                              {['ipv4', 'email', 'phone', 'mac', 'url'].map(key => (
+                              {['ipv4', 'email', 'phone', 'mac'].map(key => (
                                 <code key={key} onClick={() => addTemplateValidator(idx, key)}>{key.toUpperCase()}</code>
                               ))}
                               <button className="btn-add-small" onClick={() => addTemplateValidator(idx)}>+ Custom Regex</button>
@@ -390,8 +397,8 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                                 </div>
                                 <div className="form-group">
                                   <label>Regex Pattern</label>
-                                  <div style={{ display: 'flex', gap: '8px' }}>
-                                    <input type="text" value={v.regex || ''} onChange={e => updateTemplateValidator(idx, vIdx, { regex: e.target.value })} className="code-input" style={{ flex: 1 }} />
+                                  <div className="validator-regex-row">
+                                    <input type="text" value={v.regex || ''} onChange={e => updateTemplateValidator(idx, vIdx, { regex: e.target.value })} className="code-input" />
                                     <button className="btn-delete-small" onClick={() => deleteTemplateValidator(idx, vIdx)}>×</button>
                                   </div>
                                 </div>
@@ -451,7 +458,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                 </div>
               )}
 
-              {/* ── CRM Lookup — CSS classes only, no inline styles ── */}
+              {/* ── CRM Lookup ── */}
               {isCrmLookup && (
                 <div className="crm-section">
                   <h3>🔍 CRM Lookup – Auto-fill Fields</h3>
@@ -513,6 +520,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
             </>
           )}
 
+          {/* Validation tab -------------------------------------------- */}
           {activeTab === 'validators' && (
             <div className="validators-section">
               {validators.length === 0 && (
@@ -520,7 +528,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                   <p>Click a pattern below to add validation:</p>
                   <div className="validator-examples">
                     <strong>Network & Infrastructure:</strong>
-                    {['ipv4', 'cidr', 'mac', 'hostname'].map(k => (
+                    {['ipv4', 'cidr', 'mac'].map(k => (
                       <code key={k} onClick={() => addValidatorPreset(k)}>{k.charAt(0).toUpperCase() + k.slice(1)}</code>
                     ))}
                   </div>
@@ -528,7 +536,6 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                     <strong>Contact & Business:</strong>
                     <code onClick={() => addValidatorPreset('email')}>Email Address</code>
                     <code onClick={() => addValidatorPreset('phone')}>Phone Number</code>
-                    <code onClick={() => addValidatorPreset('url')}>URL</code>
                     <code onClick={() => addValidatorPreset('abbrev3')}>3-Letter Code (ABC)</code>
                   </div>
                   <div className="validator-manual">
@@ -558,7 +565,9 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                   {v.type === 'regex' && (
                     <div className="form-group">
                       <label>Regex Pattern</label>
-                      <input type="text" value={v.regex || ''} onChange={e => updateValidator(idx, { regex: e.target.value })} placeholder="e.g., ^[A-Z]{3}$" className="code-input" />
+                      <div className="validator-regex-row">
+                        <input type="text" value={v.regex || ''} onChange={e => updateValidator(idx, { regex: e.target.value })} placeholder="e.g., ^[A-Z]{3}$" className="code-input" />
+                      </div>
                     </div>
                   )}
                   {v.type === 'numeric' && (
@@ -590,6 +599,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
             </div>
           )}
 
+          {/* Condition tab -------------------------------------------------------- */}
           {activeTab === 'conditions' && (
             <div className="conditions-section">
               <div className="conditions-info">
@@ -636,11 +646,11 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                   <strong>SurveyJS expression:</strong>
                   <code>
                     {conditions.filter(c => c.fieldName).map(c => {
-                      if (c.operator === 'empty')     return `{${c.fieldName}} empty`;
-                      if (c.operator === 'notEmpty')  return `{${c.fieldName}} notempty`;
-                      if (c.operator === 'equals')    return `{${c.fieldName}} = '${c.value}'`;
+                      if (c.operator === 'empty') return `{${c.fieldName}} empty`;
+                      if (c.operator === 'notEmpty') return `{${c.fieldName}} notempty`;
+                      if (c.operator === 'equals') return `{${c.fieldName}} = '${c.value}'`;
                       if (c.operator === 'notEquals') return `{${c.fieldName}} != '${c.value}'`;
-                      if (c.operator === 'contains')  return `{${c.fieldName}} contains '${c.value}'`;
+                      if (c.operator === 'contains') return `{${c.fieldName}} contains '${c.value}'`;
                       return '';
                     }).join(` ${conditionLogic} `)}
                   </code>
