@@ -1,6 +1,6 @@
 // frontend/src/components/admin/FieldEditor.tsx
 import { useState, useEffect } from 'react';
-import type { FieldConfig } from '../../pages/admin/FormBuilder';
+import type { FieldConfig, BulkImportField } from '../../pages/admin/FormBuilder';
 import '../../styles/components/field-editor.css';
 import '../../styles/components/modal.css';
 
@@ -51,6 +51,8 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
   const [templateFields, setTemplateFields] = useState<FieldConfig[]>(field.templateElements || []);
   const [expandedTemplateField, setExpandedTemplateField] = useState<number | null>(null);
   const [expandedTemplateConditions, setExpandedTemplateConditions] = useState<number | null>(null);
+  const [allowBulkImport, setAllowBulkImport] = useState<boolean>((field as any).allowBulkImport || false);
+  const [bulkImportFields, setBulkImportFields] = useState<BulkImportField[]>((field as any).bulkImportFields || []);
   const [crmLabels, setCrmLabels] = useState({
     name: field.crmFieldLabels?.name || 'Company Name',
     street: field.crmFieldLabels?.street || 'Street Address',
@@ -192,7 +194,11 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
     } else {
       delete finalConfig.choices;
     }
-    if (config.type === 'paneldynamic') finalConfig.templateElements = templateFields;
+    if (config.type === 'paneldynamic') {
+      finalConfig.templateElements = templateFields;
+      (finalConfig as any).allowBulkImport = allowBulkImport;
+      (finalConfig as any).bulkImportFields = allowBulkImport ? bulkImportFields : [];
+    }
     finalConfig.validators = validators.filter(v => v.type !== 'regex' || (v.regex && v.regex.trim()));
     finalConfig.conditions = conditions.filter(c => c.fieldName);
     finalConfig.conditionLogic = conditionLogic;
@@ -455,6 +461,94 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
                       </div>
                     </div>
                   ))}
+
+                  {/* ── Bulk Import Config ── */}
+                  <div className="bulk-import-config">
+                    <div className="bulk-import-toggle-row">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={allowBulkImport}
+                          onChange={e => {
+                            setAllowBulkImport(e.target.checked);
+                            if (e.target.checked && !bulkImportFields.length) {
+                              // Auto-initialise: all fields off, none required
+                              setBulkImportFields(templateFields.map(tf => ({ name: tf.name, required: false })));
+                            }
+                          }}
+                        />
+                        📥 Enable bulk CSV import for this group
+                      </label>
+                    </div>
+
+                    {allowBulkImport && (
+                      <>
+                        {templateFields.length === 0 ? (
+                          <div className="bulk-empty">Add fields above first, then configure bulk import.</div>
+                        ) : (
+                          <table className="bulk-fields-table">
+                            <thead>
+                              <tr>
+                                <th>Field</th>
+                                <th>Type</th>
+                                <th style={{ textAlign: 'center' }}>Include in CSV</th>
+                                <th style={{ textAlign: 'center' }}>Required</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {templateFields.map(tf => {
+                                const bulkEntry = bulkImportFields.find(b => b.name === tf.name);
+                                const isIncluded = !!bulkEntry;
+                                const isRequired = bulkEntry?.required ?? false;
+
+                                const toggleInclude = (checked: boolean) => {
+                                  if (checked) {
+                                    setBulkImportFields(prev => [...prev, { name: tf.name, required: false }]);
+                                  } else {
+                                    setBulkImportFields(prev => prev.filter(b => b.name !== tf.name));
+                                  }
+                                };
+
+                                const toggleRequired = (checked: boolean) => {
+                                  setBulkImportFields(prev => prev.map(b =>
+                                    b.name === tf.name ? { ...b, required: checked } : b
+                                  ));
+                                };
+
+                                return (
+                                  <tr key={tf.id}>
+                                    <td>
+                                      <strong>{tf.title}</strong>
+                                      <code style={{ marginLeft: '6px' }}>{tf.name}</code>
+                                    </td>
+                                    <td>{tf.type}{tf.inputType ? ` / ${tf.inputType}` : ''}</td>
+                                    <td style={{ textAlign: 'center' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={isIncluded}
+                                        onChange={e => toggleInclude(e.target.checked)}
+                                      />
+                                    </td>
+                                    <td style={{ textAlign: 'center' }}>
+                                      <input
+                                        type="checkbox"
+                                        checked={isRequired}
+                                        disabled={!isIncluded}
+                                        onChange={e => toggleRequired(e.target.checked)}
+                                      />
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        )}
+                        <small style={{ color: 'var(--color-text-muted)', marginTop: 'var(--sp-2)', display: 'block' }}>
+                          "Required" means that column must be filled in the CSV. Unchecked fields stay out of the CSV and are filled manually.
+                        </small>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
 

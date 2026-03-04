@@ -28,6 +28,11 @@ interface Condition {
   value: string;
 }
 
+export interface BulkImportField {
+  name: string;
+  required: boolean;
+}
+
 export interface FieldConfig {
   id: string;
   name: string;
@@ -48,6 +53,9 @@ export interface FieldConfig {
   minPanelCount?: number;
   panelCount?: number;
   crmFieldLabels?: { name?: string; street?: string; postcode?: string; state?: string };
+  // ── Bulk import ──────────────────────────────────────────────────────────
+  allowBulkImport?: boolean;
+  bulkImportFields?: BulkImportField[];
 }
 
 interface Page {
@@ -133,6 +141,9 @@ export default function FormBuilder() {
       }
       if (el.type === 'paneldynamic' && el.templateElements) {
         field.templateElements = el.templateElements.map((te: any, i: number) => elementToField(te, `template_${fallbackId}_${i}`)).filter(Boolean) as FieldConfig[];
+        // ── Restore bulk import config from JSON ──
+        field.allowBulkImport  = el.allowBulkImport  || false;
+        field.bulkImportFields = el.bulkImportFields || [];
       }
       return field;
     } catch { return null; }
@@ -246,10 +257,17 @@ export default function FormBuilder() {
     }
 
     if (field.type === 'paneldynamic') {
-      el.panelCount = field.panelCount || 1; el.minPanelCount = field.minPanelCount || 1;
-      el.addPanelText = field.addPanelText || 'Add'; el.removePanelText = field.removePanelText || 'Remove';
+      el.panelCount      = field.panelCount || 1;
+      el.minPanelCount   = field.minPanelCount || 1;
+      el.addPanelText    = field.addPanelText || 'Add';
+      el.removePanelText = field.removePanelText || 'Remove';
       if (field.panelCount) el.templateTitle = 'Panel {panelIndex}';
       el.templateElements = (field.templateElements || []).map(tf => fieldToElement(tf, true));
+      // ── Persist bulk import config into SurveyJS JSON ──
+      if (field.allowBulkImport) {
+        el.allowBulkImport  = true;
+        el.bulkImportFields = field.bulkImportFields || [];
+      }
     }
     return el;
   };
@@ -345,6 +363,7 @@ export default function FormBuilder() {
                             {field.isRequired          && <span className="required-badge">Required</span>}
                             {field.conditions?.length  ? <span className="condition-badge">⚡ Conditional</span> : null}
                             {field.validators?.length  ? <span className="validator-badge">✓ Validated</span>   : null}
+                            {field.allowBulkImport     && <span className="condition-badge">📥 Bulk Import</span>}
                           </div>
                         </div>
                       </div>
