@@ -42,7 +42,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
     // Auto-applies a regex preset validator when a specialized inputType is selected
     useEffect(() => {
         if (config.type === 'text' && config.inputType) {
-            const inputType = config.inputType;
+            const { inputType } = config;
             const needsValidator = ['email', 'phone', 'ipv4', 'cidr', 'mac', 'number', 'date'].includes(inputType);
             const manualValidators = validators.filter(v => v.type !== 'regex' || !AUTO_PRESET_REGEXES.includes(v.regex || ''));
 

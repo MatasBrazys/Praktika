@@ -1,6 +1,6 @@
 // src/pages/admin/FormBuilder/index.tsx
-// Form builder page — handles creating and editing forms with a live preview.
-// State management and SurveyJS conversion are delegated to hooks and utils.
+// Form builder page — UI only.
+// All state and logic handled by useFormPages and useFormFields hooks.
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -10,8 +10,10 @@ import { extractErrorMessage } from '../../../lib/apiClient';
 import Navbar from '../../../components/shared/Navbar';
 import FieldEditor from '../../../components/admin/FieldEditor';
 import FormPreview from '../../../components/admin/FormPreview';
-import { convertToSurveyJS} from './utils/surveyConverter';
+import { convertToSurveyJS } from './utils/surveyConverter';
 import { elementToField } from './utils/visibleIfParser';
+import { useFormPages } from './hooks/useFormPages';
+import { useFormFields } from './hooks/useFormFields';
 import type { FieldConfig, Page } from '../../../types/form-builder.types';
 import '../../../styles/pages/admin/form-builder.css';
 import '../../../styles/components/modal.css';
@@ -24,14 +26,16 @@ export default function FormBuilder() {
 
   const [title,           setTitle]           = useState('');
   const [description,     setDescription]     = useState('');
-  const [pages,           setPages]           = useState<Page[]>([{ id: 'page_1', name: 'page1', title: 'Page 1', fields: [] }]);
-  const [activePageId,    setActivePageId]    = useState('page_1');
   const [editingField,    setEditingField]    = useState<FieldConfig | null>(null);
   const [showFieldEditor, setShowFieldEditor] = useState(false);
   const [saving,          setSaving]          = useState(false);
 
-  const activePage = pages.find(p => p.id === activePageId) || pages[0];
-  const allFields  = pages.flatMap(p => p.fields);
+  const {
+    pages, setPages, activePage, activePageId, setActivePageId,
+    addPage, deletePage, updatePageTitle, resetPages,
+  } = useFormPages();
+
+  const { saveField, deleteField, moveField, buildNewField } = useFormFields(activePageId, setPages);
 
   useEffect(() => { if (isEditMode) loadForm(); }, [id]);
 
@@ -53,81 +57,23 @@ export default function FormBuilder() {
           .filter(Boolean) as FieldConfig[],
       }));
 
-      setPages(loadedPages);
-      setActivePageId(loadedPages[0].id);
+      resetPages(loadedPages);
     } catch (err) {
       toast.error('Failed to load form', extractErrorMessage(err));
       navigate('/admin/forms');
     }
   };
 
-  // ── Page management ─────────────────────────────────────────────────────────
-
-  const addPage = () => {
-    const newId = `page_${Date.now()}`;
-    setPages(prev => [...prev, { id: newId, name: `page${pages.length + 1}`, title: `Page ${pages.length + 1}`, fields: [] }]);
-    setActivePageId(newId);
-  };
-
-  const deletePage = (pageId: string) => {
-    if (pages.length === 1) { toast.warning('Cannot delete', 'At least one page is required.'); return; }
-    if (!confirm('Delete this page and all its fields?')) return;
-    const remaining = pages.filter(p => p.id !== pageId);
-    setPages(remaining);
-    if (activePageId === pageId) setActivePageId(remaining[0].id);
-  };
-
-  const updatePageTitle = (pageId: string, newTitle: string) => {
-    setPages(prev => prev.map(p => p.id === pageId ? { ...p, title: newTitle } : p));
-  };
-
-  // ── Field management ────────────────────────────────────────────────────────
-
-  const addField = () => {
-    setEditingField({
-      id: `field_${Date.now()}`,
-      name: `field_${activePage.fields.length + 1}`,
-      title: 'New Field',
-      type: 'text',
-      isRequired: false,
-    });
+  const handleAddField = () => {
+    setEditingField(buildNewField(activePage.fields.length));
     setShowFieldEditor(true);
   };
 
-  // Adds the field if it's new, or replaces it if it already exists
-  const saveField = (updated: FieldConfig) => {
-    setPages(prev => prev.map(page => {
-      if (page.id !== activePageId) return page;
-
-      const fieldExists = page.fields.some(f => f.id === updated.id);
-      const updatedFields = fieldExists
-        ? page.fields.map(f => f.id === updated.id ? updated : f)
-        : [...page.fields, updated];
-
-      return { ...page, fields: updatedFields };
-    }));
+  const handleSaveField = (updated: FieldConfig) => {
+    saveField(updated);
     setShowFieldEditor(false);
     setEditingField(null);
   };
-
-  const deleteField = (fieldId: string) => {
-    if (!confirm('Delete this field?')) return;
-    setPages(prev => prev.map(page =>
-      page.id === activePageId
-        ? { ...page, fields: page.fields.filter(f => f.id !== fieldId) }
-        : page
-    ));
-  };
-
-  const moveField = (index: number, direction: 'up' | 'down') => {
-    const fields = [...activePage.fields];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= fields.length) return;
-    [fields[index], fields[targetIndex]] = [fields[targetIndex], fields[index]];
-    setPages(prev => prev.map(page => page.id === activePageId ? { ...page, fields } : page));
-  };
-
-  // ── Save ────────────────────────────────────────────────────────────────────
 
   const handleSave = async () => {
     if (!title.trim()) { toast.warning('Title required', 'Please enter a form title.'); return; }
@@ -147,6 +93,8 @@ export default function FormBuilder() {
       setSaving(false);
     }
   };
+
+  const allFields = pages.flatMap(p => p.fields);
 
   return (
     <>
@@ -188,13 +136,13 @@ export default function FormBuilder() {
             <div className="config-panel">
               <div className="section-header">
                 <h2>Fields ({activePage.fields.length})</h2>
-                <button className="btn-add" onClick={addField}>+ Add Field</button>
+                <button className="btn-add" onClick={handleAddField}>+ Add Field</button>
               </div>
 
               {activePage.fields.length === 0 ? (
                 <div className="empty-fields">
                   <p>No fields on this page</p>
-                  <button onClick={addField}>Add your first field</button>
+                  <button onClick={handleAddField}>Add your first field</button>
                 </div>
               ) : (
                 <div className="fields-list">
@@ -202,18 +150,18 @@ export default function FormBuilder() {
                     <div key={field.id} className="field-item">
                       <div className="field-info">
                         <div className="field-order">
-                          <button onClick={() => moveField(index, 'up')}   disabled={index === 0}>▲</button>
+                          <button onClick={() => moveField(activePage.fields, index, 'up')}   disabled={index === 0}>▲</button>
                           <span>{index + 1}</span>
-                          <button onClick={() => moveField(index, 'down')} disabled={index === activePage.fields.length - 1}>▼</button>
+                          <button onClick={() => moveField(activePage.fields, index, 'down')} disabled={index === activePage.fields.length - 1}>▼</button>
                         </div>
                         <div className="field-details">
                           <strong>{field.title}</strong>
                           <div className="field-meta">
                             <span className="field-type-badge">{field.type === 'crmlookup' ? '🔍 CRM Lookup' : field.type}</span>
                             {field.isRequired         && <span className="required-badge">Required</span>}
-                            {field.conditions?.length  ? <span className="condition-badge">⚡ Conditional</span> : null}
-                            {field.validators?.length  ? <span className="validator-badge">✓ Validated</span>   : null}
-                            {field.allowBulkImport     && <span className="condition-badge">📥 Bulk Import</span>}
+                            {field.conditions?.length ? <span className="condition-badge">⚡ Conditional</span> : null}
+                            {field.validators?.length ? <span className="validator-badge">✓ Validated</span>   : null}
+                            {field.allowBulkImport    && <span className="condition-badge">📥 Bulk Import</span>}
                           </div>
                         </div>
                       </div>
@@ -243,7 +191,7 @@ export default function FormBuilder() {
         <FieldEditor
           field={editingField}
           allFields={allFields.filter(f => f.id !== editingField.id)}
-          onSave={saveField}
+          onSave={handleSaveField}
           onCancel={() => { setShowFieldEditor(false); setEditingField(null); }}
         />
       )}
