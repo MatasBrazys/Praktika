@@ -1,23 +1,56 @@
 import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
-import { defineConfig, globalIgnores } from 'eslint/config'
+import react from 'eslint-plugin-react'
+import reactHooks from 'eslint-plugin-react-hooks'
+import prettier from 'eslint-config-prettier'
 
-export default defineConfig([
-  globalIgnores(['dist']),
+export default tseslint.config(
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
+  prettier,
+
+  // ── Bendros taisyklės visiems failams ─────────────────────────────────────
   {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      js.configs.recommended,
-      tseslint.configs.recommended,
-      reactHooks.configs.flat.recommended,
-      reactRefresh.configs.vite,
-    ],
-    languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.browser,
+    plugins: {
+      react,
+      'react-hooks': reactHooks,
+    },
+
+    settings: {
+      react: { version: 'detect' },
+    },
+
+    rules: {
+      '@typescript-eslint/no-unused-vars': ['error', {
+        argsIgnorePattern:         '^_',
+        varsIgnorePattern:         '^_',
+        caughtErrorsIgnorePattern: '^_',
+      }],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      'react/react-in-jsx-scope':           'off',
+      'react/prop-types':                   'off',
+      'react-hooks/rules-of-hooks':         'error',
+      'react-hooks/exhaustive-deps':        'warn',
+      'no-console':                         'warn',
+      'eqeqeq':                             'error',
+      'no-var':                             'error',
+      'prefer-const':                       'error',
     },
   },
-])
+
+  // ── SurveyJS utils — išorinė biblioteka be gerų tipų, any leidžiamas ─────
+  {
+    files: [
+      'src/pages/public/Form/utils/**',
+      'src/pages/admin/FormBuilder/utils/**',
+      'src/components/public/NetworkImporter/utils/**',
+    ],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+
+  {
+    ignores: ['dist/**', 'node_modules/**'],
+  },
+)

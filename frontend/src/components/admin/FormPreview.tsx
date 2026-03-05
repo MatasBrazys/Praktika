@@ -1,39 +1,37 @@
-// frontend/src/components/admin/FormPreview.tsx
-import { Model } from 'survey-core';
-import { Survey } from 'survey-react-ui';
-import "survey-core/survey-core.min.css";
-import '../../styles/components/form-preview.css';
+// src/components/admin/FormPreview.tsx
+
+import { Model }  from 'survey-core'
+import { Survey } from 'survey-react-ui'
+import 'survey-core/survey-core.min.css'
+import '../../styles/components/form-preview.css'
 
 interface Props {
-  surveyJson: any;
-  activePageIndex?: number; // ← NAUJAS prop
+  surveyJson:       Record<string, unknown>
+  activePageIndex?: number
 }
 
 export default function FormPreview({ surveyJson, activePageIndex = 0 }: Props) {
-  // Single page arba multi-page
-  const pages = surveyJson.pages || [{ elements: surveyJson.elements || [] }];
-  const activePage = pages[activePageIndex];
+  const pages      = (surveyJson.pages as Array<{ elements?: unknown[] }> | undefined)
+                     ?? [{ elements: (surveyJson.elements as unknown[] | undefined) ?? [] }]
+  const activePage = pages[activePageIndex]
+  const elements   = activePage?.elements ?? []
 
-  if (!activePage?.elements || activePage.elements.length === 0) {
+  if (!elements.length) {
     return (
       <div className="preview-empty">
         <div className="empty-icon">📝</div>
         <p>Add fields to see live preview</p>
       </div>
-    );
+    )
   }
 
-  // Rodyti TIK active page
-  const previewJson = {
-    elements: activePage.elements
-  };
+  // Render only the active page so the preview stays in sync with the selected tab
+  const survey = new Model({ elements })
+  survey.mode  = 'display'
 
-  const survey = new Model(previewJson);
-  survey.mode = 'display';
-  
   return (
     <div className="preview-container">
       <Survey model={survey} />
     </div>
-  );
+  )
 }

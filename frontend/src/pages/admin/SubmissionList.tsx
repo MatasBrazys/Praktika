@@ -1,47 +1,47 @@
 // src/pages/admin/SubmissionList.tsx
 
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { formAPI } from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
-import { extractErrorMessage } from '../../lib/apiClient';
-import Navbar from '../../components/shared/Navbar';
-import type { Submission } from '../../types';
-import '../../styles/pages/admin/submission-list.css';
+import { useState, useEffect, useCallback } from 'react'
+import { useParams, useNavigate }  from 'react-router-dom'
+import { formAPI }                 from '../../services/api'
+import { useToast }                from '../../contexts/ToastContext'
+import { extractErrorMessage }     from '../../lib/apiClient'
+import Navbar                      from '../../components/shared/Navbar'
+import type { Submission }         from '../../types'
+import '../../styles/pages/admin/submission-list.css'
 
 export default function SubmissionList() {
-  const { id }    = useParams<{ id: string }>();
-  const navigate  = useNavigate();
-  const { toast } = useToast();
+  const { id }    = useParams<{ id: string }>()
+  const navigate  = useNavigate()
+  const { toast } = useToast()
 
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [formTitle,   setFormTitle]   = useState('');
-  const [loading,     setLoading]     = useState(true);
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [formTitle,   setFormTitle]   = useState('')
+  const [loading,     setLoading]     = useState(true)
 
-  useEffect(() => { loadData(); }, [id]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
-      setLoading(true);
+      setLoading(true)
       const [form, subs] = await Promise.all([
         formAPI.get(Number(id)),
         formAPI.getSubmissions(Number(id)),
-      ]);
-      setFormTitle(form.title);
-      setSubmissions(subs);
+      ])
+      setFormTitle(form.title)
+      setSubmissions(subs)
     } catch (err) {
-      toast.error('Failed to load submissions', extractErrorMessage(err));
+      toast.error('Failed to load submissions', extractErrorMessage(err))
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }, [id, toast])
+
+  useEffect(() => { loadData() }, [loadData])
 
   const exportToCSV = () => {
-    if (!submissions.length) return;
+    if (!submissions.length) return
 
     const allFields = Array.from(
       new Set(submissions.flatMap(s => Object.keys(s.data)))
-    );
+    )
 
     const rows = [
       ['ID', 'Date', ...allFields],
@@ -50,21 +50,21 @@ export default function SubmissionList() {
         new Date(s.created_at).toLocaleString(),
         ...allFields.map(f => String((s.data as Record<string, unknown>)[f] ?? '')),
       ]),
-    ];
+    ]
 
-    const csv  = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
+    const csv  = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url  = URL.createObjectURL(blob)
     const a    = Object.assign(document.createElement('a'), {
-      href: url,
+      href:     url,
       download: `${formTitle.replace(/\s+/g, '_')}_submissions.csv`,
-    });
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Export ready', `${submissions.length} submissions downloaded.`);
-  };
+    })
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success('Export ready', `${submissions.length} submissions downloaded.`)
+  }
 
-  if (loading) return <div className="page-loading">Loading submissions…</div>;
+  if (loading) return <div className="page-loading">Loading submissions…</div>
 
   return (
     <>
@@ -125,5 +125,5 @@ export default function SubmissionList() {
         </div>
       </div>
     </>
-  );
+  )
 }

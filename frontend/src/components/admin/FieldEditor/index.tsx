@@ -1,302 +1,320 @@
 // src/components/admin/FieldEditor/index.tsx
 // Shell component — owns all state, delegates rendering to tabs and sections.
 
-import { useState, useEffect } from 'react';
-import type { FieldConfig, BulkImportField, Validator, Condition } from '../../../types/form-builder.types';
-import { VALIDATOR_PRESETS, AUTO_PRESET_REGEXES } from './validatorPresets';
-import BasicTab from './tabs/BasicTab';
-import ValidatorsTab from './tabs/ValidatorsTab';
-import ConditionsTab from './tabs/ConditionsTab';
-import '../../../styles/components/field-editor.css';
-import '../../../styles/components/modal.css';
+import { useState, useEffect, useCallback } from 'react'
+import type { FieldConfig, BulkImportField, Validator, Condition } from '../../../types/form-builder.types'
+import { VALIDATOR_PRESETS, AUTO_PRESET_REGEXES } from './validatorPresets'
+import BasicTab      from './tabs/BasicTab'
+import ValidatorsTab from './tabs/ValidatorsTab'
+import ConditionsTab from './tabs/ConditionsTab'
+import '../../../styles/components/field-editor.css'
+import '../../../styles/components/modal.css'
 
 interface Props {
-    field: FieldConfig;
-    allFields: FieldConfig[];
-    onSave: (field: FieldConfig) => void;
-    onCancel: () => void;
+  field:     FieldConfig
+  allFields: FieldConfig[]
+  onSave:    (field: FieldConfig) => void
+  onCancel:  () => void
 }
 
-type Tab = 'basic' | 'validators' | 'conditions';
+type Tab = 'basic' | 'validators' | 'conditions'
+
+const PRESET_INPUT_TYPES = ['email', 'phone', 'ipv4', 'cidr', 'mac', 'number', 'date']
 
 export default function FieldEditor({ field, allFields, onSave, onCancel }: Props) {
-    const [config, setConfig] = useState<FieldConfig>(field);
-    const [choicesText, setChoicesText] = useState(field.choices?.join('\n') || '');
-    const [templateChoicesText, setTemplateChoicesText] = useState<Record<number, string>>({});
-    const [activeTab, setActiveTab] = useState<Tab>('basic');
-    const [validators, setValidators] = useState<Validator[]>(field.validators || []);
-    const [conditions, setConditions] = useState<Condition[]>(field.conditions || []);
-    const [conditionLogic, setConditionLogic] = useState<'and' | 'or'>(field.conditionLogic || 'and');
-    const [templateFields, setTemplateFields] = useState<FieldConfig[]>(field.templateElements || []);
-    const [expandedTemplateField, setExpandedTemplateField] = useState<number | null>(null);
-    const [expandedTemplateConditions, setExpandedTemplateConditions] = useState<number | null>(null);
-    const [allowBulkImport, setAllowBulkImport] = useState<boolean>(field.allowBulkImport || false);
-    const [bulkImportFields, setBulkImportFields] = useState<BulkImportField[]>(field.bulkImportFields || []);
-    const [crmLabels, setCrmLabels] = useState({
-        name: field.crmFieldLabels?.name || 'Company Name',
-        street: field.crmFieldLabels?.street || 'Street Address',
-        postcode: field.crmFieldLabels?.postcode || 'Postcode',
-        state: field.crmFieldLabels?.state || 'City / State',
-    });
+  const [config,                     setConfig]                     = useState<FieldConfig>(field)
+  const [choicesText,                setChoicesText]                = useState(field.choices?.join('\n') ?? '')
+  const [templateChoicesText,        setTemplateChoicesText]        = useState<Record<number, string>>({})
+  const [activeTab,                  setActiveTab]                  = useState<Tab>('basic')
+  const [validators,                 setValidators]                 = useState<Validator[]>(field.validators ?? [])
+  const [conditions,                 setConditions]                 = useState<Condition[]>(field.conditions ?? [])
+  const [conditionLogic,             setConditionLogic]             = useState<'and' | 'or'>(field.conditionLogic ?? 'and')
+  const [templateFields,             setTemplateFields]             = useState<FieldConfig[]>(field.templateElements ?? [])
+  const [expandedTemplateField,      setExpandedTemplateField]      = useState<number | null>(null)
+  const [expandedTemplateConditions, setExpandedTemplateConditions] = useState<number | null>(null)
+  const [allowBulkImport,            setAllowBulkImport]            = useState<boolean>(field.allowBulkImport ?? false)
+  const [bulkImportFields,           setBulkImportFields]           = useState<BulkImportField[]>(field.bulkImportFields ?? [])
+  const [crmLabels, setCrmLabels] = useState({
+    name:     field.crmFieldLabels?.name     ?? 'Company Name',
+    street:   field.crmFieldLabels?.street   ?? 'Street Address',
+    postcode: field.crmFieldLabels?.postcode ?? 'Postcode',
+    state:    field.crmFieldLabels?.state    ?? 'City / State',
+  })
 
-    // Auto-applies a regex preset validator when a specialized inputType is selected
-    useEffect(() => {
-        if (config.type === 'text' && config.inputType) {
-            const { inputType } = config;
-            const needsValidator = ['email', 'phone', 'ipv4', 'cidr', 'mac', 'number', 'date'].includes(inputType);
-            const manualValidators = validators.filter(v => v.type !== 'regex' || !AUTO_PRESET_REGEXES.includes(v.regex || ''));
+  // Auto-applies a regex preset validator when a specialized inputType is selected.
+  // Uses functional setState so validators don't need to be in deps.
+  const applyPresetValidator = useCallback((inputType: string, fieldType: string) => {
+    setValidators(prev => {
+      const manual = prev.filter(v => v.type !== 'regex' || !AUTO_PRESET_REGEXES.includes(v.regex ?? ''))
 
-            if (needsValidator && VALIDATOR_PRESETS[inputType]) {
-                setValidators([...manualValidators, { type: 'regex', ...VALIDATOR_PRESETS[inputType] }]);
-            } else {
-                setValidators(manualValidators);
-            }
-        } else if (config.type !== 'text') {
-            setValidators(prev => prev.filter(v => v.type !== 'regex' || !AUTO_PRESET_REGEXES.includes(v.regex || '')));
-        }
-    }, [config.inputType, config.type]);
+      if (fieldType !== 'text') return manual
 
-    // ── Template field handlers ───────────────────────────────────────────────
+      const needsPreset = PRESET_INPUT_TYPES.includes(inputType)
+      if (needsPreset && VALIDATOR_PRESETS[inputType]) {
+        return [...manual, { type: 'regex' as const, ...VALIDATOR_PRESETS[inputType] }]
+      }
+      return manual
+    })
+  }, [])
 
-    const addTemplateField = () => {
-        setTemplateFields(prev => [...prev, { id: `template_${Date.now()}`, name: `field_${templateFields.length + 1}`, title: 'New Field', type: 'text', isRequired: false }]);
-    };
+  useEffect(() => {
+    applyPresetValidator(config.inputType ?? '', config.type)
+  }, [config.inputType, config.type, applyPresetValidator])
 
-    const updateTemplateField = (idx: number, updates: Partial<FieldConfig>) => {
-        setTemplateFields(prev => prev.map((f, i) => i === idx ? { ...f, ...updates } : f));
-    };
+  // ── Template field handlers ───────────────────────────────────────────────
 
-    const deleteTemplateField = (idx: number) => setTemplateFields(prev => prev.filter((_f, i) => i !== idx));
+  const addTemplateField = () => {
+    setTemplateFields(prev => [
+      ...prev,
+      { id: `template_${Date.now()}`, name: `field_${prev.length + 1}`, title: 'New Field', type: 'text', isRequired: false },
+    ])
+  }
 
-    const handleTemplateChoicesChange = (idx: number, text: string) => {
-        setTemplateChoicesText(prev => ({ ...prev, [idx]: text }));
-        updateTemplateField(idx, { choices: text.split('\n').map(c => c.trim()).filter(Boolean) });
-    };
+  const updateTemplateField = (idx: number, updates: Partial<FieldConfig>) =>
+    setTemplateFields(prev => prev.map((f, i) => i === idx ? { ...f, ...updates } : f))
 
-    const handleTemplateTypeChange = (idx: number, newType: string) => {
-        const tf = templateFields[idx];
-        const manualValidators = (tf.validators || []).filter((v: Validator) => v.type !== 'regex' || !AUTO_PRESET_REGEXES.includes(v.regex || ''));
-        updateTemplateField(idx, newType !== 'text'
-            ? { type: newType, inputType: undefined, validators: manualValidators }
-            : { type: newType }
-        );
-    };
+  const deleteTemplateField = (idx: number) =>
+    setTemplateFields(prev => prev.filter((_f, i) => i !== idx))
 
-    const handleTemplateInputTypeChange = (idx: number, inputType: string) => {
-        updateTemplateField(idx, { inputType });
-        const tf = templateFields[idx];
-        const manualValidators = (tf.validators || []).filter((v: Validator) => v.type !== 'regex' || !AUTO_PRESET_REGEXES.includes(v.regex || ''));
-        const needsValidator = ['email', 'phone', 'ipv4', 'cidr', 'mac', 'number', 'date'].includes(inputType);
-        if (needsValidator && VALIDATOR_PRESETS[inputType]) {
-            updateTemplateField(idx, { validators: [...manualValidators, { type: 'regex', ...VALIDATOR_PRESETS[inputType] }] });
-        } else if (inputType === 'text') {
-            updateTemplateField(idx, { validators: manualValidators });
-        }
-    };
+  const handleTemplateChoicesChange = (idx: number, text: string) => {
+    setTemplateChoicesText(prev => ({ ...prev, [idx]: text }))
+    updateTemplateField(idx, { choices: text.split('\n').map(c => c.trim()).filter(Boolean) })
+  }
 
-    // ── Template validator handlers ───────────────────────────────────────────
+  const handleTemplateTypeChange = (idx: number, newType: string) => {
+    const tf     = templateFields[idx]
+    const manual = (tf.validators ?? []).filter((v: Validator) =>
+      v.type !== 'regex' || !AUTO_PRESET_REGEXES.includes(v.regex ?? '')
+    )
+    updateTemplateField(idx, newType !== 'text'
+      ? { type: newType, inputType: undefined, validators: manual }
+      : { type: newType },
+    )
+  }
 
-    const addTemplateValidator = (idx: number, presetKey?: string) => {
-        const newV: Validator = presetKey && VALIDATOR_PRESETS[presetKey]
-            ? { type: 'regex', ...VALIDATOR_PRESETS[presetKey] }
-            : { type: 'regex', text: 'Invalid format', regex: '' };
-        updateTemplateField(idx, { validators: [...(templateFields[idx].validators || []), newV] });
-    };
+  const handleTemplateInputTypeChange = (idx: number, inputType: string) => {
+    const tf     = templateFields[idx]
+    const manual = (tf.validators ?? []).filter((v: Validator) =>
+      v.type !== 'regex' || !AUTO_PRESET_REGEXES.includes(v.regex ?? '')
+    )
+    const needsPreset = PRESET_INPUT_TYPES.includes(inputType)
+    const newValidators = needsPreset && VALIDATOR_PRESETS[inputType]
+      ? [...manual, { type: 'regex' as const, ...VALIDATOR_PRESETS[inputType] }]
+      : manual
+    updateTemplateField(idx, { inputType, validators: newValidators })
+  }
 
-    const updateTemplateValidator = (ti: number, vi: number, updates: Partial<Validator>) => {
-        updateTemplateField(ti, { validators: (templateFields[ti].validators || []).map((v: Validator, i: number) => i === vi ? { ...v, ...updates } : v) });
-    };
+  // ── Template validator handlers ───────────────────────────────────────────
 
-    const deleteTemplateValidator = (ti: number, vi: number) => {
-        updateTemplateField(ti, { validators: (templateFields[ti].validators || []).filter((_v: Validator, i: number) => i !== vi) });
-    };
+  const addTemplateValidator = (idx: number, presetKey?: string) => {
+    const newV: Validator = presetKey && VALIDATOR_PRESETS[presetKey]
+      ? { type: 'regex' as const, ...VALIDATOR_PRESETS[presetKey] }
+      : { type: 'regex', text: 'Invalid format', regex: '' }
+    updateTemplateField(idx, { validators: [...(templateFields[idx].validators ?? []), newV] })
+  }
 
-    // ── Template condition handlers ───────────────────────────────────────────
+  const updateTemplateValidator = (ti: number, vi: number, updates: Partial<Validator>) =>
+    updateTemplateField(ti, {
+      validators: (templateFields[ti].validators ?? []).map((v: Validator, i: number) =>
+        i === vi ? { ...v, ...updates } : v
+      ),
+    })
 
-    const addTemplateCondition = (idx: number) => {
-        const otherFields = templateFields.filter((_f, i) => i !== idx);
-        if (!otherFields.length) { alert('Add more fields first to create conditions'); return; }
-        updateTemplateField(idx, { conditions: [...(templateFields[idx].conditions || []), { fieldName: otherFields[0].name, operator: 'equals', value: '' }] });
-    };
+  const deleteTemplateValidator = (ti: number, vi: number) =>
+    updateTemplateField(ti, {
+      validators: (templateFields[ti].validators ?? []).filter((_v: Validator, i: number) => i !== vi),
+    })
 
-    const updateTemplateCondition = (ti: number, ci: number, updates: Partial<Condition>) => {
-        updateTemplateField(ti, { conditions: (templateFields[ti].conditions || []).map((c: Condition, i: number) => i === ci ? { ...c, ...updates } : c) });
-    };
+  // ── Template condition handlers ───────────────────────────────────────────
 
-    const deleteTemplateCondition = (ti: number, ci: number) => {
-        updateTemplateField(ti, { conditions: (templateFields[ti].conditions || []).filter((_c: Condition, i: number) => i !== ci) });
-    };
+  const addTemplateCondition = (idx: number) => {
+    const otherFields = templateFields.filter((_f, i) => i !== idx)
+    if (!otherFields.length) { alert('Add more fields first to create conditions'); return }
+    updateTemplateField(idx, {
+      conditions: [...(templateFields[idx].conditions ?? []), { fieldName: otherFields[0].name, operator: 'equals', value: '' }],
+    })
+  }
 
-    // ── Top-level validator handlers ──────────────────────────────────────────
+  const updateTemplateCondition = (ti: number, ci: number, updates: Partial<Condition>) =>
+    updateTemplateField(ti, {
+      conditions: (templateFields[ti].conditions ?? []).map((c: Condition, i: number) =>
+        i === ci ? { ...c, ...updates } : c
+      ),
+    })
 
-    const addValidatorPreset = (key: string) => {
-        if (VALIDATOR_PRESETS[key]) setValidators(prev => [...prev, { type: 'regex', ...VALIDATOR_PRESETS[key] }]);
-    };
+  const deleteTemplateCondition = (ti: number, ci: number) =>
+    updateTemplateField(ti, {
+      conditions: (templateFields[ti].conditions ?? []).filter((_c: Condition, i: number) => i !== ci),
+    })
 
-    const addValidator = (type: Validator['type']) => {
-        const defaults: Record<string, Validator> = {
-            regex: { type: 'regex', text: 'Invalid format', regex: '' },
-            numeric: { type: 'numeric', text: 'Invalid number', minValue: 0, maxValue: 100 },
-            text: { type: 'text', text: 'Invalid length', minLength: 1, maxLength: 100 },
-        };
-        setValidators(prev => [...prev, defaults[type]]);
-    };
+  // ── Top-level validator handlers ──────────────────────────────────────────
 
-    const updateValidator = (i: number, updates: Partial<Validator>) =>
-        setValidators(prev => prev.map((v, idx) => idx === i ? { ...v, ...updates } : v));
+  const addValidatorPreset = (key: string) => {
+    if (VALIDATOR_PRESETS[key]) setValidators(prev => [...prev, { type: 'regex' as const, ...VALIDATOR_PRESETS[key] }])
+  }
 
-    const deleteValidator = (i: number) =>
-        setValidators(prev => prev.filter((_v, idx) => idx !== i));
+  const addValidator = (type: Validator['type']) => {
+    const defaults: Record<string, Validator> = {
+      regex:   { type: 'regex',   text: 'Invalid format',  regex: '' },
+      numeric: { type: 'numeric', text: 'Invalid number',  minValue: 0,  maxValue: 100 },
+      text:    { type: 'text',    text: 'Invalid length',  minLength: 1, maxLength: 100 },
+    }
+    setValidators(prev => [...prev, defaults[type]])
+  }
 
-    // ── Top-level condition handlers ──────────────────────────────────────────
+  const updateValidator = (i: number, updates: Partial<Validator>) =>
+    setValidators(prev => prev.map((v, idx) => idx === i ? { ...v, ...updates } : v))
 
-    const addCondition = () =>
-        setConditions(prev => [...prev, { fieldName: allFields[0]?.name || '', operator: 'equals', value: '' }]);
+  const deleteValidator = (i: number) =>
+    setValidators(prev => prev.filter((_v, idx) => idx !== i))
 
-    const updateCondition = (i: number, updates: Partial<Condition>) =>
-        setConditions(prev => prev.map((c, idx) => idx === i ? { ...c, ...updates } : c));
+  // ── Top-level condition handlers ──────────────────────────────────────────
 
-    const deleteCondition = (i: number) =>
-        setConditions(prev => prev.filter((_c, idx) => idx !== i));
+  const addCondition = () =>
+    setConditions(prev => [...prev, { fieldName: allFields[0]?.name ?? '', operator: 'equals', value: '' }])
 
-    // ── Bulk import handlers ──────────────────────────────────────────────────
+  const updateCondition = (i: number, updates: Partial<Condition>) =>
+    setConditions(prev => prev.map((c, idx) => idx === i ? { ...c, ...updates } : c))
 
-    const handleBulkImportToggle = (enabled: boolean) => {
-        setAllowBulkImport(enabled);
-        if (enabled && !bulkImportFields.length) {
-            setBulkImportFields(templateFields.map(tf => ({ name: tf.name, required: false })));
-        }
-    };
+  const deleteCondition = (i: number) =>
+    setConditions(prev => prev.filter((_c, idx) => idx !== i))
 
-    const handleBulkFieldToggle = (fieldName: string, included: boolean) => {
-        setBulkImportFields(prev =>
-            included ? [...prev, { name: fieldName, required: false }] : prev.filter(b => b.name !== fieldName)
-        );
-    };
+  // ── Bulk import handlers ──────────────────────────────────────────────────
 
-    const handleBulkRequiredToggle = (fieldName: string, required: boolean) => {
-        setBulkImportFields(prev => prev.map(b => b.name === fieldName ? { ...b, required } : b));
-    };
+  const handleBulkImportToggle = (enabled: boolean) => {
+    setAllowBulkImport(enabled)
+    if (enabled && !bulkImportFields.length) {
+      setBulkImportFields(templateFields.map(tf => ({ name: tf.name, required: false })))
+    }
+  }
 
-    // ── Save ──────────────────────────────────────────────────────────────────
+  const handleBulkFieldToggle = (fieldName: string, included: boolean) =>
+    setBulkImportFields(prev =>
+      included ? [...prev, { name: fieldName, required: false }] : prev.filter(b => b.name !== fieldName)
+    )
 
-    const handleSave = () => {
-        if (!config.title.trim()) { alert('Please enter a field title'); return; }
+  const handleBulkRequiredToggle = (fieldName: string, required: boolean) =>
+    setBulkImportFields(prev => prev.map(b => b.name === fieldName ? { ...b, required } : b))
 
-        const finalConfig: FieldConfig = { ...config };
+  // ── Save ──────────────────────────────────────────────────────────────────
 
-        if (config.type === 'crmlookup') {
-            finalConfig.crmFieldLabels = { ...crmLabels };
-            delete finalConfig.choices;
-            onSave(finalConfig);
-            return;
-        }
+  const handleSave = () => {
+    if (!config.title.trim()) { alert('Please enter a field title'); return }
 
-        if (['dropdown', 'radiogroup', 'checkbox'].includes(config.type)) {
-            finalConfig.choices = choicesText.split('\n').map(c => c.trim()).filter(Boolean);
-            if (!finalConfig.choices.length) { alert('Please add at least one choice'); return; }
-        } else {
-            delete finalConfig.choices;
-        }
+    const finalConfig: FieldConfig = { ...config }
 
-        if (config.type === 'paneldynamic') {
-            finalConfig.templateElements = templateFields;
-            finalConfig.allowBulkImport = allowBulkImport;
-            finalConfig.bulkImportFields = allowBulkImport ? bulkImportFields : [];
-        }
+    if (config.type === 'crmlookup') {
+      finalConfig.crmFieldLabels = { ...crmLabels }
+      delete finalConfig.choices
+      onSave(finalConfig)
+      return
+    }
 
-        finalConfig.validators = validators.filter(v => v.type !== 'regex' || (v.regex && v.regex.trim()));
-        finalConfig.conditions = conditions.filter(c => c.fieldName);
-        finalConfig.conditionLogic = conditionLogic;
+    if (['dropdown', 'radiogroup', 'checkbox'].includes(config.type)) {
+      finalConfig.choices = choicesText.split('\n').map(c => c.trim()).filter(Boolean)
+      if (!finalConfig.choices.length) { alert('Please add at least one choice'); return }
+    } else {
+      delete finalConfig.choices
+    }
 
-        onSave(finalConfig);
-    };
+    if (config.type === 'paneldynamic') {
+      finalConfig.templateElements  = templateFields
+      finalConfig.allowBulkImport   = allowBulkImport
+      finalConfig.bulkImportFields  = allowBulkImport ? bulkImportFields : []
+    }
 
-    // ── Render ────────────────────────────────────────────────────────────────
+    finalConfig.validators     = validators.filter(v => v.type !== 'regex' || (v.regex && v.regex.trim()))
+    finalConfig.conditions     = conditions.filter(c => c.fieldName)
+    finalConfig.conditionLogic = conditionLogic
 
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content modal-wide" onClick={e => e.stopPropagation()}>
+    onSave(finalConfig)
+  }
 
-                <div className="modal-header">
-                    <h2>Field Configuration</h2>
-                    <button className="close-btn" onClick={onCancel}>×</button>
-                </div>
+  // ── Render ────────────────────────────────────────────────────────────────
 
-                <div className="modal-tabs">
-                    {(['basic', 'validators', 'conditions'] as Tab[]).map(tab => (
-                        <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
-                            {tab === 'basic' && '⚙️ Basic'}
-                            {tab === 'validators' && `✓ Validators${validators.length ? ` (${validators.length})` : ''}`}
-                            {tab === 'conditions' && `⚡ Conditions${conditions.length ? ` (${conditions.length})` : ''}`}
-                        </button>
-                    ))}
-                </div>
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content modal-wide" onClick={e => e.stopPropagation()}>
 
-                <div className="modal-body">
-                    {activeTab === 'basic' && (
-                        <BasicTab
-                            config={config}
-                            choicesText={choicesText}
-                            templateFields={templateFields}
-                            templateChoicesText={templateChoicesText}
-                            allowBulkImport={allowBulkImport}
-                            bulkImportFields={bulkImportFields}
-                            crmLabels={crmLabels}
-                            expandedTemplateField={expandedTemplateField}
-                            expandedTemplateConditions={expandedTemplateConditions}
-                            onConfigChange={updates => setConfig(prev => ({ ...prev, ...updates }))}
-                            onChoicesChange={setChoicesText}
-                            onCrmLabelsChange={updates => setCrmLabels(prev => ({ ...prev, ...updates }))}
-                            onAddTemplateField={addTemplateField}
-                            onUpdateTemplateField={updateTemplateField}
-                            onDeleteTemplateField={deleteTemplateField}
-                            onTemplateChoicesChange={handleTemplateChoicesChange}
-                            onTemplateTypeChange={handleTemplateTypeChange}
-                            onTemplateInputTypeChange={handleTemplateInputTypeChange}
-                            onToggleTemplateValidators={idx => setExpandedTemplateField(prev => prev === idx ? null : idx)}
-                            onToggleTemplateConditions={idx => setExpandedTemplateConditions(prev => prev === idx ? null : idx)}
-                            onAddTemplateValidator={addTemplateValidator}
-                            onUpdateTemplateValidator={updateTemplateValidator}
-                            onDeleteTemplateValidator={deleteTemplateValidator}
-                            onAddTemplateCondition={addTemplateCondition}
-                            onUpdateTemplateCondition={updateTemplateCondition}
-                            onDeleteTemplateCondition={deleteTemplateCondition}
-                            onTemplateConditionLogicChange={(idx, logic) => updateTemplateField(idx, { conditionLogic: logic })}
-                            onBulkImportToggle={handleBulkImportToggle}
-                            onBulkFieldToggle={handleBulkFieldToggle}
-                            onBulkRequiredToggle={handleBulkRequiredToggle}
-                        />
-                    )}
-
-                    {activeTab === 'validators' && (
-                        <ValidatorsTab
-                            validators={validators}
-                            onAdd={addValidator}
-                            onAddPreset={addValidatorPreset}
-                            onUpdate={updateValidator}
-                            onDelete={deleteValidator}
-                        />
-                    )}
-
-                    {activeTab === 'conditions' && (
-                        <ConditionsTab
-                            conditions={conditions}
-                            conditionLogic={conditionLogic}
-                            allFields={allFields}
-                            onAdd={addCondition}
-                            onUpdate={updateCondition}
-                            onDelete={deleteCondition}
-                            onLogicChange={setConditionLogic}
-                        />
-                    )}
-                </div>
-
-                <div className="modal-footer">
-                    <button className="btn-secondary" onClick={onCancel}>Cancel</button>
-                    <button className="btn-primary" onClick={handleSave}>Save Field</button>
-                </div>
-            </div>
+        <div className="modal-header">
+          <h2>Field Configuration</h2>
+          <button className="close-btn" onClick={onCancel}>×</button>
         </div>
-    );
+
+        <div className="modal-tabs">
+          {(['basic', 'validators', 'conditions'] as Tab[]).map(tab => (
+            <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
+              {tab === 'basic'      && '⚙️ Basic'}
+              {tab === 'validators' && `✓ Validators${validators.length ? ` (${validators.length})` : ''}`}
+              {tab === 'conditions' && `⚡ Conditions${conditions.length ? ` (${conditions.length})` : ''}`}
+            </button>
+          ))}
+        </div>
+
+        <div className="modal-body">
+          {activeTab === 'basic' && (
+            <BasicTab
+              config={config}
+              choicesText={choicesText}
+              templateFields={templateFields}
+              templateChoicesText={templateChoicesText}
+              allowBulkImport={allowBulkImport}
+              bulkImportFields={bulkImportFields}
+              crmLabels={crmLabels}
+              expandedTemplateField={expandedTemplateField}
+              expandedTemplateConditions={expandedTemplateConditions}
+              onConfigChange={updates => setConfig(prev => ({ ...prev, ...updates }))}
+              onChoicesChange={setChoicesText}
+              onCrmLabelsChange={updates => setCrmLabels(prev => ({ ...prev, ...updates }))}
+              onAddTemplateField={addTemplateField}
+              onUpdateTemplateField={updateTemplateField}
+              onDeleteTemplateField={deleteTemplateField}
+              onTemplateChoicesChange={handleTemplateChoicesChange}
+              onTemplateTypeChange={handleTemplateTypeChange}
+              onTemplateInputTypeChange={handleTemplateInputTypeChange}
+              onToggleTemplateValidators={idx => setExpandedTemplateField(prev => prev === idx ? null : idx)}
+              onToggleTemplateConditions={idx => setExpandedTemplateConditions(prev => prev === idx ? null : idx)}
+              onAddTemplateValidator={addTemplateValidator}
+              onUpdateTemplateValidator={updateTemplateValidator}
+              onDeleteTemplateValidator={deleteTemplateValidator}
+              onAddTemplateCondition={addTemplateCondition}
+              onUpdateTemplateCondition={updateTemplateCondition}
+              onDeleteTemplateCondition={deleteTemplateCondition}
+              onTemplateConditionLogicChange={(idx, logic) => updateTemplateField(idx, { conditionLogic: logic })}
+              onBulkImportToggle={handleBulkImportToggle}
+              onBulkFieldToggle={handleBulkFieldToggle}
+              onBulkRequiredToggle={handleBulkRequiredToggle}
+            />
+          )}
+
+          {activeTab === 'validators' && (
+            <ValidatorsTab
+              validators={validators}
+              onAdd={addValidator}
+              onAddPreset={addValidatorPreset}
+              onUpdate={updateValidator}
+              onDelete={deleteValidator}
+            />
+          )}
+
+          {activeTab === 'conditions' && (
+            <ConditionsTab
+              conditions={conditions}
+              conditionLogic={conditionLogic}
+              allFields={allFields}
+              onAdd={addCondition}
+              onUpdate={updateCondition}
+              onDelete={deleteCondition}
+              onLogicChange={setConditionLogic}
+            />
+          )}
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn-secondary" onClick={onCancel}>Cancel</button>
+          <button className="btn-primary"   onClick={handleSave}>Save Field</button>
+        </div>
+      </div>
+    </div>
+  )
 }

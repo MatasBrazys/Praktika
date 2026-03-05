@@ -16,7 +16,7 @@ function NavDropdown({ label, active, children }: {
   return (
     <div
       className="nav-dropdown"
-      onMouseEnter={() => { timer.current && clearTimeout(timer.current); setOpen(true); }}
+      onMouseEnter={() => { if (timer.current) clearTimeout(timer.current); setOpen(true); }}
       onMouseLeave={() => { timer.current = setTimeout(() => setOpen(false), 150); }}
     >
       <button className={active ? 'active' : ''} type="button">

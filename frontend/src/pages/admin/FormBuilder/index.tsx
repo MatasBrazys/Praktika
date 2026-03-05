@@ -2,99 +2,108 @@
 // Form builder page — UI only.
 // All state and logic handled by useFormPages and useFormFields hooks.
 
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { formAPI } from '../../../services/api';
-import { useToast } from '../../../contexts/ToastContext';
-import { extractErrorMessage } from '../../../lib/apiClient';
-import Navbar from '../../../components/shared/Navbar';
-import FieldEditor from '../../../components/admin/FieldEditor';
-import FormPreview from '../../../components/admin/FormPreview';
-import { convertToSurveyJS } from './utils/surveyConverter';
-import { elementToField } from './utils/visibleIfParser';
-import { useFormPages } from './hooks/useFormPages';
-import { useFormFields } from './hooks/useFormFields';
-import type { FieldConfig, Page } from '../../../types/form-builder.types';
-import '../../../styles/pages/admin/form-builder.css';
-import '../../../styles/components/modal.css';
+import { useState, useEffect, useCallback } from 'react'
+import { useParams, useNavigate }  from 'react-router-dom'
+import { formAPI }                 from '../../../services/api'
+import { useToast }                from '../../../contexts/ToastContext'
+import { extractErrorMessage }     from '../../../lib/apiClient'
+import Navbar                      from '../../../components/shared/Navbar'
+import FieldEditor                 from '../../../components/admin/FieldEditor'
+import FormPreview                 from '../../../components/admin/FormPreview'
+import { convertToSurveyJS }       from './utils/surveyConverter'
+import { elementToField }          from './utils/visibleIfParser'
+import { useFormPages }            from './hooks/useFormPages'
+import { useFormFields }           from './hooks/useFormFields'
+import type { FieldConfig, Page }  from '../../../types/form-builder.types'
+import '../../../styles/pages/admin/form-builder.css'
+import '../../../styles/components/modal.css'
+
+// SurveyJS JSON shape — only what we read back when loading an existing form
+type StoredSurveyJson = {
+  pages?:    Array<{ name?: string; title?: string; elements?: unknown[] }>
+  elements?: unknown[]
+}
 
 export default function FormBuilder() {
-  const { id }    = useParams();
-  const navigate  = useNavigate();
-  const { toast } = useToast();
-  const isEditMode = !!id;
+  const { id }    = useParams()
+  const navigate  = useNavigate()
+  const { toast } = useToast()
+  const isEditMode = !!id
 
-  const [title,           setTitle]           = useState('');
-  const [description,     setDescription]     = useState('');
-  const [editingField,    setEditingField]    = useState<FieldConfig | null>(null);
-  const [showFieldEditor, setShowFieldEditor] = useState(false);
-  const [saving,          setSaving]          = useState(false);
+  const [title,           setTitle]           = useState('')
+  const [description,     setDescription]     = useState('')
+  const [editingField,    setEditingField]    = useState<FieldConfig | null>(null)
+  const [showFieldEditor, setShowFieldEditor] = useState(false)
+  const [saving,          setSaving]          = useState(false)
 
   const {
     pages, setPages, activePage, activePageId, setActivePageId,
     addPage, deletePage, updatePageTitle, resetPages,
-  } = useFormPages();
+  } = useFormPages()
 
-  const { saveField, deleteField, moveField, buildNewField } = useFormFields(activePageId, setPages);
+  const { saveField, deleteField, moveField, buildNewField } = useFormFields(activePageId, setPages)
 
-  useEffect(() => { if (isEditMode) loadForm(); }, [id]);
-
-  const loadForm = async () => {
+  const loadForm = useCallback(async () => {
     try {
-      const form = await formAPI.get(Number(id));
-      setTitle(form.title);
-      setDescription(form.description || '');
+      const form = await formAPI.get(Number(id))
+      setTitle(form.title)
+      setDescription(form.description ?? '')
 
-      const json     = form.surveyjs_json as any;
-      const rawPages = json.pages ?? [{ name: 'page1', title: 'Page 1', elements: json.elements || [] }];
+      const json      = form.surveyjs_json as StoredSurveyJson
+      const rawPages  = json.pages ?? [{ name: 'page1', title: 'Page 1', elements: json.elements ?? [] }]
 
-      const loadedPages: Page[] = rawPages.map((p: any, pageIndex: number) => ({
+      const loadedPages: Page[] = rawPages.map((p, pageIndex) => ({
         id:     `page_${pageIndex + 1}`,
-        name:   p.name  || `page${pageIndex + 1}`,
-        title:  p.title || `Page ${pageIndex + 1}`,
-        fields: (p.elements || [])
-          .map((el: any, elIndex: number) => elementToField(el, `field_${pageIndex}_${elIndex}`))
-          .filter(Boolean) as FieldConfig[],
-      }));
+        name:   p.name  ?? `page${pageIndex + 1}`,
+        title:  p.title ?? `Page ${pageIndex + 1}`,
+        // elementToField is in the utils/any-allowed zone — cast is intentional
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        fields: (p.elements ?? []).map((el, elIndex) => elementToField(el as any, `field_${pageIndex}_${elIndex}`))
+          .filter((f): f is FieldConfig => f !== null),
+      }))
 
-      resetPages(loadedPages);
+      resetPages(loadedPages)
     } catch (err) {
-      toast.error('Failed to load form', extractErrorMessage(err));
-      navigate('/admin/forms');
+      toast.error('Failed to load form', extractErrorMessage(err))
+      navigate('/admin/forms')
     }
-  };
+  }, [id, toast, navigate, resetPages])
+
+  useEffect(() => {
+    if (isEditMode) loadForm()
+  }, [isEditMode, loadForm])
 
   const handleAddField = () => {
-    setEditingField(buildNewField(activePage.fields.length));
-    setShowFieldEditor(true);
-  };
+    setEditingField(buildNewField(activePage.fields.length))
+    setShowFieldEditor(true)
+  }
 
   const handleSaveField = (updated: FieldConfig) => {
-    saveField(updated);
-    setShowFieldEditor(false);
-    setEditingField(null);
-  };
+    saveField(updated)
+    setShowFieldEditor(false)
+    setEditingField(null)
+  }
 
   const handleSave = async () => {
-    if (!title.trim()) { toast.warning('Title required', 'Please enter a form title.'); return; }
-    const totalFields = pages.reduce((sum, page) => sum + page.fields.length, 0);
-    if (!totalFields) { toast.warning('No fields', 'Add at least one field before saving.'); return; }
+    if (!title.trim()) { toast.warning('Title required', 'Please enter a form title.'); return }
+    const totalFields = pages.reduce((sum, page) => sum + page.fields.length, 0)
+    if (!totalFields) { toast.warning('No fields', 'Add at least one field before saving.'); return }
 
-    setSaving(true);
+    setSaving(true)
     try {
-      const surveyjs_json = convertToSurveyJS(pages);
-      if (isEditMode) await formAPI.update(Number(id), { title, description, surveyjs_json });
-      else            await formAPI.create({ title, description, surveyjs_json, is_active: true });
-      toast.success(isEditMode ? 'Form updated' : 'Form created', `"${title}" has been saved.`);
-      navigate('/admin/forms');
+      const surveyjs_json = convertToSurveyJS(pages)
+      if (isEditMode) await formAPI.update(Number(id), { title, description, surveyjs_json })
+      else            await formAPI.create({ title, description, surveyjs_json, is_active: true })
+      toast.success(isEditMode ? 'Form updated' : 'Form created', `"${title}" has been saved.`)
+      navigate('/admin/forms')
     } catch (err) {
-      toast.error('Save failed', extractErrorMessage(err));
+      toast.error('Save failed', extractErrorMessage(err))
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
-  const allFields = pages.flatMap(p => p.fields);
+  const allFields = pages.flatMap(p => p.fields)
 
   return (
     <>
@@ -112,7 +121,7 @@ export default function FormBuilder() {
             </div>
             <div className="header-actions">
               <button className="btn-secondary" onClick={() => navigate('/admin/forms')}>Cancel</button>
-              <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save Form'}</button>
+              <button className="btn-primary"   onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save Form'}</button>
             </div>
           </div>
 
@@ -125,7 +134,7 @@ export default function FormBuilder() {
                   <span>{page.title}</span>
                 )}
                 {pages.length > 1 && (
-                  <button className="page-tab-delete" onClick={e => { e.stopPropagation(); deletePage(page.id); }}>×</button>
+                  <button className="page-tab-delete" onClick={e => { e.stopPropagation(); deletePage(page.id) }}>×</button>
                 )}
               </div>
             ))}
@@ -159,14 +168,14 @@ export default function FormBuilder() {
                           <div className="field-meta">
                             <span className="field-type-badge">{field.type === 'crmlookup' ? '🔍 CRM Lookup' : field.type}</span>
                             {field.isRequired         && <span className="required-badge">Required</span>}
-                            {field.conditions?.length ? <span className="condition-badge">⚡ Conditional</span> : null}
-                            {field.validators?.length ? <span className="validator-badge">✓ Validated</span>   : null}
-                            {field.allowBulkImport    && <span className="condition-badge">📥 Bulk Import</span>}
+                            {field.conditions?.length  ? <span className="condition-badge">⚡ Conditional</span> : null}
+                            {field.validators?.length  ? <span className="validator-badge">✓ Validated</span>   : null}
+                            {field.allowBulkImport     && <span className="condition-badge">📥 Bulk Import</span>}
                           </div>
                         </div>
                       </div>
                       <div className="field-actions">
-                        <button onClick={() => { setEditingField(field); setShowFieldEditor(true); }}>Edit</button>
+                        <button onClick={() => { setEditingField(field); setShowFieldEditor(true) }}>Edit</button>
                         <button onClick={() => deleteField(field.id)} className="delete">×</button>
                       </div>
                     </div>
@@ -192,9 +201,9 @@ export default function FormBuilder() {
           field={editingField}
           allFields={allFields.filter(f => f.id !== editingField.id)}
           onSave={handleSaveField}
-          onCancel={() => { setShowFieldEditor(false); setEditingField(null); }}
+          onCancel={() => { setShowFieldEditor(false); setEditingField(null) }}
         />
       )}
     </>
-  );
+  )
 }

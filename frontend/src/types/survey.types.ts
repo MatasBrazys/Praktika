@@ -1,18 +1,28 @@
 // src/types/survey.types.ts
 // Types related to SurveyJS runtime and bulk import panel detection.
 
-import type { BulkImportField } from './form-builder.types';
+import type { BulkImportField } from './form-builder.types'
+
+// ── Minimal SurveyJS element shape (enough for our usage) ─────────────────────
+
+export interface SurveyElement {
+  name:        string
+  type?:       string
+  validators?: Array<{ regex?: string; text?: string }>
+  choices?:    Array<string | { value?: string; text?: string }>
+  [key: string]: unknown  // SurveyJS has many optional props we don't need to enumerate
+}
 
 // ── Bulk import panel config passed to NetworkImporter component ──────────────
 
 export interface BulkPanelConfig {
-  questionName: string;
-  templateElements: any[];     // raw SurveyJS templateElements from JSON
-  bulkImportFields: BulkImportField[];
+  questionName:     string
+  templateElements: SurveyElement[]   
+  bulkImportFields: BulkImportField[]
 }
 
 // ── Extends BulkPanelConfig with the page index for multi-page forms ─────────
 
 export interface BulkPanelWithPage extends BulkPanelConfig {
-  pageIndex: number;
+  pageIndex: number
 }

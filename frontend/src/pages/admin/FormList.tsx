@@ -1,38 +1,47 @@
 // src/pages/admin/FormList.tsx
 
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { formAPI } from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
-import { extractErrorMessage } from '../../lib/apiClient';
-import Navbar from '../../components/shared/Navbar';
-import type { FormDefinition } from '../../types';
-import '../../styles/pages/admin/form-list.css';
+import { useState, useEffect, useCallback } from 'react'
+import { useNavigate }         from 'react-router-dom'
+import { formAPI }             from '../../services/api'
+import { useToast }            from '../../contexts/ToastContext'
+import { extractErrorMessage } from '../../lib/apiClient'
+import Navbar                  from '../../components/shared/Navbar'
+import type { FormDefinition } from '../../types'
+import '../../styles/pages/admin/form-list.css'
+
+// surveyjs_json is Record<string,unknown> — cast only for page/element counting
+type JsonWithPages = { pages?: Array<{ elements?: unknown[] }>; elements?: unknown[] }
+
+function getFieldCount(form: FormDefinition): number {
+  const json = form.surveyjs_json as JsonWithPages
+  if (json.pages) return json.pages.reduce((t, p) => t + (p.elements?.length ?? 0), 0)
+  return json.elements?.length ?? 0
+}
 
 // ─── Delete Modal ──────────────────────────────────────────────────────────
 
 interface DeleteModalProps {
-  form: FormDefinition;
-  onConfirm: () => void;
-  onCancel: () => void;
-  deleting: boolean;
+  form:      FormDefinition
+  onConfirm: () => void
+  onCancel:  () => void
+  deleting:  boolean
 }
 
 function DeleteConfirmModal({ form, onConfirm, onCancel, deleting }: DeleteModalProps) {
-  const [inputValue, setInputValue] = useState('');
-  const isMatch = inputValue === form.title;
+  const [inputValue, setInputValue] = useState('')
+  const isMatch = inputValue === form.title
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !deleting) onCancel();
-      if (e.key === 'Enter' && isMatch && !deleting) onConfirm();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onCancel, onConfirm, isMatch, deleting]);
+      if (e.key === 'Escape' && !deleting) onCancel()
+      if (e.key === 'Enter'  && isMatch && !deleting) onConfirm()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onCancel, onConfirm, isMatch, deleting])
 
   return (
-    <div className="delete-modal-overlay" onClick={() => { if (!deleting) onCancel(); }}>
+    <div className="delete-modal-overlay" onClick={() => { if (!deleting) onCancel() }}>
       <div className="delete-modal" onClick={e => e.stopPropagation()}>
 
         <div className="delete-modal-header">
@@ -100,69 +109,62 @@ function DeleteConfirmModal({ form, onConfirm, onCancel, deleting }: DeleteModal
 
       </div>
     </div>
-  );
+  )
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────
 
 export default function FormList() {
-  const navigate   = useNavigate();
-  const { toast }  = useToast();
+  const navigate  = useNavigate()
+  const { toast } = useToast()
 
-  const [forms,        setForms]        = useState<FormDefinition[]>([]);
-  const [loading,      setLoading]      = useState(true);
-  const [formToDelete, setFormToDelete] = useState<FormDefinition | null>(null);
-  const [deleting,     setDeleting]     = useState(false);
+  const [forms,        setForms]        = useState<FormDefinition[]>([])
+  const [loading,      setLoading]      = useState(true)
+  const [formToDelete, setFormToDelete] = useState<FormDefinition | null>(null)
+  const [deleting,     setDeleting]     = useState(false)
 
-  useEffect(() => { loadForms(); }, []);
-
-  const loadForms = async () => {
+  const loadForms = useCallback(async () => {
     try {
-      setLoading(true);
-      setForms(await formAPI.list());
+      setLoading(true)
+      setForms(await formAPI.list())
     } catch (err) {
-      toast.error('Failed to load forms', extractErrorMessage(err));
+      toast.error('Failed to load forms', extractErrorMessage(err))
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }, [toast])
+
+  useEffect(() => { loadForms() }, [loadForms])
 
   const handleDeleteConfirm = async () => {
-    if (!formToDelete) return;
-    setDeleting(true);
+    if (!formToDelete) return
+    setDeleting(true)
     try {
-      await formAPI.delete(formToDelete.id!);
-      setForms(prev => prev.filter(f => f.id !== formToDelete.id));
-      setFormToDelete(null);
-      toast.success('Form deleted', `"${formToDelete.title}" has been removed.`);
+      await formAPI.delete(formToDelete.id!)
+      setForms(prev => prev.filter(f => f.id !== formToDelete.id))
+      setFormToDelete(null)
+      toast.success('Form deleted', `"${formToDelete.title}" has been removed.`)
     } catch (err) {
-      toast.error('Delete failed', extractErrorMessage(err));
+      toast.error('Delete failed', extractErrorMessage(err))
     } finally {
-      setDeleting(false);
+      setDeleting(false)
     }
-  };
+  }
 
   const handleToggleActive = async (form: FormDefinition) => {
     try {
-      await formAPI.toggleActive(form.id!);
-      await loadForms();
+      await formAPI.toggleActive(form.id!)
+      await loadForms()
       toast.success(
         form.is_active ? 'Form deactivated' : 'Form activated',
-        `"${form.title}" is now ${form.is_active ? 'inactive' : 'active'}.`
-      );
+        `"${form.title}" is now ${form.is_active ? 'inactive' : 'active'}.`,
+      )
     } catch (err) {
-      toast.error('Failed to update form', extractErrorMessage(err));
+      toast.error('Failed to update form', extractErrorMessage(err))
     }
-  };
+  }
 
-  const getFieldCount = (form: FormDefinition) => {
-    const json = form.surveyjs_json as any;
-    if (!json) return 0;
-    if (json.pages) return json.pages.reduce((t: number, p: any) => t + (p.elements?.length || 0), 0);
-    return json.elements?.length || 0;
-  };
-
-  if (loading) return <div className="page-loading">Loading forms…</div>;
+  if (loading) return <div className="page-loading">Loading forms…</div>
 
   return (
     <>
@@ -199,7 +201,7 @@ export default function FormList() {
                       {form.is_active ? '● Active' : '○ Inactive'}
                     </span>
                   </div>
-                  <p className="card-description">{form.description || 'No description provided'}</p>
+                  <p className="card-description">{form.description ?? 'No description provided'}</p>
                   <div className="card-meta">
                     <span>📝 {getFieldCount(form)} fields</span>
                     <span>📅 {new Date(form.created_at!).toLocaleDateString()}</span>
@@ -223,10 +225,10 @@ export default function FormList() {
         <DeleteConfirmModal
           form={formToDelete}
           onConfirm={handleDeleteConfirm}
-          onCancel={() => { if (!deleting) setFormToDelete(null); }}
+          onCancel={() => { if (!deleting) setFormToDelete(null) }}
           deleting={deleting}
         />
       )}
     </>
-  );
+  )
 }

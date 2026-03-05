@@ -1,66 +1,72 @@
 // src/pages/public/Form/index.tsx
 // Public form page — loads form, renders SurveyJS, handles keyboard nav and bulk import.
 
-import { useState, useRef } from 'react';
-import { useParams } from 'react-router-dom';
-import { Survey } from 'survey-react-ui';
-import 'survey-core/survey-core.min.css';
-import NetworkImporter from '../../../components/public/NetworkImporter';
-import { useFormLoader } from './hooks/useFormLoader';
-import '../../../styles/pages/public/form.css';
-import '../../../styles/components/network-importer.css';
+import { useState, useRef }  from 'react'
+import { useParams }          from 'react-router-dom'
+import { Survey }             from 'survey-react-ui'
+import 'survey-core/survey-core.min.css'
+import NetworkImporter        from '../../../components/public/NetworkImporter'
+import { useFormLoader }      from './hooks/useFormLoader'
+import '../../../styles/pages/public/form.css'
+import '../../../styles/components/network-importer.css'
+
+// Shape of the options object SurveyJS passes to onCurrentPageChanged
+interface PageChangedOptions {
+  newCurrentPage?: { visibleIndex?: number }
+}
 
 export default function Form() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams<{ id: string }>()
 
-  const { form, surveyModel, bulkPanels, loading, error } = useFormLoader(id);
+  const { form, surveyModel, bulkPanels, loading, error } = useFormLoader(id)
 
-  const [currentPageNo, setCurrentPageNo] = useState(0);
-  const surveyWrapperRef = useRef<HTMLDivElement>(null);
+  const [currentPageNo,  setCurrentPageNo]  = useState(0)
+  const surveyWrapperRef = useRef<HTMLDivElement>(null)
 
-  // Track current page for bulk panel visibility
+  // Track current page for bulk panel visibility.
+  // Registered outside render to avoid adding duplicate listeners on each render.
   if (surveyModel) {
-    surveyModel.onCurrentPageChanged.add((_sender: any, options: any) => {
-      setCurrentPageNo(options.newCurrentPage?.visibleIndex ?? 0);
-    });
+    surveyModel.onCurrentPageChanged.add((_sender: unknown, options: PageChangedOptions) => {
+      setCurrentPageNo(options.newCurrentPage?.visibleIndex ?? 0)
+    })
   }
 
-  // Moves focus to next input on Enter — skips bulk importer fields
+  // Moves focus to the next input on Enter — skips bulk importer fields
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== 'Enter') return;
-    const target = e.target as HTMLElement;
+    if (e.key !== 'Enter') return
+    const target = e.target as HTMLElement
 
-    const skipTags = ['TEXTAREA', 'BUTTON', 'SELECT'];
-    if (skipTags.includes(target.tagName)) return;
-    if (target instanceof HTMLInputElement && ['checkbox', 'radio', 'submit', 'button'].includes(target.type)) return;
+    const skipTags = ['TEXTAREA', 'BUTTON', 'SELECT']
+    if (skipTags.includes(target.tagName)) return
+    if (target instanceof HTMLInputElement && ['checkbox', 'radio', 'submit', 'button'].includes(target.type)) return
 
-    e.preventDefault();
+    e.preventDefault()
 
-    const wrapper = surveyWrapperRef.current;
-    if (!wrapper) return;
+    const wrapper = surveyWrapperRef.current
+    if (!wrapper) return
 
     const focusable = Array.from(
       wrapper.querySelectorAll<HTMLElement>(
-        'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])'
-      )
-    ).filter(el => !el.closest('.ni-wrapper'));
+        'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])',
+      ),
+    ).filter(el => !el.closest('.ni-wrapper'))
 
-    const currentIndex = focusable.indexOf(target);
-    const next = focusable[currentIndex + 1];
+    const currentIndex = focusable.indexOf(target)
+    const next         = focusable[currentIndex + 1]
 
     if (next) {
-      next.focus();
+      next.focus()
       if (next instanceof HTMLInputElement && next.type === 'text') {
-        next.setSelectionRange(next.value.length, next.value.length);
+        next.setSelectionRange(next.value.length, next.value.length)
       }
     }
-  };
+  }
 
   if (loading) return (
     <div className="public-page">
       <div className="loading-spinner">Loading form...</div>
     </div>
-  );
+  )
 
   if (error) return (
     <div className="public-page">
@@ -69,11 +75,12 @@ export default function Form() {
         <p>Please contact support if you believe this is an error.</p>
       </div>
     </div>
-  );
+  )
 
-  if (!surveyModel) return null;
+  // Both form and surveyModel are set together — if one is null so is the other
+  if (!surveyModel || !form) return null
 
-  const visiblePanels = bulkPanels.filter(p => p.pageIndex === currentPageNo);
+  const visiblePanels = bulkPanels.filter(p => p.pageIndex === currentPageNo)
 
   return (
     <div className="public-page">
@@ -90,5 +97,5 @@ export default function Form() {
         </div>
       </div>
     </div>
-  );
+  )
 }

@@ -1,46 +1,48 @@
 // src/pages/public/FormList.tsx
 
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { formAPI } from '../../services/api';
-import { useToast } from '../../contexts/ToastContext';
-import { extractErrorMessage } from '../../lib/apiClient';
-import Navbar from '../../components/shared/Navbar';
-import type { FormDefinition } from '../../types';           // ← iš types, ne api
-import '../../styles/pages/public/form-list.css';
+import { useState, useEffect, useCallback } from 'react'
+import { Link }                from 'react-router-dom'
+import { formAPI }             from '../../services/api'
+import { useToast }            from '../../contexts/ToastContext'
+import { extractErrorMessage } from '../../lib/apiClient'
+import Navbar                  from '../../components/shared/Navbar'
+import type { FormDefinition } from '../../types'
+import '../../styles/pages/public/form-list.css'
+
+// surveyjs_json is Record<string,unknown> — cast only for page/element counting
+type JsonWithPages = { pages?: Array<{ elements?: unknown[] }>; elements?: unknown[] }
+
+function getFieldCount(form: FormDefinition): number {
+  const json = form.surveyjs_json as JsonWithPages
+  if (json.pages) return json.pages.reduce((t, p) => t + (p.elements?.length ?? 0), 0)
+  return json.elements?.length ?? 0
+}
 
 export default function FormList() {
-  const [forms,   setForms]   = useState<FormDefinition[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast }             = useToast();
+  const [forms,   setForms]   = useState<FormDefinition[]>([])
+  const [loading, setLoading] = useState(true)
+  const { toast }             = useToast()
 
-  useEffect(() => { loadForms(); }, []);
-
-  const loadForms = async () => {
+  const loadForms = useCallback(async () => {
     try {
-      setLoading(true);
-      const data = await formAPI.list();
-      setForms(data.filter(f => f.is_active));
+      setLoading(true)
+      const data = await formAPI.list()
+      setForms(data.filter(f => f.is_active))
     } catch (err) {
-      toast.error('Failed to load forms', extractErrorMessage(err));
+      toast.error('Failed to load forms', extractErrorMessage(err))
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }, [toast])
 
-  const getFieldCount = (form: FormDefinition) => {
-    const json = form.surveyjs_json as any;
-    if (!json) return 0;
-    if (json.pages) return json.pages.reduce((t: number, p: any) => t + (p.elements?.length || 0), 0);
-    return json.elements?.length || 0;
-  };
+  useEffect(() => { loadForms() }, [loadForms])
 
   if (loading) return (
     <>
-      <Navbar />                             {/* ← no userRole prop */}
+      <Navbar />
       <div className="page-loading">Loading available forms…</div>
     </>
-  );
+  )
 
   return (
     <>
@@ -68,7 +70,7 @@ export default function FormList() {
                     <span className="arrow">→</span>
                   </div>
                   <p className="form-item-description">
-                    {form.description || 'Click to fill out this form'}
+                    {form.description ?? 'Click to fill out this form'}
                   </p>
                   <div className="form-item-meta">
                     <span>📝 {getFieldCount(form)} fields</span>
@@ -81,5 +83,5 @@ export default function FormList() {
         </div>
       </div>
     </>
-  );
+  )
 }
