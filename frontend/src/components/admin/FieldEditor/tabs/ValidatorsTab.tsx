@@ -42,7 +42,7 @@ export default function ValidatorsTab({ validators, onAdd, onAddPreset, onUpdate
       )}
 
       {validators.map((v, idx) => (
-        <div key={idx} className="validator-item">
+        <div key={v._id ?? idx} className="validator-item">
           <div className="validator-header">
             <span className="validator-type-label">
               {v.type === 'regex'   && '🔤 Regex'}

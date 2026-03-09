@@ -1,33 +1,11 @@
 // src/components/admin/FieldEditor/tabs/BasicTab.tsx
 // Basic tab — field type, title, name, description, choices, paneldynamic and CRM config.
 
-import type { FieldConfig, BulkImportField } from '../../../../types/form-builder.types';
+import type { FieldConfig, BulkImportField, Validator, Condition } from '../../../../types/form-builder.types';
 import TemplateFieldRow from '../sections/TemplateFieldRow';
 import BulkImportConfig from '../sections/BulkImportConfig';
 import CrmLookupConfig  from '../sections/CrmLookupConfig';
-import type { Validator, Condition } from '../../../../types/form-builder.types';
-
-const FIELD_TYPES = [
-  { value: 'text',         label: '📝 Text Input' },
-  { value: 'comment',      label: '📄 Text Area' },
-  { value: 'dropdown',     label: '🔽 Dropdown' },
-  { value: 'radiogroup',   label: '◉ Radio Buttons' },
-  { value: 'checkbox',     label: '☑️ Checkboxes' },
-  { value: 'boolean',      label: '✓ Yes/No' },
-  { value: 'paneldynamic', label: '🔁 Repeated Group' },
-  { value: 'crmlookup',    label: '🔍 CRM Lookup' },
-];
-
-const TEXT_INPUT_TYPES = [
-  { value: 'text',   label: 'Plain Text' },
-  { value: 'email',  label: '📧 Email Address' },
-  { value: 'phone',  label: '📞 Phone Number' },
-  { value: 'ipv4',   label: '🌐 IPv4 Address' },
-  { value: 'cidr',   label: '🔗 CIDR Subnet' },
-  { value: 'mac',    label: '🔌 MAC Address' },
-  { value: 'number', label: '🔢 Number' },
-  { value: 'date',   label: '📅 Date' },
-];
+import { FIELD_TYPES, TEXT_INPUT_TYPES } from '../fieldTypes';
 
 interface CrmLabels { name: string; street: string; postcode: string; state: string; }
 
@@ -79,10 +57,9 @@ export default function BasicTab({
   onTemplateConditionLogicChange,
   onBulkImportToggle, onBulkFieldToggle, onBulkRequiredToggle,
 }: Props) {
-  const isCrmLookup  = config.type === 'crmlookup';
-  const needsChoices = ['dropdown', 'radiogroup', 'checkbox'].includes(config.type);
-  const showPlaceholder  = config.type === 'text' || config.type === 'comment';
-  const showDefaultValue = showPlaceholder;
+  const isCrmLookup     = config.type === 'crmlookup';
+  const needsChoices    = ['dropdown', 'radiogroup', 'checkbox'].includes(config.type);
+  const showPlaceholder = config.type === 'text' || config.type === 'comment';
 
   return (
     <>
@@ -126,7 +103,7 @@ export default function BasicTab({
             <label>Placeholder</label>
             <input type="text" value={config.placeholder || ''} onChange={e => onConfigChange({ placeholder: e.target.value })} placeholder="e.g., Enter value..." />
           </div>
-          {showDefaultValue && (
+          {showPlaceholder && (
             <div className="form-group">
               <label>Default Value</label>
               <input type="text" value={config.defaultValue || ''} onChange={e => onConfigChange({ defaultValue: e.target.value })} placeholder="Pre-filled value" />

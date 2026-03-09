@@ -22,7 +22,6 @@ export function useFormFields(activePageId: string, setPages: SetPages) {
   };
 
   const deleteField = (fieldId: string) => {
-    if (!confirm('Delete this field?')) return;
     setPages(prev => prev.map(page =>
       page.id !== activePageId
         ? page

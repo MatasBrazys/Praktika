@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { FieldConfig, BulkImportField, Validator, Condition } from '../../../types/form-builder.types'
 import { VALIDATOR_PRESETS, AUTO_PRESET_REGEXES } from './validatorPresets'
+import { useToast } from '../../../contexts/ToastContext'
 import BasicTab      from './tabs/BasicTab'
 import ValidatorsTab from './tabs/ValidatorsTab'
 import ConditionsTab from './tabs/ConditionsTab'
@@ -21,13 +22,17 @@ type Tab = 'basic' | 'validators' | 'conditions'
 
 const PRESET_INPUT_TYPES = ['email', 'phone', 'ipv4', 'cidr', 'mac', 'number', 'date']
 
+const withId = <T extends object>(item: T): T & { _id: string } =>
+  ('_id' in item ? item : { ...item, _id: crypto.randomUUID() }) as T & { _id: string }
+
 export default function FieldEditor({ field, allFields, onSave, onCancel }: Props) {
+  const { toast } = useToast()
   const [config,                     setConfig]                     = useState<FieldConfig>(field)
   const [choicesText,                setChoicesText]                = useState(field.choices?.join('\n') ?? '')
   const [templateChoicesText,        setTemplateChoicesText]        = useState<Record<number, string>>({})
   const [activeTab,                  setActiveTab]                  = useState<Tab>('basic')
-  const [validators,                 setValidators]                 = useState<Validator[]>(field.validators ?? [])
-  const [conditions,                 setConditions]                 = useState<Condition[]>(field.conditions ?? [])
+  const [validators,                 setValidators]                 = useState<Validator[]>((field.validators ?? []).map(withId))
+  const [conditions,                 setConditions]                 = useState<Condition[]>((field.conditions ?? []).map(withId))
   const [conditionLogic,             setConditionLogic]             = useState<'and' | 'or'>(field.conditionLogic ?? 'and')
   const [templateFields,             setTemplateFields]             = useState<FieldConfig[]>(field.templateElements ?? [])
   const [expandedTemplateField,      setExpandedTemplateField]      = useState<number | null>(null)
@@ -51,7 +56,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
 
       const needsPreset = PRESET_INPUT_TYPES.includes(inputType)
       if (needsPreset && VALIDATOR_PRESETS[inputType]) {
-        return [...manual, { type: 'regex' as const, ...VALIDATOR_PRESETS[inputType] }]
+        return [...manual, { _id: crypto.randomUUID(), type: 'regex' as const, ...VALIDATOR_PRESETS[inputType] }]
       }
       return manual
     })
@@ -99,7 +104,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
     )
     const needsPreset = PRESET_INPUT_TYPES.includes(inputType)
     const newValidators = needsPreset && VALIDATOR_PRESETS[inputType]
-      ? [...manual, { type: 'regex' as const, ...VALIDATOR_PRESETS[inputType] }]
+      ? [...manual, { _id: crypto.randomUUID(), type: 'regex' as const, ...VALIDATOR_PRESETS[inputType] }]
       : manual
     updateTemplateField(idx, { inputType, validators: newValidators })
   }
@@ -108,8 +113,8 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
 
   const addTemplateValidator = (idx: number, presetKey?: string) => {
     const newV: Validator = presetKey && VALIDATOR_PRESETS[presetKey]
-      ? { type: 'regex' as const, ...VALIDATOR_PRESETS[presetKey] }
-      : { type: 'regex', text: 'Invalid format', regex: '' }
+      ? { _id: crypto.randomUUID(), type: 'regex' as const, ...VALIDATOR_PRESETS[presetKey] }
+      : { _id: crypto.randomUUID(), type: 'regex', text: 'Invalid format', regex: '' }
     updateTemplateField(idx, { validators: [...(templateFields[idx].validators ?? []), newV] })
   }
 
@@ -129,9 +134,9 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
 
   const addTemplateCondition = (idx: number) => {
     const otherFields = templateFields.filter((_f, i) => i !== idx)
-    if (!otherFields.length) { alert('Add more fields first to create conditions'); return }
+    if (!otherFields.length) { toast.warning('Cannot add condition', 'Add more fields to this group first.'); return }
     updateTemplateField(idx, {
-      conditions: [...(templateFields[idx].conditions ?? []), { fieldName: otherFields[0].name, operator: 'equals', value: '' }],
+      conditions: [...(templateFields[idx].conditions ?? []), { _id: crypto.randomUUID(), fieldName: otherFields[0].name, operator: 'equals', value: '' }],
     })
   }
 
@@ -150,14 +155,14 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
   // ── Top-level validator handlers ──────────────────────────────────────────
 
   const addValidatorPreset = (key: string) => {
-    if (VALIDATOR_PRESETS[key]) setValidators(prev => [...prev, { type: 'regex' as const, ...VALIDATOR_PRESETS[key] }])
+    if (VALIDATOR_PRESETS[key]) setValidators(prev => [...prev, { _id: crypto.randomUUID(), type: 'regex' as const, ...VALIDATOR_PRESETS[key] }])
   }
 
   const addValidator = (type: Validator['type']) => {
     const defaults: Record<string, Validator> = {
-      regex:   { type: 'regex',   text: 'Invalid format',  regex: '' },
-      numeric: { type: 'numeric', text: 'Invalid number',  minValue: 0,  maxValue: 100 },
-      text:    { type: 'text',    text: 'Invalid length',  minLength: 1, maxLength: 100 },
+      regex:   { _id: crypto.randomUUID(), type: 'regex',   text: 'Invalid format',  regex: '' },
+      numeric: { _id: crypto.randomUUID(), type: 'numeric', text: 'Invalid number',  minValue: 0,  maxValue: 100 },
+      text:    { _id: crypto.randomUUID(), type: 'text',    text: 'Invalid length',  minLength: 1, maxLength: 100 },
     }
     setValidators(prev => [...prev, defaults[type]])
   }
@@ -171,7 +176,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
   // ── Top-level condition handlers ──────────────────────────────────────────
 
   const addCondition = () =>
-    setConditions(prev => [...prev, { fieldName: allFields[0]?.name ?? '', operator: 'equals', value: '' }])
+    setConditions(prev => [...prev, { _id: crypto.randomUUID(), fieldName: allFields[0]?.name ?? '', operator: 'equals', value: '' }])
 
   const updateCondition = (i: number, updates: Partial<Condition>) =>
     setConditions(prev => prev.map((c, idx) => idx === i ? { ...c, ...updates } : c))
@@ -199,7 +204,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
   // ── Save ──────────────────────────────────────────────────────────────────
 
   const handleSave = () => {
-    if (!config.title.trim()) { alert('Please enter a field title'); return }
+    if (!config.title.trim()) { toast.warning('Title required', 'Please enter a field title.'); return }
 
     const finalConfig: FieldConfig = { ...config }
 
@@ -212,7 +217,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
 
     if (['dropdown', 'radiogroup', 'checkbox'].includes(config.type)) {
       finalConfig.choices = choicesText.split('\n').map(c => c.trim()).filter(Boolean)
-      if (!finalConfig.choices.length) { alert('Please add at least one choice'); return }
+      if (!finalConfig.choices.length) { toast.warning('Choices required', 'Please add at least one choice.'); return }
     } else {
       delete finalConfig.choices
     }

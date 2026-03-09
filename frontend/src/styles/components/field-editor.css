@@ -77,3 +77,24 @@
   padding: 1px 5px;
   border-radius: var(--radius-xs);
 }
+
+/* ── Bulk import table ── */
+.bulk-col-center { text-align: center; }
+
+.bulk-field-name {
+  margin-left: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.bulk-import-hint {
+  color: var(--color-text-muted);
+  margin-top: var(--sp-2);
+  display: block;
+}
+
+/* ── Template field row ── */
+.btn-full-width {
+  margin-top: var(--sp-2);
+  width: 100%;
+}

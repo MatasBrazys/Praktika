@@ -1,33 +1,33 @@
 // src/pages/public/Form/hooks/useFormLoader.ts
 // Loads a form by ID, initialises the SurveyJS model, and wires up CRM behaviour.
 
-import { useState, useEffect }   from 'react'
-import { useNavigate }            from 'react-router-dom'
-import { Model }                  from 'survey-core'
-import { formAPI }                from '../../../../services/api'
-import { useToast }               from '../../../../contexts/ToastContext'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Model } from 'survey-core'
+import { formAPI } from '../../../../services/api'
+import { useToast } from '../../../../contexts/ToastContext'
 import { attachRealtimeBehavior } from '../utils/crmBehavior'
-import { detectBulkPanels }       from '../utils/bulkPanelDetector'
+import { detectBulkPanels } from '../utils/bulkPanelDetector'
 import type { BulkPanelWithPage } from '../../../../types/survey.types'
-import type { FormDefinition }    from '../../../../types'
+import type { FormDefinition } from '../../../../types'
 
 interface UseFormLoaderResult {
-  form:        FormDefinition | null
+  form: FormDefinition | null
   surveyModel: Model | null
-  bulkPanels:  BulkPanelWithPage[]
-  loading:     boolean
-  error:       string
+  bulkPanels: BulkPanelWithPage[]
+  loading: boolean
+  error: string
 }
 
 export function useFormLoader(formId: string | undefined): UseFormLoaderResult {
-  const navigate  = useNavigate()
+  const navigate = useNavigate()
   const { toast } = useToast()
 
-  const [form,        setForm]        = useState<FormDefinition | null>(null)
+  const [form, setForm] = useState<FormDefinition | null>(null)
   const [surveyModel, setSurveyModel] = useState<Model | null>(null)
-  const [bulkPanels,  setBulkPanels]  = useState<BulkPanelWithPage[]>([])
-  const [loading,     setLoading]     = useState(true)
-  const [error,       setError]       = useState('')
+  const [bulkPanels, setBulkPanels] = useState<BulkPanelWithPage[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (!formId) return
@@ -43,10 +43,11 @@ export function useFormLoader(formId: string | undefined): UseFormLoaderResult {
         }
 
         const model = new Model(formData.surveyjs_json)
+        model.textUpdateMode = 'onTyping'   
         attachRealtimeBehavior(model)
 
         // pageIndex is tracked in Form/index.tsx via onCurrentPageChanged
-        model.onCurrentPageChanged.add(() => {})
+        model.onCurrentPageChanged.add(() => { })
 
         model.onComplete.add(async (survey: { data: Record<string, unknown> }) => {
           try {

@@ -5,6 +5,7 @@
 // ── Field validation ──────────────────────────────────────────────────────────
 
 export interface Validator {
+  _id?: string;
   type: 'regex' | 'numeric' | 'text';
   text: string;
   regex?: string;
@@ -17,6 +18,7 @@ export interface Validator {
 // ── Conditional visibility (maps to SurveyJS visibleIf expressions) ──────────
 
 export interface Condition {
+  _id?: string;
   fieldName: string;
   operator: 'equals' | 'notEquals' | 'contains' | 'notEmpty' | 'empty';
   value: string;

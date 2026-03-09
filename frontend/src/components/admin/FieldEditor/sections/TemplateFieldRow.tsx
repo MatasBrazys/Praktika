@@ -3,18 +3,7 @@
 // Includes type, title, name, validators, and conditions for that field.
 
 import type { FieldConfig, Validator, Condition } from '../../../../types/form-builder.types';
-
-
-const TEXT_INPUT_TYPES = [
-  { value: 'text',   label: 'Plain Text' },
-  { value: 'email',  label: '📧 Email Address' },
-  { value: 'phone',  label: '📞 Phone Number' },
-  { value: 'ipv4',   label: '🌐 IPv4 Address' },
-  { value: 'cidr',   label: '🔗 CIDR Subnet' },
-  { value: 'mac',    label: '🔌 MAC Address' },
-  { value: 'number', label: '🔢 Number' },
-  { value: 'date',   label: '📅 Date' },
-];
+import { TEXT_INPUT_TYPES } from '../fieldTypes';
 
 interface Props {
   tf:                        FieldConfig;
@@ -134,7 +123,7 @@ export default function TemplateFieldRow({
             </div>
             {!(tf.validators || []).length && <p className="no-validators">No validators</p>}
             {(tf.validators || []).map((v, vIdx) => (
-              <div key={vIdx} className="template-validator-item">
+              <div key={v._id ?? vIdx} className="template-validator-item">
                 <div className="form-group">
                   <label>Error Message</label>
                   <input type="text" value={v.text} onChange={e => onUpdateValidator(idx, vIdx, { text: e.target.value })} />
@@ -183,7 +172,7 @@ export default function TemplateFieldRow({
             )}
 
             {(tf.conditions || []).map((c, cIdx) => (
-              <div key={cIdx} className="template-condition-row">
+              <div key={c._id ?? cIdx} className="template-condition-row">
                 {cIdx > 0 && (
                   <div className="condition-logic-label-small">{(tf.conditionLogic || 'and').toUpperCase()}</div>
                 )}
@@ -213,7 +202,7 @@ export default function TemplateFieldRow({
               </div>
             ))}
 
-            <button className="btn-add-small" style={{ marginTop: '8px', width: '100%' }} onClick={() => onAddCondition(idx)}>
+            <button className="btn-add-small btn-full-width" onClick={() => onAddCondition(idx)}>
               + Add Condition
             </button>
           </div>

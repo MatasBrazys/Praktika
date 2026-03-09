@@ -38,8 +38,8 @@ export default function BulkImportConfig({
                 <tr>
                   <th>Field</th>
                   <th>Type</th>
-                  <th style={{ textAlign: 'center' }}>Include in CSV</th>
-                  <th style={{ textAlign: 'center' }}>Required</th>
+                  <th className="bulk-col-center">Include in CSV</th>
+                  <th className="bulk-col-center">Required</th>
                 </tr>
               </thead>
               <tbody>
@@ -52,17 +52,17 @@ export default function BulkImportConfig({
                     <tr key={tf.id}>
                       <td>
                         <strong>{tf.title}</strong>
-                        <code style={{ marginLeft: '6px' }}>{tf.name}</code>
+                        <code className="bulk-field-name">{tf.name}</code>
                       </td>
                       <td>{tf.type}{tf.inputType ? ` / ${tf.inputType}` : ''}</td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td className="bulk-col-center">
                         <input
                           type="checkbox"
                           checked={isIncluded}
                           onChange={e => onFieldToggle(tf.name, e.target.checked)}
                         />
                       </td>
-                      <td style={{ textAlign: 'center' }}>
+                      <td className="bulk-col-center">
                         <input
                           type="checkbox"
                           checked={isRequired}
@@ -76,7 +76,7 @@ export default function BulkImportConfig({
               </tbody>
             </table>
           )}
-          <small style={{ color: 'var(--color-text-muted)', marginTop: 'var(--sp-2)', display: 'block' }}>
+          <small className="bulk-import-hint">
             "Required" means that column must be filled in the CSV. Unchecked fields stay out of the CSV and are filled manually.
           </small>
         </>

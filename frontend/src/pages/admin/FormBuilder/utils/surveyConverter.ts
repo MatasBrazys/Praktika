@@ -2,7 +2,7 @@
 // Converts internal FieldConfig objects into SurveyJS-compatible JSON elements.
 // Used when saving a form and when rendering the live preview.
 
-import type { FieldConfig, Page } from '../../../../types/form-builder.types';
+import type { FieldConfig, Page, Condition } from '../../../../types/form-builder.types';
 
 // Internal marker used to identify CRM lookup panels when reading back from JSON
 export const CRM_PANEL_MARKER = '__crm_panel__';
@@ -27,10 +27,13 @@ export function fieldToElement(field: FieldConfig, isTemplate = false): any {
     if (field.defaultValue) element.defaultValue = field.defaultValue;
     if (field.inputType && field.type === 'text') element.inputType = field.inputType;
     if (field.choices) element.choices = field.choices;
-    if (field.validators?.length) element.validators = field.validators;
+    if (field.validators?.length) {
+        // Strip internal _id keys before saving to SurveyJS JSON
+        element.validators = field.validators.map(({ _id: _, ...v }) => v);
+    }
 
     if (field.conditions?.length) {
-        element.visibleIf = buildVisibleIf(field, isTemplate);
+        element.visibleIf = buildVisibleIf(field.conditions, field.conditionLogic, isTemplate);
     }
 
     if (field.type === 'paneldynamic') {
@@ -63,7 +66,7 @@ export function convertToSurveyJS(pages: Page[]): any {
     };
 }
 
-// ── Private helpers ───────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 // Builds the CRM lookup panel with the ID input and 4 read-only autofill fields
 function buildCrmPanel(field: FieldConfig): any {
@@ -88,20 +91,26 @@ function buildCrmPanel(field: FieldConfig): any {
     };
 }
 
-// Builds a SurveyJS visibleIf expression string from the field's conditions array
-function buildVisibleIf(field: FieldConfig, isTemplate: boolean): string {
-    const logic = field.conditionLogic || 'and';
+// Builds a SurveyJS visibleIf expression string from conditions and logic.
+// Exported so ConditionsTab can use it for the live preview.
+// isTemplate=true switches references from {field} to {panel.field}
+export function buildVisibleIf(
+    conditions: Condition[],
+    conditionLogic: 'and' | 'or' | undefined,
+    isTemplate: boolean,
+): string {
+    const logic = conditionLogic || 'and';
 
-    const expressions = (field.conditions || []).map(condition => {
+    const expressions = conditions.map(condition => {
         const ref = isTemplate
             ? `{panel.${condition.fieldName}}`
             : `{${condition.fieldName}}`;
 
         switch (condition.operator) {
-            case 'empty': return `${ref} empty`;
+            case 'empty':    return `${ref} empty`;
             case 'notEmpty': return `${ref} notempty`;
             case 'contains': return `${ref} contains ['${condition.value}']`;
-            case 'equals': return `${ref} = '${condition.value}'`;
+            case 'equals':   return `${ref} = '${condition.value}'`;
             case 'notEquals': return `${ref} != '${condition.value}'`;
             default: return '';
         }

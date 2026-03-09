@@ -2,6 +2,7 @@
 // Attaches real-time CRM lookup behaviour to a SurveyJS model.
 // When a user types a CRM ID, the 4 read-only autofill fields are populated automatically.
 
+
 import type { Model } from 'survey-core';
 import { crmAPI } from '../../../../services/api';
 import { debounce } from '../../../../lib/utils';
@@ -19,10 +20,16 @@ export function attachRealtimeBehavior(surveyModel: Model): void {
   initCrmFields(allQuestions, crmPrefixes);
 
   const states: Record<string, LookupState> = {};
-  crmPrefixes.forEach(prefix => { states[prefix] = 'idle'; });
+
+  const debouncedLookups: Record<string, ReturnType<typeof makeDebouncedLookup>> = {};
+
+  crmPrefixes.forEach(prefix => {
+    states[prefix] = 'idle';
+    debouncedLookups[prefix] = makeDebouncedLookup(prefix, allQuestions, states);
+  });
 
   // Blocks form submission if a CRM lookup is still in progress or failed
-  surveyModel.onValidateQuestion.add((_survey, options) => {
+  surveyModel.onValidateQuestion.add((_survey: any, options: any) => {
     if (!crmPrefixes.includes(options.name)) return;
     if (!(options.value || '').trim()) return;
 
@@ -32,9 +39,9 @@ export function attachRealtimeBehavior(surveyModel: Model): void {
   });
 
   // Triggers CRM lookup on ID change, or inline regex validation for other fields
-  surveyModel.onValueChanged.add((_survey, options) => {
+  surveyModel.onValueChanged.add((_survey: any, options: any) => {
     if (crmPrefixes.includes(options.name)) {
-      handleCrmIdChange(options.name, options.value, allQuestions, states);
+      handleCrmIdChange(options.name, options.value, allQuestions, states, debouncedLookups);
       return;
     }
     handleRegexValidation(options.name, options.value, allQuestions);
@@ -54,13 +61,48 @@ function detectCrmPrefixes(questions: any[]): string[] {
 function initCrmFields(allQuestions: () => any[], crmPrefixes: string[]): void {
   crmPrefixes.forEach(prefix => {
     CRM_SUFFIXES.forEach(suffix => {
-      const field = allQuestions().find(q => q.name === `${prefix}_${suffix}`);
+      const field = allQuestions().find((q: any) => q.name === `${prefix}_${suffix}`);
       if (field) { field.visibleIf = ''; field.visible = false; }
     });
 
-    const idField = allQuestions().find(q => q.name === prefix);
+    const idField = allQuestions().find((q: any) => q.name === prefix);
     if (idField) idField.description = 'Enter a CRM ID to look up client details.';
   });
+}
+
+// Creates a dedicated debounced lookup function for a single CRM prefix.
+// Having one per field means typing in field A won't cancel field B's timer.
+function makeDebouncedLookup(
+  prefix: string,
+  allQuestions: () => any[],
+  states: Record<string, LookupState>,
+) {
+  return debounce(async (crmId: string) => {
+    states[prefix] = 'searching';
+    setCrmState(prefix, 'searching', allQuestions, { id: crmId });
+    clearAutofillFields(prefix, allQuestions);
+
+    try {
+      const result = await crmAPI.lookup(crmId);
+
+      if (!result.found) {
+        states[prefix] = 'not_found';
+        setCrmState(prefix, 'not_found', allQuestions, { id: crmId });
+        return;
+      }
+
+      CRM_SUFFIXES.forEach(suffix => {
+        const field = allQuestions().find((q: any) => q.name === `${prefix}_${suffix}`);
+        if (field) { field.value = result[suffix] ?? ''; field.visible = true; }
+      });
+
+      states[prefix] = 'found';
+      setCrmState(prefix, 'found', allQuestions, { id: crmId, company: result.name });
+    } catch {
+      states[prefix] = 'error';
+      setCrmState(prefix, 'error', allQuestions);
+    }
+  }, 600);
 }
 
 // Updates the CRM ID field's description or error based on lookup state
@@ -70,7 +112,7 @@ function setCrmState(
   allQuestions: () => any[],
   meta?: { id?: string; company?: string },
 ): void {
-  const idField = allQuestions().find(q => q.name === prefix);
+  const idField = allQuestions().find((q: any) => q.name === prefix);
   if (!idField) return;
 
   switch (state) {
@@ -100,43 +142,10 @@ function setCrmState(
 // Hides and clears all 4 autofill fields for a CRM prefix
 function clearAutofillFields(prefix: string, allQuestions: () => any[]): void {
   CRM_SUFFIXES.forEach(suffix => {
-    const field = allQuestions().find(q => q.name === `${prefix}_${suffix}`);
+    const field = allQuestions().find((q: any) => q.name === `${prefix}_${suffix}`);
     if (field) { field.value = undefined; field.visible = false; }
   });
 }
-
-// Fires the CRM API lookup after a 600ms debounce and populates autofill fields
-const doCrmLookup = debounce(async (
-  prefix: string,
-  crmId: string,
-  allQuestions: () => any[],
-  states: Record<string, LookupState>,
-) => {
-  states[prefix] = 'searching';
-  setCrmState(prefix, 'searching', allQuestions, { id: crmId });
-  clearAutofillFields(prefix, allQuestions);
-
-  try {
-    const result = await crmAPI.lookup(crmId);
-
-    if (!result.found) {
-      states[prefix] = 'not_found';
-      setCrmState(prefix, 'not_found', allQuestions, { id: crmId });
-      return;
-    }
-
-    CRM_SUFFIXES.forEach(suffix => {
-      const field = allQuestions().find(q => q.name === `${prefix}_${suffix}`);
-      if (field) { field.value = result[suffix] ?? ''; field.visible = true; }
-    });
-
-    states[prefix] = 'found';
-    setCrmState(prefix, 'found', allQuestions, { id: crmId, company: result.name });
-  } catch {
-    states[prefix] = 'error';
-    setCrmState(prefix, 'error', allQuestions);
-  }
-}, 600);
 
 // Handles value changes on CRM ID fields
 function handleCrmIdChange(
@@ -144,6 +153,7 @@ function handleCrmIdChange(
   rawValue: string,
   allQuestions: () => any[],
   states: Record<string, LookupState>,
+  debouncedLookups: Record<string, (crmId: string) => void>,
 ): void {
   const crmId = (rawValue || '').trim().toUpperCase();
 
@@ -154,12 +164,12 @@ function handleCrmIdChange(
     return;
   }
 
-  doCrmLookup(fieldName, crmId, allQuestions, states);
+  debouncedLookups[fieldName]?.(crmId);
 }
 
 // Shows inline error if the value does not match the field's regex validators
 function handleRegexValidation(fieldName: string, value: any, allQuestions: () => any[]): void {
-  const field = allQuestions().find(q => q.name === fieldName);
+  const field = allQuestions().find((q: any) => q.name === fieldName);
   if (!field) return;
 
   const regexValidators = (field.validators || []).filter((v: any) => v.regex);

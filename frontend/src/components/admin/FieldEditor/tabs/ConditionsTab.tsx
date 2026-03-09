@@ -2,6 +2,7 @@
 // Conditions tab — configure visibleIf logic for a field.
 
 import type { Condition, FieldConfig } from '../../../../types/form-builder.types';
+import { buildVisibleIf } from '../../../../pages/admin/FormBuilder/utils/surveyConverter';
 
 interface Props {
   conditions:     Condition[];
@@ -38,7 +39,7 @@ export default function ConditionsTab({
       )}
 
       {conditions.map((c, idx) => (
-        <div key={idx} className="condition-row">
+        <div key={c._id ?? idx} className="condition-row">
           {idx > 0 && <div className="condition-logic-label">{conditionLogic.toUpperCase()}</div>}
           <div className="condition-inputs">
             <select value={c.fieldName} onChange={e => onUpdate(idx, { fieldName: e.target.value })}>
@@ -73,19 +74,7 @@ export default function ConditionsTab({
       {conditions.length > 0 && (
         <div className="condition-preview">
           <strong>SurveyJS expression:</strong>
-          <code>
-            {conditions
-              .filter(c => c.fieldName)
-              .map(c => {
-                if (c.operator === 'empty')     return `{${c.fieldName}} empty`;
-                if (c.operator === 'notEmpty')  return `{${c.fieldName}} notempty`;
-                if (c.operator === 'equals')    return `{${c.fieldName}} = '${c.value}'`;
-                if (c.operator === 'notEquals') return `{${c.fieldName}} != '${c.value}'`;
-                if (c.operator === 'contains')  return `{${c.fieldName}} contains '${c.value}'`;
-                return '';
-              })
-              .join(` ${conditionLogic} `)}
-          </code>
+          <code>{buildVisibleIf(conditions.filter(c => c.fieldName), conditionLogic, false)}</code>
         </div>
       )}
     </div>
