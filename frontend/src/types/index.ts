@@ -47,7 +47,9 @@ export interface Submission {
   form_id: number;
   form_type: string;
   data: Record<string, unknown>;
+  submitted_by_user_id?: number;
   created_at: string;
+  updated_at?: string;
 }
 
 // ── CRM ────────────────────────────────────────────────────────────────────

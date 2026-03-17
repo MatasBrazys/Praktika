@@ -1,5 +1,5 @@
 // src/types/form-builder.types.ts
-// All types shared between FormBuilder, FieldEditor, and NetworkImporter.
+// All types shared between FormBuilder, FieldEditor, and BulkkImporter.
 // Previously duplicated across FormBuilder.tsx and FieldEditor.tsx.
 
 // ── Field validation ──────────────────────────────────────────────────────────
@@ -27,8 +27,8 @@ export interface Condition {
 // ── Bulk CSV import configuration per paneldynamic field ─────────────────────
 
 export interface BulkImportField {
-  name: string;
-  required: boolean;
+  name: string; // field name, for example "ip_address"
+  required: boolean; // is this column required in csv file
 }
 
 // ── Single form field configuration ──────────────────────────────────────────
@@ -54,8 +54,8 @@ export interface FieldConfig {
   minPanelCount?: number;
   panelCount?: number;
   // bulk import
-  allowBulkImport?: boolean;
-  bulkImportFields?: BulkImportField[];
+  allowBulkImport?: boolean; // bulk import enabled on this group?
+  bulkImportFields?: BulkImportField[]; //which sub-fields needs to be in csv import.
   // crmlookup specific
   crmFieldLabels?: {
     name?: string;

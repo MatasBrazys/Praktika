@@ -3,6 +3,7 @@
 
 from pydantic import BaseModel, field_validator
 from datetime import datetime
+from typing import Optional
 
 
 # Incoming submission request from the frontend
@@ -27,6 +28,18 @@ class SubmissionRequest(BaseModel):
         return value
 
 
+# Update request — only data changes, form_type stays the same
+class SubmissionUpdateRequest(BaseModel):
+    data: dict
+
+    @field_validator("data")
+    @classmethod
+    def data_cannot_be_empty(cls, value: dict) -> dict:
+        if not value:
+            raise ValueError("data cannot be an empty object")
+        return value
+
+
 # Internal schema used by submission_service — not exposed directly in routers
 class SubmissionCreate(BaseModel):
     form_id: int
@@ -40,7 +53,9 @@ class SubmissionResponse(BaseModel):
     form_id: int
     form_type: str
     data: dict
+    submitted_by_user_id: Optional[int] = None
     created_at: datetime
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

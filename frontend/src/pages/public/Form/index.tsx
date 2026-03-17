@@ -1,14 +1,16 @@
 // src/pages/public/Form/index.tsx
 // Public form page — loads form, renders SurveyJS, handles keyboard nav and bulk import.
+// Supports edit mode when submissionId is present in the URL.
 
 import { useState, useRef }  from 'react'
 import { useParams }          from 'react-router-dom'
 import { Survey }             from 'survey-react-ui'
 import 'survey-core/survey-core.min.css'
-import NetworkImporter        from '../../../components/public/NetworkImporter'
+
+import BulkImporter        from '../../../components/public/BulkImporter'
 import { useFormLoader }      from './hooks/useFormLoader'
 import '../../../styles/pages/public/form.css'
-import '../../../styles/components/network-importer.css'
+import '../../../styles/components/bulk-importer.css'
 
 // Shape of the options object SurveyJS passes to onCurrentPageChanged
 interface PageChangedOptions {
@@ -16,9 +18,10 @@ interface PageChangedOptions {
 }
 
 export default function Form() {
-  const { id } = useParams<{ id: string }>()
+  const { id, submissionId } = useParams<{ id: string; submissionId?: string }>()
 
-  const { form, surveyModel, bulkPanels, loading, error } = useFormLoader(id)
+  // form - raw data from database, surveyModel -  form definition from types/index.ts
+  const { form, surveyModel, bulkPanels, loading, error, isEditMode } = useFormLoader(id, submissionId)
 
   const [currentPageNo,  setCurrentPageNo]  = useState(0)
   const surveyWrapperRef = useRef<HTMLDivElement>(null)
@@ -34,8 +37,8 @@ export default function Form() {
   // Moves focus to the next input on Enter — skips bulk importer fields
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'Enter') return
-    const target = e.target as HTMLElement
 
+    const target = e.target as HTMLElement
     const skipTags = ['TEXTAREA', 'BUTTON', 'SELECT']
     if (skipTags.includes(target.tagName)) return
     if (target instanceof HTMLInputElement && ['checkbox', 'radio', 'submit', 'button'].includes(target.type)) return
@@ -49,7 +52,7 @@ export default function Form() {
       wrapper.querySelectorAll<HTMLElement>(
         'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled])',
       ),
-    ).filter(el => !el.closest('.ni-wrapper'))
+    ).filter(el => !el.closest('.bi-wrapper'))
 
     const currentIndex = focusable.indexOf(target)
     const next         = focusable[currentIndex + 1]
@@ -85,13 +88,15 @@ export default function Form() {
   return (
     <div className="public-page">
       <div className="public-form-container">
-        <div className="form-header">
+        <div className={`form-header ${isEditMode ? 'form-header--edit' : ''}`}>
+          {isEditMode && <span className="form-edit-badge">Editing submission</span>}
           <h1>{form.title}</h1>
           {form.description && <p className="form-description">{form.description}</p>}
         </div>
+
         <div className="survey-wrapper" ref={surveyWrapperRef} onKeyDown={handleKeyDown}>
           {visiblePanels.map(panel => (
-            <NetworkImporter key={panel.questionName} surveyModel={surveyModel} config={panel} />
+            <BulkImporter key={panel.questionName} surveyModel={surveyModel} config={panel} />
           ))}
           <Survey model={surveyModel} />
         </div>

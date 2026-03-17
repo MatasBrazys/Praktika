@@ -63,11 +63,31 @@ export const formAPI = {
     return res.data;
   },
 
-  submitForm: async (formId: number, formTitle: string, data: Record<string, unknown>): Promise<void> => {
-    await apiClient.post(`/api/forms/${formId}/submit`, {
+  submitForm: async (formId: number, formTitle: string, data: Record<string, unknown>): Promise<{ submission_id: number }> => {
+    const res = await apiClient.post<{ message: string; submission_id: number }>(`/api/forms/${formId}/submit`, {
       form_type: formTitle,
       data,
     });
+    return res.data;
+  },
+};
+
+// ── Submissions (user-facing) ──────────────────────────────────────────────
+
+export const submissionAPI = {
+  mine: async (): Promise<Submission[]> => {
+    const res = await apiClient.get<Submission[]>('/api/submissions/mine');
+    return res.data;
+  },
+
+  get: async (id: number): Promise<Submission> => {
+    const res = await apiClient.get<Submission>(`/api/submissions/${id}`);
+    return res.data;
+  },
+
+  update: async (id: number, data: Record<string, unknown>): Promise<Submission> => {
+    const res = await apiClient.put<Submission>(`/api/submissions/${id}`, { data });
+    return res.data;
   },
 };
 

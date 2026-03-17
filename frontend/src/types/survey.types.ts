@@ -3,7 +3,7 @@
 
 import type { BulkImportField } from './form-builder.types'
 
-// ── Minimal SurveyJS element shape (enough for our usage) ─────────────────────
+// ── Minimal SurveyJS element used only in bulk
 
 export interface SurveyElement {
   name:        string
@@ -13,12 +13,12 @@ export interface SurveyElement {
   [key: string]: unknown  // SurveyJS has many optional props we don't need to enumerate
 }
 
-// ── Bulk import panel config passed to NetworkImporter component ──────────────
+// ── Bulk import panel config passed to BulkImporter component ──────────────
 
 export interface BulkPanelConfig {
-  questionName:     string
-  templateElements: SurveyElement[]   
-  bulkImportFields: BulkImportField[]
+  questionName:     string           // paneldynamic field name, for example 'servers'
+  templateElements: SurveyElement[]  // sub-field description (types, validators, choices)
+  bulkImportFields: BulkImportField[] // which columns present and necessary.
 }
 
 // ── Extends BulkPanelConfig with the page index for multi-page forms ─────────

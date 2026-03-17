@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base
-from app.routers import forms, crm, auth
+from app.routers import forms, crm, auth, submissions
 
 
 # Create tables on startup
@@ -34,3 +34,4 @@ def health():
 app.include_router(forms.router)  
 app.include_router(crm.router)  
 app.include_router(auth.router)
+app.include_router(submissions.router)

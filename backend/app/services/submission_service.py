@@ -23,7 +23,12 @@ def create(
     if not form_exists:
         raise HTTPException(status_code=404, detail="Form not found")
 
-    submission = FormSubmission(form_id=form_id, form_type=form_type, data=data)
+    submission = FormSubmission(
+        form_id=form_id,
+        form_type=form_type,
+        data=data,
+        submitted_by_user_id=submitted_by_user_id,
+    )
     db.add(submission)
     db.commit()
     db.refresh(submission)
@@ -31,6 +36,45 @@ def create(
         "Submission created: id=%d form_id=%d user_id=%s",
         submission.id, form_id, submitted_by_user_id or "unknown",
     )
+    return submission
+
+
+# Returns a single submission by ID — raises 404 if not found
+def get_by_id(db: Session, submission_id: int) -> FormSubmission:
+    submission = db.query(FormSubmission).filter(FormSubmission.id == submission_id).first()
+    if not submission:
+        raise HTTPException(status_code=404, detail="Submission not found")
+    return submission
+
+
+# Returns all submissions by a specific user, newest first
+def get_by_user(db: Session, user_id: int, skip: int = 0, limit: int = 100) -> list[FormSubmission]:
+    return (
+        db.query(FormSubmission)
+        .filter(FormSubmission.submitted_by_user_id == user_id)
+        .order_by(FormSubmission.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+# Updates submission data — only the owner can update their own submission
+def update(
+    db: Session,
+    submission_id: int,
+    data: dict,
+    user_id: int,
+) -> FormSubmission:
+    submission = get_by_id(db, submission_id)
+
+    if submission.submitted_by_user_id != user_id:
+        raise HTTPException(status_code=403, detail="You can only edit your own submissions")
+
+    submission.data = data
+    db.commit()
+    db.refresh(submission)
+    logger.info("Submission updated: id=%d by user_id=%d", submission_id, user_id)
     return submission
 
 

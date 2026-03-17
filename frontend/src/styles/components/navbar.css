@@ -164,6 +164,58 @@
   color: white;
 }
 
+/* ── Auth buttons ── */
+.btn-signout {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 6px var(--sp-4);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  font-family: var(--font-sans);
+  color: rgba(255,255,255,0.6);
+  background: transparent;
+  border: 1.5px solid rgba(255,255,255,0.12);
+  cursor: pointer;
+  transition: all var(--t-fast);
+  white-space: nowrap;
+}
+
+.btn-signout:hover {
+  color: white;
+  background: rgba(220, 38, 38, 0.15);
+  border-color: var(--red-500);
+}
+
+.btn-signout:active {
+  background: rgba(220, 38, 38, 0.25);
+}
+
+.btn-signin-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 7px var(--sp-5);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  font-family: var(--font-sans);
+  color: white;
+  background: var(--color-primary);
+  border: none;
+  cursor: pointer;
+  transition: all var(--t-fast);
+  white-space: nowrap;
+  box-shadow: var(--shadow-teal-sm);
+}
+
+.btn-signin-nav:hover {
+  background: var(--color-primary-dark);
+  box-shadow: var(--shadow-teal);
+  transform: translateY(-1px);
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .navbar-container { padding: 0 var(--sp-4); height: 56px; }

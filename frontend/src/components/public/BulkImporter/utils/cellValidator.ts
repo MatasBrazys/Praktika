@@ -1,4 +1,4 @@
-// src/components/public/NetworkImporter/utils/cellValidator.ts
+// src/components/public/BulkkImporter/utils/cellValidator.ts
 // Validates a single CSV cell value against the field's SurveyJS templateElement definition.
 
 // Result of validating one cell in the import preview table

@@ -1,4 +1,4 @@
-// src/components/public/NetworkImporter/utils/csvParser.ts
+// src/components/public/BulkkImporter/utils/csvParser.ts
 // CSV parsing utilities for the bulk import feature.
 
 import type { BulkImportField } from '../../../../types/form-builder.types';

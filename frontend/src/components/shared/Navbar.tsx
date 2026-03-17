@@ -74,6 +74,7 @@ export default function Navbar() {
           {isAuthenticated && (
             <NavDropdown label="Forms" active={isActive('/user')}>
               <Link to="/user/forms">Fill Forms</Link>
+              <Link to="/user/submissions">My Submissions</Link>
             </NavDropdown>
           )}
         </div>

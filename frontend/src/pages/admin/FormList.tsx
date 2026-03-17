@@ -1,11 +1,11 @@
 // src/pages/admin/FormList.tsx
 
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate }         from 'react-router-dom'
-import { formAPI }             from '../../services/api'
-import { useToast }            from '../../contexts/ToastContext'
+import { useNavigate } from 'react-router-dom'
+import { formAPI } from '../../services/api'
+import { useToast } from '../../contexts/ToastContext'
 import { extractErrorMessage } from '../../lib/apiClient'
-import Navbar                  from '../../components/shared/Navbar'
+import Navbar from '../../components/shared/Navbar'
 import type { FormDefinition } from '../../types'
 import '../../styles/pages/admin/form-list.css'
 
@@ -21,10 +21,10 @@ function getFieldCount(form: FormDefinition): number {
 // ─── Delete Modal ──────────────────────────────────────────────────────────
 
 interface DeleteModalProps {
-  form:      FormDefinition
+  form: FormDefinition
   onConfirm: () => void
-  onCancel:  () => void
-  deleting:  boolean
+  onCancel: () => void
+  deleting: boolean
 }
 
 function DeleteConfirmModal({ form, onConfirm, onCancel, deleting }: DeleteModalProps) {
@@ -34,7 +34,7 @@ function DeleteConfirmModal({ form, onConfirm, onCancel, deleting }: DeleteModal
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !deleting) onCancel()
-      if (e.key === 'Enter'  && isMatch && !deleting) onConfirm()
+      if (e.key === 'Enter' && isMatch && !deleting) onConfirm()
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
@@ -115,13 +115,13 @@ function DeleteConfirmModal({ form, onConfirm, onCancel, deleting }: DeleteModal
 // ─── Main ──────────────────────────────────────────────────────────────────
 
 export default function FormList() {
-  const navigate  = useNavigate()
+  const navigate = useNavigate()
   const { toast } = useToast()
 
-  const [forms,        setForms]        = useState<FormDefinition[]>([])
-  const [loading,      setLoading]      = useState(true)
+  const [forms, setForms] = useState<FormDefinition[]>([])
+  const [loading, setLoading] = useState(true)
   const [formToDelete, setFormToDelete] = useState<FormDefinition | null>(null)
-  const [deleting,     setDeleting]     = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const loadForms = useCallback(async () => {
     try {
@@ -207,8 +207,8 @@ export default function FormList() {
                     <span>📅 {new Date(form.created_at!).toLocaleDateString()}</span>
                   </div>
                   <div className="card-actions">
-                    <button className="btn-edit"   onClick={() => navigate(`/admin/form-builder/${form.id}`)}>Edit</button>
-                    <button className="btn-view"   onClick={() => navigate(`/admin/forms/${form.id}/submissions`)}>Submissions</button>
+                    <button className="btn-edit" onClick={() => navigate(`/admin/form-builder/${form.id}`)}>Edit</button>
+                    <button className="btn-view" onClick={() => navigate(`/admin/forms/${form.id}/submissions`)}>Submissions</button>
                     <button className={`btn-toggle ${form.is_active ? '' : 'activate'}`} onClick={() => handleToggleActive(form)}>
                       {form.is_active ? 'Deactivate' : 'Activate'}
                     </button>

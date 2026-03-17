@@ -24,7 +24,7 @@ export default function BulkImportConfig({
             checked={allowBulkImport}
             onChange={e => onToggle(e.target.checked)}
           />
-          📥 Enable bulk CSV import for this group
+          Enable bulk CSV import for this group
         </label>
       </div>
 

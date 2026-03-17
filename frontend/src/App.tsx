@@ -13,7 +13,9 @@ import FormBuilder    from './pages/admin/FormBuilder';
 import SubmissionList from './pages/admin/SubmissionList';
 import UserFormList   from './pages/public/FormList';
 import PublicForm     from './pages/public/Form';
-import SuccessPage    from './pages/public/Success';
+import MySubmissions      from './pages/public/MySubmissions';
+import MyFormSubmissions from './pages/public/MyFormSubmissions';
+import SuccessPage       from './pages/public/Success';
 
 export default function App() {
   return (
@@ -30,17 +32,20 @@ export default function App() {
 
             {/* ── Protected: any authenticated user ──────── */}
             <Route element={<PrivateRoute />}>
-              <Route path="/"             element={<Home />} />
-              <Route path="/user/forms"   element={<UserFormList />} />
-              <Route path="/user/forms/:id" element={<PublicForm />} />
+              <Route path="/"                                  element={<Home />} />
+              <Route path="/user/forms"                        element={<UserFormList />} />
+              <Route path="/user/forms/:id"                    element={<PublicForm />} />
+              <Route path="/user/forms/:id/edit/:submissionId" element={<PublicForm />} />
+              <Route path="/user/submissions"                  element={<MySubmissions />} />
+              <Route path="/user/submissions/:formId"          element={<MyFormSubmissions />} />
             </Route>
 
             {/* ── Protected: admin only ───────────────────── */}
             <Route element={<PrivateRoute requireAdmin />}>
-              <Route path="/admin/forms"                 element={<FormList />} />
-              <Route path="/admin/form-builder"          element={<FormBuilder />} />
-              <Route path="/admin/form-builder/:id"      element={<FormBuilder />} />
-              <Route path="/admin/forms/:id/submissions" element={<SubmissionList />} />
+              <Route path="/admin/forms"                     element={<FormList />} />
+              <Route path="/admin/form-builder"              element={<FormBuilder />} />
+              <Route path="/admin/form-builder/:id"          element={<FormBuilder />} />
+              <Route path="/admin/forms/:id/submissions"     element={<SubmissionList />} />
             </Route>
 
             {/* ── Fallback ────────────────────────────────── */}

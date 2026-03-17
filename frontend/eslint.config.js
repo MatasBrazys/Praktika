@@ -43,7 +43,7 @@ export default tseslint.config(
     files: [
       'src/pages/public/Form/utils/**',
       'src/pages/admin/FormBuilder/utils/**',
-      'src/components/public/NetworkImporter/utils/**',
+      'src/components/public/BulkImporter/utils/**',
     ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',

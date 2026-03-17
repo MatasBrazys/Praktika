@@ -1,4 +1,4 @@
-// src/components/public/NetworkImporter/utils/templateGenerator.ts
+// src/components/public/BulkkImporter/utils/templateGenerator.ts
 // Generates a CSV template file for the bulk import feature.
 
 import type { BulkPanelConfig } from '../../../../types/survey.types';
