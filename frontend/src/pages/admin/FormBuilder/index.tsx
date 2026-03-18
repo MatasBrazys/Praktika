@@ -3,38 +3,38 @@
 // All state and logic handled by useFormPages and useFormFields hooks.
 
 import { useState, useEffect, useCallback } from 'react'
-import { useParams, useNavigate }  from 'react-router-dom'
-import { formAPI }                 from '../../../services/api'
-import { useToast }                from '../../../contexts/ToastContext'
-import { extractErrorMessage }     from '../../../lib/apiClient'
-import Navbar                      from '../../../components/shared/Navbar'
-import FieldEditor                 from '../../../components/admin/FieldEditor'
-import FormPreview                 from '../../../components/admin/FormPreview'
-import { convertToSurveyJS }       from './utils/surveyConverter'
-import { elementToField }          from './utils/visibleIfParser'
-import { useFormPages }            from './hooks/useFormPages'
-import { useFormFields }           from './hooks/useFormFields'
-import type { FieldConfig, Page }  from '../../../types/form-builder.types'
+import { useParams, useNavigate } from 'react-router-dom'
+import { formAPI } from '../../../services/api'
+import { useToast } from '../../../contexts/ToastContext'
+import { extractErrorMessage } from '../../../lib/apiClient'
+import Navbar from '../../../components/shared/Navbar'
+import FieldEditor from '../../../components/admin/FieldEditor'
+import FormPreview from '../../../components/admin/FormPreview'
+import { convertToSurveyJS } from './utils/surveyConverter'
+import { elementToField } from './utils/visibleIfParser'
+import { useFormPages } from './hooks/useFormPages'
+import { useFormFields } from './hooks/useFormFields'
+import type { FieldConfig, Page } from '../../../types/form-builder.types'
 import '../../../styles/pages/admin/form-builder.css'
 import '../../../styles/components/modal.css'
 
 // SurveyJS JSON shape — only what we read back when loading an existing form
 type StoredSurveyJson = {
-  pages?:    Array<{ name?: string; title?: string; elements?: unknown[] }>
+  pages?: Array<{ name?: string; title?: string; elements?: unknown[] }>
   elements?: unknown[]
 }
 
 export default function FormBuilder() {
-  const { id }    = useParams()
-  const navigate  = useNavigate()
+  const { id } = useParams()
+  const navigate = useNavigate()
   const { toast } = useToast()
   const isEditMode = !!id
 
-  const [title,           setTitle]           = useState('')
-  const [description,     setDescription]     = useState('')
-  const [editingField,    setEditingField]    = useState<FieldConfig | null>(null)
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [editingField, setEditingField] = useState<FieldConfig | null>(null)
   const [showFieldEditor, setShowFieldEditor] = useState(false)
-  const [saving,          setSaving]          = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const {
     pages, setPages, activePage, activePageId, setActivePageId,
@@ -49,13 +49,13 @@ export default function FormBuilder() {
       setTitle(form.title)
       setDescription(form.description ?? '')
 
-      const json      = form.surveyjs_json as StoredSurveyJson
-      const rawPages  = json.pages ?? [{ name: 'page1', title: 'Page 1', elements: json.elements ?? [] }]
+      const json = form.surveyjs_json as StoredSurveyJson
+      const rawPages = json.pages ?? [{ name: 'page1', title: 'Page 1', elements: json.elements ?? [] }]
 
       const loadedPages: Page[] = rawPages.map((p, pageIndex) => ({
-        id:     `page_${pageIndex + 1}`,
-        name:   p.name  ?? `page${pageIndex + 1}`,
-        title:  p.title ?? `Page ${pageIndex + 1}`,
+        id: `page_${pageIndex + 1}`,
+        name: p.name ?? `page${pageIndex + 1}`,
+        title: p.title ?? `Page ${pageIndex + 1}`,
         // elementToField is in the utils/any-allowed zone — cast is intentional
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         fields: (p.elements ?? []).map((el, elIndex) => elementToField(el as any, `field_${pageIndex}_${elIndex}`))
@@ -93,7 +93,7 @@ export default function FormBuilder() {
     try {
       const surveyjs_json = convertToSurveyJS(pages)
       if (isEditMode) await formAPI.update(Number(id), { title, description, surveyjs_json })
-      else            await formAPI.create({ title, description, surveyjs_json, is_active: true })
+      else await formAPI.create({ title, description, surveyjs_json, is_active: true })
       toast.success(isEditMode ? 'Form updated' : 'Form created', `"${title}" has been saved.`)
       navigate('/admin/forms')
     } catch (err) {
@@ -121,7 +121,7 @@ export default function FormBuilder() {
             </div>
             <div className="header-actions">
               <button className="btn-secondary" onClick={() => navigate('/admin/forms')}>Cancel</button>
-              <button className="btn-primary"   onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save Form'}</button>
+              <button className="btn-primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save Form'}</button>
             </div>
           </div>
 
@@ -159,7 +159,7 @@ export default function FormBuilder() {
                     <div key={field.id} className="field-item">
                       <div className="field-info">
                         <div className="field-order">
-                          <button onClick={() => moveField(activePage.fields, index, 'up')}   disabled={index === 0}>▲</button>
+                          <button onClick={() => moveField(activePage.fields, index, 'up')} disabled={index === 0}>▲</button>
                           <span>{index + 1}</span>
                           <button onClick={() => moveField(activePage.fields, index, 'down')} disabled={index === activePage.fields.length - 1}>▼</button>
                         </div>
@@ -167,10 +167,10 @@ export default function FormBuilder() {
                           <strong>{field.title}</strong>
                           <div className="field-meta">
                             <span className="field-type-badge">{field.type === 'crmlookup' ? '🔍 CRM Lookup' : field.type}</span>
-                            {field.isRequired         && <span className="required-badge">Required</span>}
-                            {field.conditions?.length  ? <span className="condition-badge">⚡ Conditional</span> : null}
-                            {field.validators?.length  ? <span className="validator-badge">✓ Validated</span>   : null}
-                            {field.allowBulkImport     && <span className="condition-badge">📥 Bulk Import</span>}
+                            {field.isRequired && <span className="required-badge">Required</span>}
+                            {field.conditions?.length ? <span className="condition-badge">⚡ Conditional</span> : null}
+                            {field.validators?.length ? <span className="validator-badge">✓ Validated</span> : null}
+                            {field.allowBulkImport && <span className="condition-badge">📥 Bulk Import</span>}
                           </div>
                         </div>
                       </div>

@@ -2,15 +2,16 @@
 // Public form page — loads form, renders SurveyJS, handles keyboard nav and bulk import.
 // Supports edit mode when submissionId is present in the URL.
 
-import { useState, useRef }  from 'react'
-import { useParams }          from 'react-router-dom'
-import { Survey }             from 'survey-react-ui'
+import { useState, useRef, useEffect } from 'react'
+import { useParams } from 'react-router-dom'
+import { Survey } from 'survey-react-ui'
 import 'survey-core/survey-core.min.css'
 
-import BulkImporter        from '../../../components/public/BulkImporter'
-import { useFormLoader }      from './hooks/useFormLoader'
+import BulkImporter from '../../../components/public/BulkImporter'
+import { useFormLoader } from './hooks/useFormLoader'
 import '../../../styles/pages/public/form.css'
 import '../../../styles/components/bulk-importer.css'
+import '../../../styles/components/realtime-validation.css'
 
 // Shape of the options object SurveyJS passes to onCurrentPageChanged
 interface PageChangedOptions {
@@ -23,16 +24,19 @@ export default function Form() {
   // form - raw data from database, surveyModel -  form definition from types/index.ts
   const { form, surveyModel, bulkPanels, loading, error, isEditMode } = useFormLoader(id, submissionId)
 
-  const [currentPageNo,  setCurrentPageNo]  = useState(0)
+  const [currentPageNo, setCurrentPageNo] = useState(0)
   const surveyWrapperRef = useRef<HTMLDivElement>(null)
 
   // Track current page for bulk panel visibility.
-  // Registered outside render to avoid adding duplicate listeners on each render.
-  if (surveyModel) {
-    surveyModel.onCurrentPageChanged.add((_sender: unknown, options: PageChangedOptions) => {
+  // useEffect ensures the listener is added once per model, not on every render.
+  useEffect(() => {
+    if (!surveyModel) return
+    const handler = (_sender: unknown, options: PageChangedOptions) => {
       setCurrentPageNo(options.newCurrentPage?.visibleIndex ?? 0)
-    })
-  }
+    }
+    surveyModel.onCurrentPageChanged.add(handler)
+    return () => { surveyModel.onCurrentPageChanged.remove(handler) }
+  }, [surveyModel])
 
   // Moves focus to the next input on Enter — skips bulk importer fields
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -55,7 +59,7 @@ export default function Form() {
     ).filter(el => !el.closest('.bi-wrapper'))
 
     const currentIndex = focusable.indexOf(target)
-    const next         = focusable[currentIndex + 1]
+    const next = focusable[currentIndex + 1]
 
     if (next) {
       next.focus()

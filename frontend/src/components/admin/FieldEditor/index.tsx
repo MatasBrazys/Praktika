@@ -1,10 +1,12 @@
 // src/components/admin/FieldEditor/index.tsx
-// Shell component — owns all state, delegates rendering to tabs and sections.
+// Shell component — owns top-level state, delegates template/bulk to hooks.
 
 import { useState, useEffect, useCallback } from 'react'
-import type { FieldConfig, BulkImportField, Validator, Condition } from '../../../types/form-builder.types'
+import type { FieldConfig, Validator, Condition } from '../../../types/form-builder.types'
 import { VALIDATOR_PRESETS, AUTO_PRESET_REGEXES } from './validatorPresets'
 import { useToast } from '../../../contexts/ToastContext'
+import { useTemplateFields } from './hooks/useTemplateFields'
+import { useBulkImportConfig } from './hooks/useBulkImportConfig'
 import BasicTab      from './tabs/BasicTab'
 import ValidatorsTab from './tabs/ValidatorsTab'
 import ConditionsTab from './tabs/ConditionsTab'
@@ -27,33 +29,37 @@ const withId = <T extends object>(item: T): T & { _id: string } =>
 
 export default function FieldEditor({ field, allFields, onSave, onCancel }: Props) {
   const { toast } = useToast()
-  const [config,                     setConfig]                     = useState<FieldConfig>(field)
-  const [choicesText,                setChoicesText]                = useState(field.choices?.join('\n') ?? '')
-  const [templateChoicesText,        setTemplateChoicesText]        = useState<Record<number, string>>({})
-  const [activeTab,                  setActiveTab]                  = useState<Tab>('basic')
-  const [validators,                 setValidators]                 = useState<Validator[]>((field.validators ?? []).map(withId))
-  const [conditions,                 setConditions]                 = useState<Condition[]>((field.conditions ?? []).map(withId))
-  const [conditionLogic,             setConditionLogic]             = useState<'and' | 'or'>(field.conditionLogic ?? 'and')
-  const [templateFields,             setTemplateFields]             = useState<FieldConfig[]>(field.templateElements ?? [])
-  const [expandedTemplateField,      setExpandedTemplateField]      = useState<number | null>(null)
-  const [expandedTemplateConditions, setExpandedTemplateConditions] = useState<number | null>(null)
-  const [allowBulkImport,            setAllowBulkImport]            = useState<boolean>(field.allowBulkImport ?? false)
-  const [bulkImportFields,           setBulkImportFields]           = useState<BulkImportField[]>(field.bulkImportFields ?? [])
-  const [crmLabels, setCrmLabels] = useState({
+  const [config,         setConfig]         = useState<FieldConfig>(field)
+  const [choicesText,    setChoicesText]    = useState(field.choices?.join('\n') ?? '')
+  const [activeTab,      setActiveTab]      = useState<Tab>('basic')
+  const [validators,     setValidators]     = useState<Validator[]>((field.validators ?? []).map(withId))
+  const [conditions,     setConditions]     = useState<Condition[]>((field.conditions ?? []).map(withId))
+  const [conditionLogic, setConditionLogic] = useState<'and' | 'or'>(field.conditionLogic ?? 'and')
+  const [crmLabels,      setCrmLabels]      = useState({
     name:     field.crmFieldLabels?.name     ?? 'Company Name',
     street:   field.crmFieldLabels?.street   ?? 'Street Address',
     postcode: field.crmFieldLabels?.postcode ?? 'Postcode',
     state:    field.crmFieldLabels?.state    ?? 'City / State',
   })
 
-  // Auto-applies a regex preset validator when a specialized inputType is selected.
-  // Uses functional setState so validators don't need to be in deps.
+  // ── Template fields (paneldynamic sub-fields) ─────────────────────────────
+
+  const template = useTemplateFields(field.templateElements ?? [])
+
+  // ── Bulk import config ────────────────────────────────────────────────────
+
+  const bulk = useBulkImportConfig(
+    field.allowBulkImport ?? false,
+    field.bulkImportFields ?? [],
+    () => template.templateFields,
+  )
+
+  // ── Auto-preset validator for inputType ───────────────────────────────────
+
   const applyPresetValidator = useCallback((inputType: string, fieldType: string) => {
     setValidators(prev => {
       const manual = prev.filter(v => v.type !== 'regex' || !AUTO_PRESET_REGEXES.includes(v.regex ?? ''))
-
       if (fieldType !== 'text') return manual
-
       const needsPreset = PRESET_INPUT_TYPES.includes(inputType)
       if (needsPreset && VALIDATOR_PRESETS[inputType]) {
         return [...manual, { _id: crypto.randomUUID(), type: 'regex' as const, ...VALIDATOR_PRESETS[inputType] }]
@@ -65,92 +71,6 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
   useEffect(() => {
     applyPresetValidator(config.inputType ?? '', config.type)
   }, [config.inputType, config.type, applyPresetValidator])
-
-  // ── Template field handlers ───────────────────────────────────────────────
-
-  const addTemplateField = () => {
-    setTemplateFields(prev => [
-      ...prev,
-      { id: `template_${Date.now()}`, name: `field_${prev.length + 1}`, title: 'New Field', type: 'text', isRequired: false },
-    ])
-  }
-
-  const updateTemplateField = (idx: number, updates: Partial<FieldConfig>) =>
-    setTemplateFields(prev => prev.map((f, i) => i === idx ? { ...f, ...updates } : f))
-
-  const deleteTemplateField = (idx: number) =>
-    setTemplateFields(prev => prev.filter((_f, i) => i !== idx))
-
-  const handleTemplateChoicesChange = (idx: number, text: string) => {
-    setTemplateChoicesText(prev => ({ ...prev, [idx]: text }))
-    updateTemplateField(idx, { choices: text.split('\n').map(c => c.trim()).filter(Boolean) })
-  }
-
-  const handleTemplateTypeChange = (idx: number, newType: string) => {
-    const tf     = templateFields[idx]
-    const manual = (tf.validators ?? []).filter((v: Validator) =>
-      v.type !== 'regex' || !AUTO_PRESET_REGEXES.includes(v.regex ?? '')
-    )
-    updateTemplateField(idx, newType !== 'text'
-      ? { type: newType, inputType: undefined, validators: manual }
-      : { type: newType },
-    )
-  }
-
-  const handleTemplateInputTypeChange = (idx: number, inputType: string) => {
-    const tf     = templateFields[idx]
-    const manual = (tf.validators ?? []).filter((v: Validator) =>
-      v.type !== 'regex' || !AUTO_PRESET_REGEXES.includes(v.regex ?? '')
-    )
-    const needsPreset = PRESET_INPUT_TYPES.includes(inputType)
-    const newValidators = needsPreset && VALIDATOR_PRESETS[inputType]
-      ? [...manual, { _id: crypto.randomUUID(), type: 'regex' as const, ...VALIDATOR_PRESETS[inputType] }]
-      : manual
-    updateTemplateField(idx, { inputType, validators: newValidators })
-  }
-
-  // ── Template validator handlers ───────────────────────────────────────────
-
-  const addTemplateValidator = (idx: number, presetKey?: string) => {
-    const newV: Validator = presetKey && VALIDATOR_PRESETS[presetKey]
-      ? { _id: crypto.randomUUID(), type: 'regex' as const, ...VALIDATOR_PRESETS[presetKey] }
-      : { _id: crypto.randomUUID(), type: 'regex', text: 'Invalid format', regex: '' }
-    updateTemplateField(idx, { validators: [...(templateFields[idx].validators ?? []), newV] })
-  }
-
-  const updateTemplateValidator = (ti: number, vi: number, updates: Partial<Validator>) =>
-    updateTemplateField(ti, {
-      validators: (templateFields[ti].validators ?? []).map((v: Validator, i: number) =>
-        i === vi ? { ...v, ...updates } : v
-      ),
-    })
-
-  const deleteTemplateValidator = (ti: number, vi: number) =>
-    updateTemplateField(ti, {
-      validators: (templateFields[ti].validators ?? []).filter((_v: Validator, i: number) => i !== vi),
-    })
-
-  // ── Template condition handlers ───────────────────────────────────────────
-
-  const addTemplateCondition = (idx: number) => {
-    const otherFields = templateFields.filter((_f, i) => i !== idx)
-    if (!otherFields.length) { toast.warning('Cannot add condition', 'Add more fields to this group first.'); return }
-    updateTemplateField(idx, {
-      conditions: [...(templateFields[idx].conditions ?? []), { _id: crypto.randomUUID(), fieldName: otherFields[0].name, operator: 'equals', value: '' }],
-    })
-  }
-
-  const updateTemplateCondition = (ti: number, ci: number, updates: Partial<Condition>) =>
-    updateTemplateField(ti, {
-      conditions: (templateFields[ti].conditions ?? []).map((c: Condition, i: number) =>
-        i === ci ? { ...c, ...updates } : c
-      ),
-    })
-
-  const deleteTemplateCondition = (ti: number, ci: number) =>
-    updateTemplateField(ti, {
-      conditions: (templateFields[ti].conditions ?? []).filter((_c: Condition, i: number) => i !== ci),
-    })
 
   // ── Top-level validator handlers ──────────────────────────────────────────
 
@@ -184,23 +104,6 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
   const deleteCondition = (i: number) =>
     setConditions(prev => prev.filter((_c, idx) => idx !== i))
 
-  // ── Bulk import handlers ──────────────────────────────────────────────────
-
-  const handleBulkImportToggle = (enabled: boolean) => {
-    setAllowBulkImport(enabled)
-    if (enabled && !bulkImportFields.length) {
-      setBulkImportFields(templateFields.map(tf => ({ name: tf.name, required: false })))
-    }
-  }
-
-  const handleBulkFieldToggle = (fieldName: string, included: boolean) =>
-    setBulkImportFields(prev =>
-      included ? [...prev, { name: fieldName, required: false }] : prev.filter(b => b.name !== fieldName)
-    )
-
-  const handleBulkRequiredToggle = (fieldName: string, required: boolean) =>
-    setBulkImportFields(prev => prev.map(b => b.name === fieldName ? { ...b, required } : b))
-
   // ── Save ──────────────────────────────────────────────────────────────────
 
   const handleSave = () => {
@@ -223,9 +126,9 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
     }
 
     if (config.type === 'paneldynamic') {
-      finalConfig.templateElements  = templateFields
-      finalConfig.allowBulkImport   = allowBulkImport
-      finalConfig.bulkImportFields  = allowBulkImport ? bulkImportFields : []
+      finalConfig.templateElements  = template.templateFields
+      finalConfig.allowBulkImport   = bulk.allowBulkImport
+      finalConfig.bulkImportFields  = bulk.allowBulkImport ? bulk.bulkImportFields : []
     }
 
     finalConfig.validators     = validators.filter(v => v.type !== 'regex' || (v.regex && v.regex.trim()))
@@ -261,34 +164,34 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
             <BasicTab
               config={config}
               choicesText={choicesText}
-              templateFields={templateFields}
-              templateChoicesText={templateChoicesText}
-              allowBulkImport={allowBulkImport}
-              bulkImportFields={bulkImportFields}
+              templateFields={template.templateFields}
+              templateChoicesText={template.templateChoicesText}
+              allowBulkImport={bulk.allowBulkImport}
+              bulkImportFields={bulk.bulkImportFields}
               crmLabels={crmLabels}
-              expandedTemplateField={expandedTemplateField}
-              expandedTemplateConditions={expandedTemplateConditions}
+              expandedTemplateField={template.expandedTemplateField}
+              expandedTemplateConditions={template.expandedTemplateConditions}
               onConfigChange={updates => setConfig(prev => ({ ...prev, ...updates }))}
               onChoicesChange={setChoicesText}
               onCrmLabelsChange={updates => setCrmLabels(prev => ({ ...prev, ...updates }))}
-              onAddTemplateField={addTemplateField}
-              onUpdateTemplateField={updateTemplateField}
-              onDeleteTemplateField={deleteTemplateField}
-              onTemplateChoicesChange={handleTemplateChoicesChange}
-              onTemplateTypeChange={handleTemplateTypeChange}
-              onTemplateInputTypeChange={handleTemplateInputTypeChange}
-              onToggleTemplateValidators={idx => setExpandedTemplateField(prev => prev === idx ? null : idx)}
-              onToggleTemplateConditions={idx => setExpandedTemplateConditions(prev => prev === idx ? null : idx)}
-              onAddTemplateValidator={addTemplateValidator}
-              onUpdateTemplateValidator={updateTemplateValidator}
-              onDeleteTemplateValidator={deleteTemplateValidator}
-              onAddTemplateCondition={addTemplateCondition}
-              onUpdateTemplateCondition={updateTemplateCondition}
-              onDeleteTemplateCondition={deleteTemplateCondition}
-              onTemplateConditionLogicChange={(idx, logic) => updateTemplateField(idx, { conditionLogic: logic })}
-              onBulkImportToggle={handleBulkImportToggle}
-              onBulkFieldToggle={handleBulkFieldToggle}
-              onBulkRequiredToggle={handleBulkRequiredToggle}
+              onAddTemplateField={template.addTemplateField}
+              onUpdateTemplateField={template.updateTemplateField}
+              onDeleteTemplateField={template.deleteTemplateField}
+              onTemplateChoicesChange={template.handleTemplateChoicesChange}
+              onTemplateTypeChange={template.handleTemplateTypeChange}
+              onTemplateInputTypeChange={template.handleTemplateInputTypeChange}
+              onToggleTemplateValidators={idx => template.setExpandedTemplateField(prev => prev === idx ? null : idx)}
+              onToggleTemplateConditions={idx => template.setExpandedTemplateConditions(prev => prev === idx ? null : idx)}
+              onAddTemplateValidator={template.addTemplateValidator}
+              onUpdateTemplateValidator={template.updateTemplateValidator}
+              onDeleteTemplateValidator={template.deleteTemplateValidator}
+              onAddTemplateCondition={template.addTemplateCondition}
+              onUpdateTemplateCondition={template.updateTemplateCondition}
+              onDeleteTemplateCondition={template.deleteTemplateCondition}
+              onTemplateConditionLogicChange={(idx, logic) => template.updateTemplateField(idx, { conditionLogic: logic })}
+              onBulkImportToggle={bulk.handleBulkImportToggle}
+              onBulkFieldToggle={bulk.handleBulkFieldToggle}
+              onBulkRequiredToggle={bulk.handleBulkRequiredToggle}
             />
           )}
 

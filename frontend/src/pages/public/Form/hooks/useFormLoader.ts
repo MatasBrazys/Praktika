@@ -1,5 +1,5 @@
 // src/pages/public/Form/hooks/useFormLoader.ts
-// Loads a form by ID, initialises the SurveyJS model, and wires up CRM behaviour.
+// Loads a form by ID, initialises the SurveyJS model, and wires up behaviors.
 // When submissionId is provided, loads existing data for editing.
 
 import { useState, useEffect } from 'react'
@@ -7,7 +7,8 @@ import { useNavigate } from 'react-router-dom'
 import { Model } from 'survey-core'
 import { formAPI, submissionAPI } from '../../../../services/api'
 import { useToast } from '../../../../contexts/ToastContext'
-import { attachRealtimeBehavior } from '../utils/crmBehavior'
+import { attachRealtimeValidation } from '../utils/realtimeValidation'
+import { attachCrmBehavior } from '../utils/crmBehavior'
 import { detectBulkPanels } from '../utils/bulkPanelDetector'
 import type { BulkPanelWithPage } from '../../../../types/survey.types'
 import type { FormDefinition } from '../../../../types'
@@ -67,7 +68,8 @@ export function useFormLoader(
 
         const model = new Model(formData.surveyjs_json)
         model.textUpdateMode = 'onTyping'
-        attachRealtimeBehavior(model)
+        attachRealtimeValidation(model)
+        attachCrmBehavior(model)
 
         // Pre-fill with existing data when editing
         if (existingData) {

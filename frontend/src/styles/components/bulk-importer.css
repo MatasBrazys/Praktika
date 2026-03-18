@@ -469,28 +469,3 @@
   .bi-btn--import { margin-left: 0; justify-content: center; }
 }
 
-/* ── Realtime validation indicators (injected by attachRealtimeBehavior) ── */
-
-.rt-valid {
-  border-color: var(--color-success) !important;
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15) !important;
-  transition: border-color 150ms, box-shadow 150ms;
-}
-
-.rt-invalid {
-  border-color: var(--color-danger) !important;
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.12) !important;
-  transition: border-color 150ms, box-shadow 150ms;
-}
-
-.rt-hint {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
-  margin-top: 3px;
-  line-height: 1.4;
-  transition: color 150ms;
-}
-
-.rt-hint--ok  { color: var(--color-success); }
-.rt-hint--err { color: var(--color-danger);  }
