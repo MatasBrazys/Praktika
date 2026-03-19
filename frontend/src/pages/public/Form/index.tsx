@@ -11,7 +11,6 @@ import BulkImporter from '../../../components/public/BulkImporter'
 import { useFormLoader } from './hooks/useFormLoader'
 import '../../../styles/pages/public/form.css'
 import '../../../styles/components/bulk-importer.css'
-import '../../../styles/components/realtime-validation.css'
 
 // Shape of the options object SurveyJS passes to onCurrentPageChanged
 interface PageChangedOptions {
@@ -22,7 +21,7 @@ export default function Form() {
   const { id, submissionId } = useParams<{ id: string; submissionId?: string }>()
 
   // form - raw data from database, surveyModel -  form definition from types/index.ts
-  const { form, surveyModel, bulkPanels, loading, error, isEditMode } = useFormLoader(id, submissionId)
+  const { form, surveyModel, bulkPanels, loading, error, isEditMode, submitting } = useFormLoader(id, submissionId)
 
   const [currentPageNo, setCurrentPageNo] = useState(0)
   const surveyWrapperRef = useRef<HTMLDivElement>(null)
@@ -71,7 +70,19 @@ export default function Form() {
 
   if (loading) return (
     <div className="public-page">
-      <div className="loading-spinner">Loading form...</div>
+      <div className="loading-spinner">
+        <div className="spinner" />
+        Loading form...
+      </div>
+    </div>
+  )
+
+  if (submitting) return (
+    <div className="public-page">
+      <div className="loading-spinner">
+        <div className="spinner" />
+        Submitting...
+      </div>
     </div>
   )
 

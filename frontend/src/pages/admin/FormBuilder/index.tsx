@@ -35,6 +35,7 @@ export default function FormBuilder() {
   const [editingField, setEditingField] = useState<FieldConfig | null>(null)
   const [showFieldEditor, setShowFieldEditor] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [loading, setLoading] = useState(isEditMode)  // true only when editing
 
   const {
     pages, setPages, activePage, activePageId, setActivePageId,
@@ -45,6 +46,7 @@ export default function FormBuilder() {
 
   const loadForm = useCallback(async () => {
     try {
+      setLoading(true)
       const form = await formAPI.get(Number(id))
       setTitle(form.title)
       setDescription(form.description ?? '')
@@ -66,6 +68,9 @@ export default function FormBuilder() {
     } catch (err) {
       toast.error('Failed to load form', extractErrorMessage(err))
       navigate('/admin/forms')
+    }
+    finally{
+      setLoading(false)
     }
   }, [id, toast, navigate, resetPages])
 
@@ -104,6 +109,17 @@ export default function FormBuilder() {
   }
 
   const allFields = pages.flatMap(p => p.fields)
+  if (loading) return (
+  <>
+    <Navbar />
+    <div className="page-container-admin">
+      <div className="page-loading">
+        <div className="spinner" />
+        Loading form...
+      </div>
+    </div>
+  </>
+)
 
   return (
     <>

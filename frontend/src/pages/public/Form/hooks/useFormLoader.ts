@@ -20,6 +20,7 @@ interface UseFormLoaderResult {
   loading: boolean
   error: string
   isEditMode: boolean
+  submitting: boolean
 }
 
 export function useFormLoader(
@@ -34,6 +35,7 @@ export function useFormLoader(
   const [bulkPanels, setBulkPanels] = useState<BulkPanelWithPage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const isEditMode = !!submissionId
 
@@ -43,6 +45,7 @@ export function useFormLoader(
     const loadForm = async (id: number) => {
       try {
         setLoading(true)
+        await new Promise(r => setTimeout(r, 500)) 
         const formData = await formAPI.get(id)
 
         if (!formData.is_active) {
@@ -67,7 +70,15 @@ export function useFormLoader(
         }
 
         const model = new Model(formData.surveyjs_json)
+
+        // textUpdateMode = 'onTyping' tells SurveyJS to fire onValueChanged earlier than default.
+        // Default: onValueChanged fires only on submit.
+        // With 'onTyping': plain text fields fire per keystroke, all other inputTypes fire on blur.
+        // Our realtimeValidation.ts listens to onValueChanged and calls field.validate() —
+        // so validation triggers whenever SurveyJS decides to fire the event.
         model.textUpdateMode = 'onTyping'
+        model.showCompletedPage = false      // we use our own Success page
+
         attachRealtimeValidation(model)
         attachCrmBehavior(model)
 
@@ -80,9 +91,11 @@ export function useFormLoader(
         model.onCurrentPageChanged.add(() => { })
 
         model.onComplete.add(async (survey: { data: Record<string, unknown> }) => {
+          setSubmitting(true)
           try {
             if (!formData.id) {
               toast.error('Submission failed', 'Form ID is missing.')
+              setSubmitting(false)
               return
             }
 
@@ -97,6 +110,7 @@ export function useFormLoader(
               navigate(`/user/forms/${id}/success`)
             }
           } catch {
+            setSubmitting(false)
             toast.error('Submission failed', 'Please try again or contact support.')
           }
         })
@@ -114,5 +128,5 @@ export function useFormLoader(
     loadForm(Number(formId))
   }, [formId, submissionId, navigate, toast])
 
-  return { form, surveyModel, bulkPanels, loading, error, isEditMode }
+  return { form, surveyModel, bulkPanels, loading, error, isEditMode, submitting }
 }

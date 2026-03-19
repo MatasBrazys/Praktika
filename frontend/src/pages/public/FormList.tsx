@@ -1,11 +1,11 @@
 // src/pages/public/FormList.tsx
 
 import { useState, useEffect, useCallback } from 'react'
-import { Link }                from 'react-router-dom'
-import { formAPI }             from '../../services/api'
-import { useToast }            from '../../contexts/ToastContext'
+import { Link } from 'react-router-dom'
+import { formAPI } from '../../services/api'
+import { useToast } from '../../contexts/ToastContext'
 import { extractErrorMessage } from '../../lib/apiClient'
-import Navbar                  from '../../components/shared/Navbar'
+import Navbar from '../../components/shared/Navbar'
 import type { FormDefinition } from '../../types'
 import '../../styles/pages/public/form-list.css'
 
@@ -19,9 +19,9 @@ function getFieldCount(form: FormDefinition): number {
 }
 
 export default function FormList() {
-  const [forms,   setForms]   = useState<FormDefinition[]>([])
+  const [forms, setForms] = useState<FormDefinition[]>([])
   const [loading, setLoading] = useState(true)
-  const { toast }             = useToast()
+  const { toast } = useToast()
 
   const loadForms = useCallback(async () => {
     try {
@@ -40,7 +40,7 @@ export default function FormList() {
   if (loading) return (
     <>
       <Navbar />
-      <div className="page-loading">Loading available forms…</div>
+      <div className="page-loading"><div className="spinner" />Loading available forms…</div>
     </>
   )
 

@@ -164,7 +164,14 @@ export default function FormList() {
     }
   }
 
-  if (loading) return <div className="page-loading">Loading forms…</div>
+  if (loading) return(
+    <>
+    <Navbar/>
+    <div className="page-loading"><div className="spinner" />Loading forms…</div>
+    </>  
+  )
+   
+
 
   return (
     <>

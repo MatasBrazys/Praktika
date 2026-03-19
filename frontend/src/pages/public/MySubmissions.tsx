@@ -64,7 +64,10 @@ export default function MySubmissions() {
   if (loading) return (
     <>
       <Navbar />
-      <div className="page-loading">Loading your submissions…</div>
+      <div className="page-loading">
+        <div className="spinner" />
+        Loading your submissions…
+      </div>
     </>
   )
 

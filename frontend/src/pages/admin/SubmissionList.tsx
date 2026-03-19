@@ -64,7 +64,12 @@ export default function SubmissionList() {
     toast.success('Export ready', `${submissions.length} submissions downloaded.`)
   }
 
-  if (loading) return <div className="page-loading">Loading submissions…</div>
+  if (loading) return(
+    <>
+    <Navbar/>
+    <div className="page-loading"><div className="spinner" />Loading submissions…</div>
+    </>
+  ) 
 
   return (
     <>

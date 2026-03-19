@@ -1,43 +1,22 @@
 // src/pages/public/Form/utils/realtimeValidation.ts
-// Attaches real-time regex validation to any SurveyJS model.
-// Validates fields on every keystroke via onValueChanged.
-// Independent of CRM — works on any field that has regex validators.
+// Triggers SurveyJS's own validators on value change instead of waiting for submit.
+// Requires model.textUpdateMode = 'onTyping' (set in useFormLoader.ts).
+//
+// Note: only inputType 'text' (plain text) fires onValueChanged per keystroke.
+// All other inputTypes (email, phone, number, date, ipv4, cidr, mac) fire on blur.
+// This is a SurveyJS limitation — textUpdateMode only applies to plain text inputs.
 
 import type { Model } from 'survey-core'
 
-// Wires up per-keystroke regex validation for all fields with regex validators.
-// Call this once after creating the Model, before rendering.
-// Requires model.textUpdateMode = 'onTyping' to fire on each keystroke.
 export function attachRealtimeValidation(surveyModel: Model): void {
   surveyModel.onValueChanged.add((_survey: unknown, options: { name: string; value: unknown }) => {
-    validateFieldRegex(options.name, options.value, surveyModel)
+    const field = (surveyModel.getAllQuestions() as any[])
+      .find((q: any) => q.name === options.name)
+    if (!field?.validators?.length) return
+
+    const value = String(options.value ?? '').trim()
+    if (!value) return
+
+    field.validate()
   })
-}
-
-// ── Private ───────────────────────────────────────────────────────────────
-
-// Shows inline error if the value does not match the field's regex validators.
-// Clears errors when the value passes or is empty.
-function validateFieldRegex(fieldName: string, value: unknown, surveyModel: Model): void {
-  const allQuestions = surveyModel.getAllQuestions() as any[]
-  const field = allQuestions.find((q: any) => q.name === fieldName)
-  if (!field) return
-
-  const regexValidators = (field.validators || []).filter((v: any) => v.regex)
-  if (!regexValidators.length) return
-
-  const stringValue = String(value ?? '').trim()
-  field.clearErrors?.()
-  if (!stringValue) return
-
-  for (const validator of regexValidators) {
-    try {
-      if (!new RegExp(validator.regex).test(stringValue)) {
-        field.addError?.(validator.text || 'Invalid format')
-        return
-      }
-    } catch {
-      // Skip malformed regex patterns
-    }
-  }
 }
