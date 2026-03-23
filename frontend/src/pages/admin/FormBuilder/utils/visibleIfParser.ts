@@ -5,8 +5,6 @@
 import type { FieldConfig, Condition } from '../../../../types/form-builder.types';
 import { CRM_PANEL_MARKER } from './surveyConverter';
 
-// Converts a raw SurveyJS element object back into a FieldConfig.
-// Returns null if the element is malformed or unrecognisable.
 export function elementToField(element: any, fallbackId: string): FieldConfig | null {
     try {
         if (element.type === 'panel' && element[CRM_PANEL_MARKER]) {
@@ -18,8 +16,6 @@ export function elementToField(element: any, fallbackId: string): FieldConfig | 
     }
 }
 
-// Parses a SurveyJS visibleIf expression string into a Condition array.
-// Handles: =, !=, contains, empty, notempty operators.
 export function parseVisibleIf(expression: string): Condition[] {
     return expression
         .split(/ and | or /i)
@@ -29,7 +25,6 @@ export function parseVisibleIf(expression: string): Condition[] {
 
 // ── Private helpers ───────────────────────────────────────────────────────────
 
-// Reconstructs a CRM lookup FieldConfig from the stored panel structure
 function parseCrmPanel(panel: any, fallbackId: string): FieldConfig | null {
     const idElement = panel.elements?.[0];
     if (!idElement) return null;
@@ -51,7 +46,6 @@ function parseCrmPanel(panel: any, fallbackId: string): FieldConfig | null {
     };
 }
 
-// Converts a standard SurveyJS element into a FieldConfig
 function parseRegularElement(element: any, fallbackId: string): FieldConfig {
     const field: FieldConfig = {
         id: fallbackId,
@@ -71,6 +65,16 @@ function parseRegularElement(element: any, fallbackId: string): FieldConfig {
         panelCount: element.panelCount,
     };
 
+    // ── Dynamic choices source ──
+    if (element.dynamicChoicesSource?.fieldName) {
+        field.dynamicChoicesSource = {
+            fieldName: element.dynamicChoicesSource.fieldName,
+            ...(element.dynamicChoicesSource.subFieldName
+                ? { subFieldName: element.dynamicChoicesSource.subFieldName }
+                : {}),
+        };
+    }
+
     if (element.visibleIf) {
         field.conditions = parseVisibleIf(element.visibleIf);
         field.conditionLogic = element.visibleIf.toLowerCase().includes(' or ') ? 'or' : 'and';
@@ -88,7 +92,6 @@ function parseRegularElement(element: any, fallbackId: string): FieldConfig {
     return field;
 }
 
-// Parses a single condition clause from a visibleIf expression
 function parseConditionPart(part: string): Condition | null {
     const emptyMatch = part.match(/\{(?:panel\.)?(\w+)\}\s+empty/);
     const notEmptyMatch = part.match(/\{(?:panel\.)?(\w+)\}\s+notempty/);

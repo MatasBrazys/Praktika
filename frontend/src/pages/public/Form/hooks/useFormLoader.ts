@@ -9,6 +9,7 @@ import { formAPI, submissionAPI } from '../../../../services/api'
 import { useToast } from '../../../../contexts/ToastContext'
 import { attachRealtimeValidation } from '../utils/realtimeValidation'
 import { attachCrmBehavior } from '../utils/crmBehavior'
+import { attachDynamicChoicesBehavior } from '../utils/dynamicChoicesBehavior'
 import { detectBulkPanels } from '../utils/bulkPanelDetector'
 import type { BulkPanelWithPage } from '../../../../types/survey.types'
 import type { FormDefinition } from '../../../../types'
@@ -45,7 +46,6 @@ export function useFormLoader(
     const loadForm = async (id: number) => {
       try {
         setLoading(true)
-        await new Promise(r => setTimeout(r, 500)) 
         const formData = await formAPI.get(id)
 
         if (!formData.is_active) {
@@ -74,20 +74,18 @@ export function useFormLoader(
         // textUpdateMode = 'onTyping' tells SurveyJS to fire onValueChanged earlier than default.
         // Default: onValueChanged fires only on submit.
         // With 'onTyping': plain text fields fire per keystroke, all other inputTypes fire on blur.
-        // Our realtimeValidation.ts listens to onValueChanged and calls field.validate() —
-        // so validation triggers whenever SurveyJS decides to fire the event.
         model.textUpdateMode = 'onTyping'
-        model.showCompletedPage = false      // we use our own Success page
+        model.showCompletedPage = false
 
         attachRealtimeValidation(model)
         attachCrmBehavior(model)
+        attachDynamicChoicesBehavior(model, formData.surveyjs_json as Record<string, unknown>)
 
         // Pre-fill with existing data when editing
         if (existingData) {
           model.data = existingData
         }
 
-        // pageIndex is tracked in Form/index.tsx via onCurrentPageChanged
         model.onCurrentPageChanged.add(() => { })
 
         model.onComplete.add(async (survey: { data: Record<string, unknown> }) => {
@@ -100,12 +98,10 @@ export function useFormLoader(
             }
 
             if (submissionId) {
-              // Edit mode — update existing submission
               await submissionAPI.update(Number(submissionId), survey.data)
               toast.success('Submission updated', 'Your changes have been saved.')
               navigate('/user/submissions')
             } else {
-              // New mode — create submission
               await formAPI.submitForm(formData.id, formData.title, survey.data)
               navigate(`/user/forms/${id}/success`)
             }

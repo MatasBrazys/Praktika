@@ -1,15 +1,35 @@
-// src/pages/admin/FormBuilder/utils/surveyConverter.ts
-// Converts internal FieldConfig objects into SurveyJS-compatible JSON elements.
-// Used when saving a form and when rendering the live preview.
+// PATCH for src/pages/admin/FormBuilder/utils/surveyConverter.ts
+// Add this block AFTER the line: if (field.choices) element.choices = field.choices;
+// (inside the fieldToElement function, before the validators block)
+//
+// ── Dynamic choices ──
+// If the field uses dynamic choices, save the source config and skip static choices.
+// At runtime, dynamicChoicesBehavior.ts will populate choices from the source field.
+
+// ADD these lines to fieldToElement(), after choices and before validators:
+
+/*
+    if (field.dynamicChoicesSource?.fieldName) {
+        element.dynamicChoicesSource = {
+            fieldName: field.dynamicChoicesSource.fieldName,
+            ...(field.dynamicChoicesSource.subFieldName
+                ? { subFieldName: field.dynamicChoicesSource.subFieldName }
+                : {}),
+        };
+        // Don't save static choices when dynamic source is configured
+        delete element.choices;
+    }
+*/
+
+// ─── FULL REPLACEMENT of fieldToElement function ─────────────────────────────
+
+// Replace the existing fieldToElement function with this version that supports
+// dynamicChoicesSource. Everything else is unchanged.
 
 import type { FieldConfig, Page, Condition } from '../../../../types/form-builder.types';
 
-// Internal marker used to identify CRM lookup panels when reading back from JSON
 export const CRM_PANEL_MARKER = '__crm_panel__';
 
-// Converts a single FieldConfig into a SurveyJS element object.
-// CRM lookup is a special case — generates a panel with 5 sub-fields (id + 4 autofill).
-// isTemplate=true switches visibleIf references from {field} to {panel.field}
 export function fieldToElement(field: FieldConfig, isTemplate = false): any {
     if (field.type === 'crmlookup') {
         return buildCrmPanel(field);
@@ -27,8 +47,20 @@ export function fieldToElement(field: FieldConfig, isTemplate = false): any {
     if (field.defaultValue) element.defaultValue = field.defaultValue;
     if (field.inputType && field.type === 'text') element.inputType = field.inputType;
     if (field.choices) element.choices = field.choices;
+
+    // ── Dynamic choices source (dropdown/radiogroup pulling from another field) ──
+    if (field.dynamicChoicesSource?.fieldName) {
+        element.dynamicChoicesSource = {
+            fieldName: field.dynamicChoicesSource.fieldName,
+            ...(field.dynamicChoicesSource.subFieldName
+                ? { subFieldName: field.dynamicChoicesSource.subFieldName }
+                : {}),
+        };
+        // Runtime choices come from source — don't bake static ones into JSON
+        delete element.choices;
+    }
+
     if (field.validators?.length) {
-        // Strip internal _id keys before saving to SurveyJS JSON
         element.validators = field.validators.map(({ _id: _, ...v }) => v);
     }
 
@@ -52,7 +84,6 @@ export function fieldToElement(field: FieldConfig, isTemplate = false): any {
     return element;
 }
 
-// Converts all pages (or a single page) into the final SurveyJS JSON
 export function convertToSurveyJS(pages: Page[]): any {
     if (pages.length === 1) {
         return { elements: pages[0].fields.map(f => fieldToElement(f)) };
@@ -68,7 +99,6 @@ export function convertToSurveyJS(pages: Page[]): any {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-// Builds the CRM lookup panel with the ID input and 4 read-only autofill fields
 function buildCrmPanel(field: FieldConfig): any {
     const prefix = field.name;
     const labels = field.crmFieldLabels || {};
@@ -91,9 +121,6 @@ function buildCrmPanel(field: FieldConfig): any {
     };
 }
 
-// Builds a SurveyJS visibleIf expression string from conditions and logic.
-// Exported so ConditionsTab can use it for the live preview.
-// isTemplate=true switches references from {field} to {panel.field}
 export function buildVisibleIf(
     conditions: Condition[],
     conditionLogic: 'and' | 'or' | undefined,

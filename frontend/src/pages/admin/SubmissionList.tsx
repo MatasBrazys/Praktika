@@ -87,7 +87,7 @@ export default function SubmissionList() {
             </div>
             <div className="header-actions">
               <button className="btn-export" onClick={exportToCSV} disabled={!submissions.length}>
-                📥 Export CSV
+                Export CSV
               </button>
             </div>
           </div>
@@ -95,9 +95,7 @@ export default function SubmissionList() {
           {submissions.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">📭</div>
-              <h2>No submissions yet</h2>
-              <p>Share this form to start collecting responses</p>
-              <code className="share-link">{window.location.origin}/user/forms/{id}</code>
+              <h2>No submissions yet</h2>      
             </div>
           ) : (
             <div className="submissions-table">

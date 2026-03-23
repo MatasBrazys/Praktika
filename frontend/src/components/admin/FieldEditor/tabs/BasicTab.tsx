@@ -1,53 +1,56 @@
 // src/components/admin/FieldEditor/tabs/BasicTab.tsx
 // Basic tab — field type, title, name, description, choices, paneldynamic and CRM config.
 
-import type { FieldConfig, BulkImportField, Validator, Condition } from '../../../../types/form-builder.types';
+import type { FieldConfig, BulkImportField, Validator, Condition, DynamicChoicesSource } from '../../../../types/form-builder.types';
 import TemplateFieldRow from '../sections/TemplateFieldRow';
 import BulkImportConfig from '../sections/BulkImportConfig';
-import CrmLookupConfig  from '../sections/CrmLookupConfig';
+import CrmLookupConfig from '../sections/CrmLookupConfig';
 import { FIELD_TYPES, TEXT_INPUT_TYPES } from '../fieldTypes';
-
+import DynamicChoicesConfig from '../sections/DynamicChoicesConfig';
 interface CrmLabels { name: string; street: string; postcode: string; state: string; }
 
 interface Props {
-  config:            FieldConfig;
-  choicesText:       string;
-  templateFields:    FieldConfig[];
+  config: FieldConfig;
+  choicesText: string;
+  templateFields: FieldConfig[];
   templateChoicesText: Record<number, string>;
-  allowBulkImport:   boolean;
-  bulkImportFields:  BulkImportField[];
-  crmLabels:         CrmLabels;
-  expandedTemplateField:      number | null;
+  allowBulkImport: boolean;
+  bulkImportFields: BulkImportField[];
+  crmLabels: CrmLabels;
+  expandedTemplateField: number | null;
   expandedTemplateConditions: number | null;
-  onConfigChange:    (updates: Partial<FieldConfig>) => void;
-  onChoicesChange:   (text: string) => void;
+  allFields: FieldConfig[]
+  onConfigChange: (updates: Partial<FieldConfig>) => void;
+  onChoicesChange: (text: string) => void;
   onCrmLabelsChange: (updates: Partial<CrmLabels>) => void;
   // template field handlers
-  onAddTemplateField:         () => void;
-  onUpdateTemplateField:      (idx: number, updates: Partial<FieldConfig>) => void;
-  onDeleteTemplateField:      (idx: number) => void;
-  onTemplateChoicesChange:    (idx: number, text: string) => void;
-  onTemplateTypeChange:       (idx: number, type: string) => void;
-  onTemplateInputTypeChange:  (idx: number, inputType: string) => void;
+  onAddTemplateField: () => void;
+  onUpdateTemplateField: (idx: number, updates: Partial<FieldConfig>) => void;
+  onDeleteTemplateField: (idx: number) => void;
+  onTemplateChoicesChange: (idx: number, text: string) => void;
+  onTemplateTypeChange: (idx: number, type: string) => void;
+  onTemplateInputTypeChange: (idx: number, inputType: string) => void;
   onToggleTemplateValidators: (idx: number) => void;
   onToggleTemplateConditions: (idx: number) => void;
-  onAddTemplateValidator:     (idx: number, presetKey?: string) => void;
-  onUpdateTemplateValidator:  (ti: number, vi: number, updates: Partial<Validator>) => void;
-  onDeleteTemplateValidator:  (ti: number, vi: number) => void;
-  onAddTemplateCondition:     (idx: number) => void;
-  onUpdateTemplateCondition:  (ti: number, ci: number, updates: Partial<Condition>) => void;
-  onDeleteTemplateCondition:  (ti: number, ci: number) => void;
+  onAddTemplateValidator: (idx: number, presetKey?: string) => void;
+  onUpdateTemplateValidator: (ti: number, vi: number, updates: Partial<Validator>) => void;
+  onDeleteTemplateValidator: (ti: number, vi: number) => void;
+  onAddTemplateCondition: (idx: number) => void;
+  onUpdateTemplateCondition: (ti: number, ci: number, updates: Partial<Condition>) => void;
+  onDeleteTemplateCondition: (ti: number, ci: number) => void;
   onTemplateConditionLogicChange: (idx: number, logic: 'and' | 'or') => void;
   // bulk import handlers
-  onBulkImportToggle:    (enabled: boolean) => void;
-  onBulkFieldToggle:     (fieldName: string, included: boolean) => void;
-  onBulkRequiredToggle:  (fieldName: string, required: boolean) => void;
+  onBulkImportToggle: (enabled: boolean) => void;
+  onBulkFieldToggle: (fieldName: string, included: boolean) => void;
+  onBulkRequiredToggle: (fieldName: string, required: boolean) => void;
+  onDynamicChoicesChange: (source: DynamicChoicesSource | undefined) => void
+
 }
 
 export default function BasicTab({
   config, choicesText, templateFields, templateChoicesText,
   allowBulkImport, bulkImportFields, crmLabels,
-  expandedTemplateField, expandedTemplateConditions,
+  expandedTemplateField, expandedTemplateConditions, allFields,
   onConfigChange, onChoicesChange, onCrmLabelsChange,
   onAddTemplateField, onUpdateTemplateField, onDeleteTemplateField,
   onTemplateChoicesChange, onTemplateTypeChange, onTemplateInputTypeChange,
@@ -55,10 +58,10 @@ export default function BasicTab({
   onAddTemplateValidator, onUpdateTemplateValidator, onDeleteTemplateValidator,
   onAddTemplateCondition, onUpdateTemplateCondition, onDeleteTemplateCondition,
   onTemplateConditionLogicChange,
-  onBulkImportToggle, onBulkFieldToggle, onBulkRequiredToggle,
+  onBulkImportToggle, onBulkFieldToggle, onBulkRequiredToggle, onDynamicChoicesChange,
 }: Props) {
-  const isCrmLookup     = config.type === 'crmlookup';
-  const needsChoices    = ['dropdown', 'radiogroup', 'checkbox'].includes(config.type);
+  const isCrmLookup = config.type === 'crmlookup';
+  const needsChoices = ['dropdown', 'radiogroup', 'checkbox'].includes(config.type);
   const showPlaceholder = config.type === 'text' || config.type === 'comment';
 
   return (
@@ -113,10 +116,19 @@ export default function BasicTab({
       )}
 
       {needsChoices && (
-        <div className="form-group">
-          <label>Choices (one per line) *</label>
-          <textarea value={choicesText} onChange={e => onChoicesChange(e.target.value)} placeholder="Type each option on a new line" rows={5} />
-        </div>
+        <>
+          <DynamicChoicesConfig
+            source={config.dynamicChoicesSource}
+            allFields={allFields}
+            onChange={onDynamicChoicesChange}
+          />
+          {!config.dynamicChoicesSource?.fieldName && (
+            <div className='form-group'>
+              <label>Choices (one per line) *</label>
+              <textarea value={choicesText} onChange={e=>onChoicesChange(e.target.value)} placeholder='Type each option on a new line' rows={5}/>
+            </div>
+          )}
+        </>
       )}
 
       {/* Paneldynamic template fields */}

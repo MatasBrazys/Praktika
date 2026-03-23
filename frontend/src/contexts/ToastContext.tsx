@@ -1,7 +1,7 @@
 // src/contexts/ToastContext.tsx
 
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 import type { Toast, ToastType } from '../types';
 
 interface ToastContextType {
@@ -34,12 +34,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  const toast = {
+  const toast = useMemo(() => ({
     success: (title: string, message?: string) => add('success', title, message),
     error:   (title: string, message?: string) => add('error',   title, message, 6000),
     warning: (title: string, message?: string) => add('warning', title, message, 5000),
     info:    (title: string, message?: string) => add('info',    title, message),
-  };
+  }), [add])
 
   return (
     <ToastContext.Provider value={{ toasts, toast, dismiss }}>

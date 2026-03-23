@@ -2,7 +2,7 @@
 // Shell component — owns top-level state, delegates template/bulk to hooks.
 
 import { useState, useEffect, useCallback } from 'react'
-import type { FieldConfig, Validator, Condition } from '../../../types/form-builder.types'
+import type { FieldConfig, Validator, Condition, DynamicChoicesSource } from '../../../types/form-builder.types'
 import { VALIDATOR_PRESETS, AUTO_PRESET_REGEXES } from './validatorPresets'
 import { useToast } from '../../../contexts/ToastContext'
 import { useTemplateFields } from './hooks/useTemplateFields'
@@ -119,10 +119,18 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
     }
 
     if (['dropdown', 'radiogroup', 'checkbox'].includes(config.type)) {
-      finalConfig.choices = choicesText.split('\n').map(c => c.trim()).filter(Boolean)
-      if (!finalConfig.choices.length) { toast.warning('Choices required', 'Please add at least one choice.'); return }
+      if (config.dynamicChoicesSource?.fieldName) {
+        // Dynamic choices — runtime will populate, skip static validation
+        finalConfig.dynamicChoicesSource = config.dynamicChoicesSource
+        delete finalConfig.choices
+      } else {
+        finalConfig.choices = choicesText.split('\n').map(c => c.trim()).filter(Boolean)
+        if (!finalConfig.choices.length) { toast.warning('Choices required', 'Please add at least one choice.'); return }
+        delete finalConfig.dynamicChoicesSource
+      }
     } else {
       delete finalConfig.choices
+      delete finalConfig.dynamicChoicesSource
     }
 
     if (config.type === 'paneldynamic') {
@@ -137,6 +145,10 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
 
     onSave(finalConfig)
   }
+  const handleDynamicChoicesChange = (source: DynamicChoicesSource | undefined) => {
+    setConfig(prev => ({...prev, dynamicChoicesSource: source}))
+  }
+
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -171,6 +183,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
               crmLabels={crmLabels}
               expandedTemplateField={template.expandedTemplateField}
               expandedTemplateConditions={template.expandedTemplateConditions}
+              allFields={allFields}
               onConfigChange={updates => setConfig(prev => ({ ...prev, ...updates }))}
               onChoicesChange={setChoicesText}
               onCrmLabelsChange={updates => setCrmLabels(prev => ({ ...prev, ...updates }))}
@@ -192,6 +205,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
               onBulkImportToggle={bulk.handleBulkImportToggle}
               onBulkFieldToggle={bulk.handleBulkFieldToggle}
               onBulkRequiredToggle={bulk.handleBulkRequiredToggle}
+              onDynamicChoicesChange={handleDynamicChoicesChange}
             />
           )}
 
