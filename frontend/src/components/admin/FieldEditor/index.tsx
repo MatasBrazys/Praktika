@@ -80,9 +80,10 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
 
   const addValidator = (type: Validator['type']) => {
     const defaults: Record<string, Validator> = {
-      regex:   { _id: crypto.randomUUID(), type: 'regex',   text: 'Invalid format',  regex: '' },
-      numeric: { _id: crypto.randomUUID(), type: 'numeric', text: 'Invalid number',  minValue: 0,  maxValue: 100 },
-      text:    { _id: crypto.randomUUID(), type: 'text',    text: 'Invalid length',  minLength: 1, maxLength: 100 },
+      regex:      { _id: crypto.randomUUID(), type: 'regex',      text: 'Invalid format',              regex: '' },
+      numeric:    { _id: crypto.randomUUID(), type: 'numeric',    text: 'Invalid number',              minValue: 0,  maxValue: 100 },
+      text:       { _id: crypto.randomUUID(), type: 'text',       text: 'Invalid length',              minLength: 1, maxLength: 100 },
+      crossfield: { _id: crypto.randomUUID(), type: 'crossfield', text: 'Cross-field validation failed', compareField: '', operation: '' },
     }
     setValidators(prev => [...prev, defaults[type]])
   }
@@ -104,6 +105,12 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
   const deleteCondition = (i: number) =>
     setConditions(prev => prev.filter((_c, idx) => idx !== i))
 
+  // ── Dynamic choices handler ───────────────────────────────────────────────
+
+  const handleDynamicChoicesChange = (source: DynamicChoicesSource | undefined) => {
+    setConfig(prev => ({ ...prev, dynamicChoicesSource: source }))
+  }
+
   // ── Save ──────────────────────────────────────────────────────────────────
 
   const handleSave = () => {
@@ -120,7 +127,6 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
 
     if (['dropdown', 'radiogroup', 'checkbox'].includes(config.type)) {
       if (config.dynamicChoicesSource?.fieldName) {
-        // Dynamic choices — runtime will populate, skip static validation
         finalConfig.dynamicChoicesSource = config.dynamicChoicesSource
         delete finalConfig.choices
       } else {
@@ -139,16 +145,17 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
       finalConfig.bulkImportFields  = bulk.allowBulkImport ? bulk.bulkImportFields : []
     }
 
-    finalConfig.validators     = validators.filter(v => v.type !== 'regex' || (v.regex && v.regex.trim()))
+    // Filter validators: regex needs pattern, crossfield needs compareField + operation
+    finalConfig.validators = validators.filter(v => {
+      if (v.type === 'regex') return v.regex && v.regex.trim()
+      if (v.type === 'crossfield') return v.compareField && v.operation
+      return true
+    })
     finalConfig.conditions     = conditions.filter(c => c.fieldName)
     finalConfig.conditionLogic = conditionLogic
 
     onSave(finalConfig)
   }
-  const handleDynamicChoicesChange = (source: DynamicChoicesSource | undefined) => {
-    setConfig(prev => ({...prev, dynamicChoicesSource: source}))
-  }
-
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -196,6 +203,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
               onToggleTemplateValidators={idx => template.setExpandedTemplateField(prev => prev === idx ? null : idx)}
               onToggleTemplateConditions={idx => template.setExpandedTemplateConditions(prev => prev === idx ? null : idx)}
               onAddTemplateValidator={template.addTemplateValidator}
+              onAddTemplateCrossfieldValidator={template.addTemplateCrossfieldValidator}
               onUpdateTemplateValidator={template.updateTemplateValidator}
               onDeleteTemplateValidator={template.deleteTemplateValidator}
               onAddTemplateCondition={template.addTemplateCondition}
@@ -212,6 +220,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
           {activeTab === 'validators' && (
             <ValidatorsTab
               validators={validators}
+              comparableFields={allFields}
               onAdd={addValidator}
               onAddPreset={addValidatorPreset}
               onUpdate={updateValidator}

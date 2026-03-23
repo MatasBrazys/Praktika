@@ -1,6 +1,5 @@
 // src/components/admin/FieldEditor/hooks/useTemplateFields.ts
 // Manages template fields (paneldynamic sub-fields) and their validators/conditions.
-// Extracted from FieldEditor/index.tsx to reduce its responsibility.
 
 import { useState } from 'react'
 import type { FieldConfig, Validator, Condition } from '../../../../types/form-builder.types'
@@ -12,10 +11,10 @@ const PRESET_INPUT_TYPES = ['email', 'phone', 'ipv4', 'cidr', 'mac', 'number', '
 export function useTemplateFields(initialFields: FieldConfig[]) {
   const { toast } = useToast()
 
-  const [templateFields,             setTemplateFields]             = useState<FieldConfig[]>(initialFields)
-  const [expandedTemplateField,      setExpandedTemplateField]      = useState<number | null>(null)
+  const [templateFields, setTemplateFields] = useState<FieldConfig[]>(initialFields)
+  const [expandedTemplateField, setExpandedTemplateField] = useState<number | null>(null)
   const [expandedTemplateConditions, setExpandedTemplateConditions] = useState<number | null>(null)
-  const [templateChoicesText,        setTemplateChoicesText]        = useState<Record<number, string>>({})
+  const [templateChoicesText, setTemplateChoicesText] = useState<Record<number, string>>({})
 
   // ── Field CRUD ────────────────────────────────────────────────────────────
 
@@ -42,7 +41,7 @@ export function useTemplateFields(initialFields: FieldConfig[]) {
   // ── Type changes (with auto-preset) ───────────────────────────────────────
 
   const handleTemplateTypeChange = (idx: number, newType: string) => {
-    const tf     = templateFields[idx]
+    const tf = templateFields[idx]
     const manual = (tf.validators ?? []).filter((v: Validator) =>
       v.type !== 'regex' || !AUTO_PRESET_REGEXES.includes(v.regex ?? '')
     )
@@ -53,7 +52,7 @@ export function useTemplateFields(initialFields: FieldConfig[]) {
   }
 
   const handleTemplateInputTypeChange = (idx: number, inputType: string) => {
-    const tf     = templateFields[idx]
+    const tf = templateFields[idx]
     const manual = (tf.validators ?? []).filter((v: Validator) =>
       v.type !== 'regex' || !AUTO_PRESET_REGEXES.includes(v.regex ?? '')
     )
@@ -70,6 +69,17 @@ export function useTemplateFields(initialFields: FieldConfig[]) {
     const newV: Validator = presetKey && VALIDATOR_PRESETS[presetKey]
       ? { _id: crypto.randomUUID(), type: 'regex' as const, ...VALIDATOR_PRESETS[presetKey] }
       : { _id: crypto.randomUUID(), type: 'regex', text: 'Invalid format', regex: '' }
+    updateTemplateField(idx, { validators: [...(templateFields[idx].validators ?? []), newV] })
+  }
+
+  const addTemplateCrossfieldValidator = (idx: number) => {
+    const newV: Validator = {
+      _id: crypto.randomUUID(),
+      type: 'crossfield',
+      text: 'Values are not compatible',  // generic bet geresnis
+      compareField: '',
+      operation: '',
+    }
     updateTemplateField(idx, { validators: [...(templateFields[idx].validators ?? []), newV] })
   }
 
@@ -122,6 +132,7 @@ export function useTemplateFields(initialFields: FieldConfig[]) {
     handleTemplateTypeChange,
     handleTemplateInputTypeChange,
     addTemplateValidator,
+    addTemplateCrossfieldValidator,
     updateTemplateValidator,
     deleteTemplateValidator,
     addTemplateCondition,

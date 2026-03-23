@@ -5,8 +5,9 @@ import type { FieldConfig, BulkImportField, Validator, Condition, DynamicChoices
 import TemplateFieldRow from '../sections/TemplateFieldRow';
 import BulkImportConfig from '../sections/BulkImportConfig';
 import CrmLookupConfig from '../sections/CrmLookupConfig';
-import { FIELD_TYPES, TEXT_INPUT_TYPES } from '../fieldTypes';
 import DynamicChoicesConfig from '../sections/DynamicChoicesConfig';
+import { FIELD_TYPES, TEXT_INPUT_TYPES } from '../fieldTypes';
+
 interface CrmLabels { name: string; street: string; postcode: string; state: string; }
 
 interface Props {
@@ -19,7 +20,7 @@ interface Props {
   crmLabels: CrmLabels;
   expandedTemplateField: number | null;
   expandedTemplateConditions: number | null;
-  allFields: FieldConfig[]
+  allFields: FieldConfig[];
   onConfigChange: (updates: Partial<FieldConfig>) => void;
   onChoicesChange: (text: string) => void;
   onCrmLabelsChange: (updates: Partial<CrmLabels>) => void;
@@ -33,6 +34,7 @@ interface Props {
   onToggleTemplateValidators: (idx: number) => void;
   onToggleTemplateConditions: (idx: number) => void;
   onAddTemplateValidator: (idx: number, presetKey?: string) => void;
+  onAddTemplateCrossfieldValidator: (idx: number) => void;
   onUpdateTemplateValidator: (ti: number, vi: number, updates: Partial<Validator>) => void;
   onDeleteTemplateValidator: (ti: number, vi: number) => void;
   onAddTemplateCondition: (idx: number) => void;
@@ -43,8 +45,8 @@ interface Props {
   onBulkImportToggle: (enabled: boolean) => void;
   onBulkFieldToggle: (fieldName: string, included: boolean) => void;
   onBulkRequiredToggle: (fieldName: string, required: boolean) => void;
-  onDynamicChoicesChange: (source: DynamicChoicesSource | undefined) => void
-
+  // dynamic choices
+  onDynamicChoicesChange: (source: DynamicChoicesSource | undefined) => void;
 }
 
 export default function BasicTab({
@@ -55,10 +57,12 @@ export default function BasicTab({
   onAddTemplateField, onUpdateTemplateField, onDeleteTemplateField,
   onTemplateChoicesChange, onTemplateTypeChange, onTemplateInputTypeChange,
   onToggleTemplateValidators, onToggleTemplateConditions,
-  onAddTemplateValidator, onUpdateTemplateValidator, onDeleteTemplateValidator,
+  onAddTemplateValidator, onAddTemplateCrossfieldValidator,
+  onUpdateTemplateValidator, onDeleteTemplateValidator,
   onAddTemplateCondition, onUpdateTemplateCondition, onDeleteTemplateCondition,
   onTemplateConditionLogicChange,
-  onBulkImportToggle, onBulkFieldToggle, onBulkRequiredToggle, onDynamicChoicesChange,
+  onBulkImportToggle, onBulkFieldToggle, onBulkRequiredToggle,
+  onDynamicChoicesChange,
 }: Props) {
   const isCrmLookup = config.type === 'crmlookup';
   const needsChoices = ['dropdown', 'radiogroup', 'checkbox'].includes(config.type);
@@ -106,12 +110,10 @@ export default function BasicTab({
             <label>Placeholder</label>
             <input type="text" value={config.placeholder || ''} onChange={e => onConfigChange({ placeholder: e.target.value })} placeholder="e.g., Enter value..." />
           </div>
-          {showPlaceholder && (
-            <div className="form-group">
-              <label>Default Value</label>
-              <input type="text" value={config.defaultValue || ''} onChange={e => onConfigChange({ defaultValue: e.target.value })} placeholder="Pre-filled value" />
-            </div>
-          )}
+          <div className="form-group">
+            <label>Default Value</label>
+            <input type="text" value={config.defaultValue || ''} onChange={e => onConfigChange({ defaultValue: e.target.value })} placeholder="Pre-filled value" />
+          </div>
         </div>
       )}
 
@@ -123,9 +125,9 @@ export default function BasicTab({
             onChange={onDynamicChoicesChange}
           />
           {!config.dynamicChoicesSource?.fieldName && (
-            <div className='form-group'>
+            <div className="form-group">
               <label>Choices (one per line) *</label>
-              <textarea value={choicesText} onChange={e=>onChoicesChange(e.target.value)} placeholder='Type each option on a new line' rows={5}/>
+              <textarea value={choicesText} onChange={e => onChoicesChange(e.target.value)} placeholder="Type each option on a new line" rows={5} />
             </div>
           )}
         </>
@@ -174,6 +176,7 @@ export default function BasicTab({
               onToggleValidators={onToggleTemplateValidators}
               onToggleConditions={onToggleTemplateConditions}
               onAddValidator={onAddTemplateValidator}
+              onAddCrossfieldValidator={onAddTemplateCrossfieldValidator}
               onUpdateValidator={onUpdateTemplateValidator}
               onDeleteValidator={onDeleteTemplateValidator}
               onAddCondition={onAddTemplateCondition}

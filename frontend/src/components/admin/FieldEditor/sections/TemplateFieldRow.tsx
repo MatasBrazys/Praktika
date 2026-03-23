@@ -1,8 +1,9 @@
 // src/components/admin/FieldEditor/sections/TemplateFieldRow.tsx
 // A single repeatable field row inside a paneldynamic configuration.
-// Includes type, title, name, validators, and conditions for that field.
+// Includes type, title, name, validators (regex + crossfield), and conditions.
 
 import type { FieldConfig, Validator, Condition } from '../../../../types/form-builder.types';
+import { CROSSFIELD_OPERATIONS } from '../../../../types/form-builder.types';
 import { TEXT_INPUT_TYPES } from '../fieldTypes';
 
 interface Props {
@@ -26,6 +27,7 @@ interface Props {
   onUpdateCondition:         (ti: number, ci: number, updates: Partial<Condition>) => void;
   onDeleteCondition:         (ti: number, ci: number) => void;
   onConditionLogicChange:    (idx: number, logic: 'and' | 'or') => void;
+  onAddCrossfieldValidator:  (idx: number) => void;
 }
 
 export default function TemplateFieldRow({
@@ -35,6 +37,7 @@ export default function TemplateFieldRow({
   onToggleValidators, onToggleConditions,
   onAddValidator, onUpdateValidator, onDeleteValidator,
   onAddCondition, onUpdateCondition, onDeleteCondition, onConditionLogicChange,
+  onAddCrossfieldValidator,
 }: Props) {
   const otherFields = allTemplateFields.filter((_f, i) => i !== idx);
 
@@ -120,21 +123,74 @@ export default function TemplateFieldRow({
                 <code key={key} onClick={() => onAddValidator(idx, key)}>{key.toUpperCase()}</code>
               ))}
               <button className="btn-add-small" onClick={() => onAddValidator(idx)}>+ Custom Regex</button>
+              {otherFields.length > 0 && (
+                <button className="btn-add-small" onClick={() => onAddCrossfieldValidator(idx)}>+ Cross-Field</button>
+              )}
             </div>
             {!(tf.validators || []).length && <p className="no-validators">No validators</p>}
             {(tf.validators || []).map((v, vIdx) => (
               <div key={v._id ?? vIdx} className="template-validator-item">
-                <div className="form-group">
-                  <label>Error Message</label>
-                  <input type="text" value={v.text} onChange={e => onUpdateValidator(idx, vIdx, { text: e.target.value })} />
-                </div>
-                <div className="form-group">
-                  <label>Regex Pattern</label>
-                  <div className="validator-regex-row">
-                    <input type="text" value={v.regex || ''} onChange={e => onUpdateValidator(idx, vIdx, { regex: e.target.value })} className="code-input" />
-                    <button className="btn-delete-small" onClick={() => onDeleteValidator(idx, vIdx)}>×</button>
-                  </div>
-                </div>
+                {/* ── Regex validator ── */}
+                {(v.type === 'regex' || !v.type) && (
+                  <>
+                    <div className="form-group">
+                      <label>Error Message</label>
+                      <input type="text" value={v.text} onChange={e => onUpdateValidator(idx, vIdx, { text: e.target.value })} />
+                    </div>
+                    <div className="form-group">
+                      <label>Regex Pattern</label>
+                      <div className="validator-regex-row">
+                        <input type="text" value={v.regex || ''} onChange={e => onUpdateValidator(idx, vIdx, { regex: e.target.value })} className="code-input" />
+                        <button className="btn-delete-small" onClick={() => onDeleteValidator(idx, vIdx)}>×</button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* ── Cross-field validator ── */}
+                {v.type === 'crossfield' && (
+                  <>
+                    <div className="validator-header">
+                      <span className="validator-type-label">🔗 Cross-Field</span>
+                      <button className="btn-delete-small" onClick={() => onDeleteValidator(idx, vIdx)}>×</button>
+                    </div>
+                    <div className="form-group">
+                      <label>Error Message</label>
+                      <input type="text" value={v.text} onChange={e => onUpdateValidator(idx, vIdx, { text: e.target.value })} />
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Compare to field</label>
+                        <select
+                          value={v.compareField || ''}
+                          onChange={e => onUpdateValidator(idx, vIdx, { compareField: e.target.value })}
+                        >
+                          <option value="">Select field...</option>
+                          {otherFields.map(f => (
+                            <option key={f.name} value={f.name}>{f.title} ({f.name})</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>Operation</label>
+                        <select
+                          value={v.operation || ''}
+                          onChange={e => onUpdateValidator(idx, vIdx, { operation: e.target.value })}
+                        >
+                          <option value="">Select operation...</option>
+                          {CROSSFIELD_OPERATIONS.map(op => (
+                            <option key={op.value} value={op.value}>{op.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    {v.operation && (
+                      <div className="crossfield-hint">
+                        {CROSSFIELD_OPERATIONS.find(op => op.value === v.operation)?.description}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             ))}
           </div>

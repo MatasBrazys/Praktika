@@ -167,3 +167,25 @@
   color: var(--color-text-secondary);
   line-height: 1.5;
 }
+/* ── Cross-Field Validator Config ─────────────────────────────────────────
+   APPEND to src/styles/components/field-editor.css
+   ────────────────────────────────────────────────────────────────────── */
+
+.crossfield-config {
+  background: var(--teal-50);
+  border: 1px solid var(--teal-200);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+
+.crossfield-hint {
+  margin-top: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}

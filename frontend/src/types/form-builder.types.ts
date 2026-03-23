@@ -5,14 +5,35 @@
 
 export interface Validator {
   _id?: string;
-  type: 'regex' | 'numeric' | 'text';
+  type: 'regex' | 'numeric' | 'text' | 'crossfield';
   text: string;
   regex?: string;
   minValue?: number;
   maxValue?: number;
   minLength?: number;
   maxLength?: number;
+  // crossfield specific
+  compareField?: string;   // name of the field to compare against
+  operation?: string;      // e.g. "subnet_contains", "not_equal", "less_than"
 }
+
+// ── Cross-field operations ───────────────────────────────────────────────────
+
+export interface CrossFieldOperation {
+  value: string;
+  label: string;
+  description: string;
+}
+
+export const CROSSFIELD_OPERATIONS: CrossFieldOperation[] = [
+  { value: 'subnet_contains', label: '⊂ IP in subnet',     description: 'IP address must be within the CIDR subnet range' },
+  { value: 'not_equal',       label: '≠ Not equal',         description: 'Values must be different' },
+  { value: 'less_than',       label: '< Less than',         description: 'Number must be less than the other field' },
+  { value: 'greater_than',    label: '> Greater than',       description: 'Number must be greater than the other field' },
+  { value: 'before_date',     label: '◀ Before date',       description: 'Date must be earlier than the other field' },
+  { value: 'after_date',      label: '▶ After date',        description: 'Date must be later than the other field' },
+];
+
 
 // ── Conditional visibility (maps to SurveyJS visibleIf expressions) ──────────
 
@@ -33,8 +54,8 @@ export interface BulkImportField {
 // ── Dynamic choices — dropdown/radiogroup pulls choices from another field ───
 
 export interface DynamicChoicesSource {
-  fieldName: string;      // source field name (paneldynamic or checkbox)
-  subFieldName?: string;  // if paneldynamic — which sub-field to collect values from
+  fieldName: string;
+  subFieldName?: string;
 }
 
 // ── Single form field configuration ──────────────────────────────────────────
@@ -62,7 +83,7 @@ export interface FieldConfig {
   // bulk import
   allowBulkImport?: boolean;
   bulkImportFields?: BulkImportField[];
-  // dynamic choices — dropdown/radiogroup pulls choices from another field at runtime
+  // dynamic choices
   dynamicChoicesSource?: DynamicChoicesSource;
   // crmlookup specific
   crmFieldLabels?: {

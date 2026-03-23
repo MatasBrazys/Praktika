@@ -10,6 +10,7 @@ import { useToast } from '../../../../contexts/ToastContext'
 import { attachRealtimeValidation } from '../utils/realtimeValidation'
 import { attachCrmBehavior } from '../utils/crmBehavior'
 import { attachDynamicChoicesBehavior } from '../utils/dynamicChoicesBehavior'
+import { attachCrossFieldValidation } from '../utils/crossFieldValidation'
 import { detectBulkPanels } from '../utils/bulkPanelDetector'
 import type { BulkPanelWithPage } from '../../../../types/survey.types'
 import type { FormDefinition } from '../../../../types'
@@ -53,7 +54,6 @@ export function useFormLoader(
           return
         }
 
-        // If editing, load existing submission data
         let existingData: Record<string, unknown> | null = null
         if (submissionId) {
           try {
@@ -69,19 +69,17 @@ export function useFormLoader(
           }
         }
 
+        const rawJson = formData.surveyjs_json as Record<string, unknown>
         const model = new Model(formData.surveyjs_json)
 
-        // textUpdateMode = 'onTyping' tells SurveyJS to fire onValueChanged earlier than default.
-        // Default: onValueChanged fires only on submit.
-        // With 'onTyping': plain text fields fire per keystroke, all other inputTypes fire on blur.
         model.textUpdateMode = 'onTyping'
         model.showCompletedPage = false
 
         attachRealtimeValidation(model)
         attachCrmBehavior(model)
-        attachDynamicChoicesBehavior(model, formData.surveyjs_json as Record<string, unknown>)
+        attachDynamicChoicesBehavior(model, rawJson)
+        attachCrossFieldValidation(model, rawJson)
 
-        // Pre-fill with existing data when editing
         if (existingData) {
           model.data = existingData
         }

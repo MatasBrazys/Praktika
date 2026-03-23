@@ -1,18 +1,19 @@
 // src/components/admin/FieldEditor/tabs/ValidatorsTab.tsx
-// Validators tab — add regex, numeric range, or text length validators to a field.
+// Validators tab — regex, numeric range, text length, and cross-field validators.
 
-import type { Validator } from '../../../../types/form-builder.types';
-
+import type { Validator, FieldConfig } from '../../../../types/form-builder.types';
+import { CROSSFIELD_OPERATIONS } from '../../../../types/form-builder.types';
 
 interface Props {
   validators: Validator[];
+  comparableFields: FieldConfig[];    // fields available for cross-field comparison
   onAdd:       (type: Validator['type']) => void;
   onAddPreset: (key: string) => void;
   onUpdate:    (index: number, updates: Partial<Validator>) => void;
   onDelete:    (index: number) => void;
 }
 
-export default function ValidatorsTab({ validators, onAdd, onAddPreset, onUpdate, onDelete }: Props) {
+export default function ValidatorsTab({ validators, comparableFields, onAdd, onAddPreset, onUpdate, onDelete }: Props) {
   return (
     <div className="validators-section">
       {validators.length === 0 && (
@@ -36,6 +37,9 @@ export default function ValidatorsTab({ validators, onAdd, onAddPreset, onUpdate
               <button className="btn-add-small" onClick={() => onAdd('regex')}>+ Custom Regex</button>
               <button className="btn-add-small" onClick={() => onAdd('numeric')}>+ Numeric Range</button>
               <button className="btn-add-small" onClick={() => onAdd('text')}>+ Text Length</button>
+              {comparableFields.length > 0 && (
+                <button className="btn-add-small" onClick={() => onAdd('crossfield')}>+ Cross-Field</button>
+              )}
             </div>
           </div>
         </div>
@@ -45,9 +49,10 @@ export default function ValidatorsTab({ validators, onAdd, onAddPreset, onUpdate
         <div key={v._id ?? idx} className="validator-item">
           <div className="validator-header">
             <span className="validator-type-label">
-              {v.type === 'regex'   && '🔤 Regex'}
-              {v.type === 'numeric' && '🔢 Numeric Range'}
-              {v.type === 'text'    && '📏 Text Length'}
+              {v.type === 'regex'      && '🔤 Regex'}
+              {v.type === 'numeric'    && '🔢 Numeric Range'}
+              {v.type === 'text'       && '📏 Text Length'}
+              {v.type === 'crossfield' && '🔗 Cross-Field'}
             </span>
             <button className="btn-delete-small" onClick={() => onDelete(idx)}>×</button>
           </div>
@@ -100,8 +105,56 @@ export default function ValidatorsTab({ validators, onAdd, onAddPreset, onUpdate
               </div>
             </div>
           )}
+
+          {v.type === 'crossfield' && (
+            <div className="crossfield-config">
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Compare to field</label>
+                  <select
+                    value={v.compareField || ''}
+                    onChange={e => onUpdate(idx, { compareField: e.target.value })}
+                  >
+                    <option value="">Select field...</option>
+                    {comparableFields.map(f => (
+                      <option key={f.name} value={f.name}>{f.title} ({f.name})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Operation</label>
+                  <select
+                    value={v.operation || ''}
+                    onChange={e => onUpdate(idx, { operation: e.target.value })}
+                  >
+                    <option value="">Select operation...</option>
+                    {CROSSFIELD_OPERATIONS.map(op => (
+                      <option key={op.value} value={op.value}>{op.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {v.operation && (
+                <div className="crossfield-hint">
+                  {CROSSFIELD_OPERATIONS.find(op => op.value === v.operation)?.description}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       ))}
+
+      {/* Quick add row when validators already exist */}
+      {validators.length > 0 && (
+        <div className="validator-add-row" style={{ marginTop: 12 }}>
+          <button className="btn-add-small" onClick={() => onAdd('regex')}>+ Regex</button>
+          <button className="btn-add-small" onClick={() => onAdd('numeric')}>+ Numeric</button>
+          <button className="btn-add-small" onClick={() => onAdd('text')}>+ Text Length</button>
+          {comparableFields.length > 0 && (
+            <button className="btn-add-small" onClick={() => onAdd('crossfield')}>+ Cross-Field</button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
