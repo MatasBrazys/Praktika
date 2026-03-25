@@ -1,38 +1,13 @@
-// PATCH for src/pages/admin/FormBuilder/utils/surveyConverter.ts
-// Add this block AFTER the line: if (field.choices) element.choices = field.choices;
-// (inside the fieldToElement function, before the validators block)
-//
-// ── Dynamic choices ──
-// If the field uses dynamic choices, save the source config and skip static choices.
-// At runtime, dynamicChoicesBehavior.ts will populate choices from the source field.
-
-// ADD these lines to fieldToElement(), after choices and before validators:
-
-/*
-    if (field.dynamicChoicesSource?.fieldName) {
-        element.dynamicChoicesSource = {
-            fieldName: field.dynamicChoicesSource.fieldName,
-            ...(field.dynamicChoicesSource.subFieldName
-                ? { subFieldName: field.dynamicChoicesSource.subFieldName }
-                : {}),
-        };
-        // Don't save static choices when dynamic source is configured
-        delete element.choices;
-    }
-*/
-
-// ─── FULL REPLACEMENT of fieldToElement function ─────────────────────────────
-
-// Replace the existing fieldToElement function with this version that supports
-// dynamicChoicesSource. Everything else is unchanged.
+// src/pages/admin/FormBuilder/utils/surveyConverter.ts
+// Converts internal FieldConfig[] to SurveyJS JSON format.
 
 import type { FieldConfig, Page, Condition } from '../../../../types/form-builder.types';
 
-export const CRM_PANEL_MARKER = '__crm_panel__';
+export const LOOKUP_PANEL_MARKER = '__lookup_panel__';
 
 export function fieldToElement(field: FieldConfig, isTemplate = false): any {
-    if (field.type === 'crmlookup') {
-        return buildCrmPanel(field);
+    if (field.type === 'lookup') {
+        return buildLookupPanel(field);
     }
 
     const element: any = {
@@ -48,7 +23,7 @@ export function fieldToElement(field: FieldConfig, isTemplate = false): any {
     if (field.inputType && field.type === 'text') element.inputType = field.inputType;
     if (field.choices) element.choices = field.choices;
 
-    // ── Dynamic choices source (dropdown/radiogroup pulling from another field) ──
+    // ── Dynamic choices source ──
     if (field.dynamicChoicesSource?.fieldName) {
         element.dynamicChoicesSource = {
             fieldName: field.dynamicChoicesSource.fieldName,
@@ -56,7 +31,6 @@ export function fieldToElement(field: FieldConfig, isTemplate = false): any {
                 ? { subFieldName: field.dynamicChoicesSource.subFieldName }
                 : {}),
         };
-        // Runtime choices come from source — don't bake static ones into JSON
         delete element.choices;
     }
 
@@ -99,24 +73,36 @@ export function convertToSurveyJS(pages: Page[]): any {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function buildCrmPanel(field: FieldConfig): any {
+function buildLookupPanel(field: FieldConfig): any {
     const prefix = field.name;
-    const labels = field.crmFieldLabels || {};
+    const mappings = field.lookupFieldMappings ?? [];
 
     return {
         type: 'panel',
         name: `panel_${prefix}`,
-        [CRM_PANEL_MARKER]: true,
+        [LOOKUP_PANEL_MARKER]: true,
+        lookupConfigId: field.lookupConfigId,
+        lookupFieldMappings: mappings.map(m => ({
+            key: m.key,
+            label: m.label,
+            fieldName: `${prefix}_${m.key.replace(/\./g, '_')}`,
+        })),
         elements: [
             {
-                type: 'text', name: prefix, title: field.title,
-                description: field.description || 'Enter CRM ID to auto-fill client details',
-                isRequired: field.isRequired, placeholder: field.placeholder || 'e.g. CRM001',
+                type: 'text',
+                name: prefix,
+                title: field.title,
+                description: field.description || 'Type to search…',
+                isRequired: field.isRequired,
+                placeholder: field.placeholder || 'Search…',
             },
-            { type: 'text', name: `${prefix}_name`, title: labels.name || 'Company Name', readOnly: true, visibleIf: `{${prefix}} notempty` },
-            { type: 'text', name: `${prefix}_street`, title: labels.street || 'Street Address', readOnly: true, visibleIf: `{${prefix}} notempty` },
-            { type: 'text', name: `${prefix}_postcode`, title: labels.postcode || 'Postcode', readOnly: true, visibleIf: `{${prefix}} notempty` },
-            { type: 'text', name: `${prefix}_state`, title: labels.state || 'City / State', readOnly: true, visibleIf: `{${prefix}} notempty` },
+            ...mappings.map(m => ({
+                type: 'text',
+                name: `${prefix}_${m.key.replace(/\./g, '_')}`,
+                title: m.label,
+                readOnly: true,
+                visibleIf: `{${prefix}} notempty`,
+            })),
         ],
     };
 }

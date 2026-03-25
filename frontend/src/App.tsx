@@ -16,6 +16,7 @@ import PublicForm     from './pages/public/Form';
 import MySubmissions      from './pages/public/MySubmissions';
 import MyFormSubmissions from './pages/public/MyFormSubmissions';
 import SuccessPage       from './pages/public/Success';
+import LookupConfigs from './pages/admin/LookupConfigs';
 
 export default function App() {
   return (
@@ -46,6 +47,7 @@ export default function App() {
               <Route path="/admin/form-builder"              element={<FormBuilder />} />
               <Route path="/admin/form-builder/:id"          element={<FormBuilder />} />
               <Route path="/admin/forms/:id/submissions"     element={<SubmissionList />} />
+              <Route path="/admin/lookup-configs" element={<LookupConfigs />} />
             </Route>
 
             {/* ── Fallback ────────────────────────────────── */}

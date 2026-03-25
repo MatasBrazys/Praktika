@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -38,7 +38,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: ${VITE_API_URL}  
+        VITE_API_URL: ${VITE_API_URL}
     container_name: it-services-frontend
     ports:
       - "3000:80"
@@ -47,6 +47,15 @@ services:
       - ./certs:/etc/nginx/ssl:ro
     depends_on:
       - backend
+
+  mock-api:
+    build:
+      context: ./mock_api
+      dockerfile: Dockerfile
+    container_name: it-services-mock-api
+    ports:
+      - "9000:9000"
+    restart: unless-stopped
 
 volumes:
   postgres_data:

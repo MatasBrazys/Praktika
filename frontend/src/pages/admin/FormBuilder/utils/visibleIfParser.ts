@@ -3,12 +3,12 @@
 // Used when loading an existing form for editing in FormBuilder.
 
 import type { FieldConfig, Condition } from '../../../../types/form-builder.types';
-import { CRM_PANEL_MARKER } from './surveyConverter';
+import { LOOKUP_PANEL_MARKER } from './surveyConverter';
 
 export function elementToField(element: any, fallbackId: string): FieldConfig | null {
     try {
-        if (element.type === 'panel' && element[CRM_PANEL_MARKER]) {
-            return parseCrmPanel(element, fallbackId);
+        if (element.type === 'panel' && element[LOOKUP_PANEL_MARKER]) {
+            return parseLookupPanel(element, fallbackId);
         }
         return parseRegularElement(element, fallbackId);
     } catch {
@@ -25,24 +25,26 @@ export function parseVisibleIf(expression: string): Condition[] {
 
 // ── Private helpers ───────────────────────────────────────────────────────────
 
-function parseCrmPanel(panel: any, fallbackId: string): FieldConfig | null {
-    const idElement = panel.elements?.[0];
-    if (!idElement) return null;
+function parseLookupPanel(panel: any, fallbackId: string): FieldConfig | null {
+    const elements = panel.elements;
+    if (!elements?.length) return null;
+
+    const trigger = elements[0];
+    const mappings = panel.lookupFieldMappings ?? [];
 
     return {
         id: fallbackId,
-        name: idElement.name,
-        title: idElement.title || idElement.name,
-        description: idElement.description,
-        type: 'crmlookup',
-        isRequired: idElement.isRequired || false,
-        placeholder: idElement.placeholder,
-        crmFieldLabels: {
-            name: panel.elements?.[1]?.title,
-            street: panel.elements?.[2]?.title,
-            postcode: panel.elements?.[3]?.title,
-            state: panel.elements?.[4]?.title,
-        },
+        name: trigger.name,
+        title: trigger.title || trigger.name,
+        description: trigger.description,
+        type: 'lookup',
+        isRequired: trigger.isRequired || false,
+        placeholder: trigger.placeholder,
+        lookupConfigId: panel.lookupConfigId,
+        lookupFieldMappings: mappings.map((m: any) => ({
+            key: m.key,
+            label: m.label,
+        })),
     };
 }
 

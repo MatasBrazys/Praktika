@@ -52,17 +52,6 @@ export interface Submission {
   updated_at?: string;
 }
 
-// ── CRM ────────────────────────────────────────────────────────────────────
-
-export interface CRMLookupResult {
-  found: boolean;
-  crm_id: string;
-  name: string;
-  street: string;
-  postcode: string;
-  state: string;
-}
-
 // ── Toast (UI) ─────────────────────────────────────────────────────────────
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';

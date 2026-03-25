@@ -68,6 +68,7 @@ export default function Navbar() {
             <NavDropdown label="Admin" active={isActive('/admin')}>
               <Link to="/admin/forms">Manage Forms</Link>
               <Link to="/admin/form-builder">Create Form</Link>
+              <Link to="/admin/lookup-configs">Lookup Configs</Link>
             </NavDropdown>
           )}
 

@@ -4,7 +4,6 @@ import { apiClient } from '../lib/apiClient';
 import type {
   FormDefinition,
   Submission,
-  CRMLookupResult,
   User,
   TokenResponse,
   LoginRequest,
@@ -91,12 +90,108 @@ export const submissionAPI = {
   },
 };
 
-// ── CRM ────────────────────────────────────────────────────────────────────
 
-export const crmAPI = {
-  lookup: async (crmId: string): Promise<CRMLookupResult> => {
-    const normalised = encodeURIComponent(crmId.trim().toUpperCase());
-    const res = await apiClient.get<CRMLookupResult>(`/api/crm/lookup/${normalised}`);
+
+
+// ── Lookup Configs ─────────────────────────────────────────────────────────
+
+export interface LookupFieldMapping {
+  key: string;
+  label: string;
+}
+
+export interface LookupConfigResponse {
+  id: number;
+  name: string;
+  description?: string;
+  base_url: string;
+  search_endpoint: string;
+  search_method: string;
+  auth_type: string;
+  has_token: boolean;
+  auth_header_name?: string;
+  results_path?: string;
+  value_field: string;
+  display_field: string;
+  field_mappings: LookupFieldMapping[];
+  test_query?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface LookupConfigCreate {
+  name: string;
+  description?: string;
+  base_url: string;
+  search_endpoint: string;
+  search_method?: string;
+  auth_type?: string;
+  auth_token?: string;
+  auth_header_name?: string;
+  results_path?: string;
+  value_field?: string;
+  display_field?: string;
+  test_query?: string;
+  field_mappings?: LookupFieldMapping[];
+}
+
+export interface LookupQueryResult {
+  value: string;
+  display: string;
+  fields: Record<string, string>;
+}
+
+export interface LookupQueryResponse {
+  found: boolean;
+  results: LookupQueryResult[];
+  error?: string;
+}
+
+export const lookupAPI = {
+  listConfigs: async (): Promise<LookupConfigResponse[]> => {
+    const res = await apiClient.get<LookupConfigResponse[]>('/api/lookup/configs');
+    return res.data;
+  },
+
+  listActiveConfigs: async (): Promise<LookupConfigResponse[]> => {
+    const res = await apiClient.get<LookupConfigResponse[]>('/api/lookup/configs/active');
+    return res.data;
+  },
+
+  getConfig: async (id: number): Promise<LookupConfigResponse> => {
+    const res = await apiClient.get<LookupConfigResponse>(`/api/lookup/configs/${id}`);
+    return res.data;
+  },
+
+  createConfig: async (data: LookupConfigCreate): Promise<LookupConfigResponse> => {
+    const res = await apiClient.post<LookupConfigResponse>('/api/lookup/configs', data);
+    return res.data;
+  },
+
+  updateConfig: async (id: number, data: Partial<LookupConfigCreate> & { is_active?: boolean }): Promise<LookupConfigResponse> => {
+    const res = await apiClient.put<LookupConfigResponse>(`/api/lookup/configs/${id}`, data);
+    return res.data;
+  },
+
+  deleteConfig: async (id: number): Promise<void> => {
+    await apiClient.delete(`/api/lookup/configs/${id}`);
+  },
+
+  testConfig: async (id: number): Promise<{ success: boolean; error?: string; sample_count?: number }> => {
+    const res = await apiClient.post(`/api/lookup/configs/${id}/test`);
+    return res.data;
+  },
+  discoverFields: async (id: number): Promise<{ fields: Array<{ path: string; sample_value: string; type: string }>; error?: string }> => {
+    const res = await apiClient.post(`/api/lookup/configs/${id}/discover-fields`);
+    return res.data;
+  },
+
+  query: async (configId: number, query: string): Promise<LookupQueryResponse> => {
+    const res = await apiClient.post<LookupQueryResponse>('/api/lookup/query', {
+      config_id: configId,
+      query,
+    });
     return res.data;
   },
 };

@@ -35,12 +35,6 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
   const [validators,     setValidators]     = useState<Validator[]>((field.validators ?? []).map(withId))
   const [conditions,     setConditions]     = useState<Condition[]>((field.conditions ?? []).map(withId))
   const [conditionLogic, setConditionLogic] = useState<'and' | 'or'>(field.conditionLogic ?? 'and')
-  const [crmLabels,      setCrmLabels]      = useState({
-    name:     field.crmFieldLabels?.name     ?? 'Company Name',
-    street:   field.crmFieldLabels?.street   ?? 'Street Address',
-    postcode: field.crmFieldLabels?.postcode ?? 'Postcode',
-    state:    field.crmFieldLabels?.state    ?? 'City / State',
-  })
 
   // ── Template fields (paneldynamic sub-fields) ─────────────────────────────
 
@@ -118,9 +112,13 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
 
     const finalConfig: FieldConfig = { ...config }
 
-    if (config.type === 'crmlookup') {
-      finalConfig.crmFieldLabels = { ...crmLabels }
+    // Lookup — just needs configId, no choices or validators needed
+    if (config.type === 'lookup') {
+      if (!config.lookupConfigId) { toast.warning('Config required', 'Select a lookup config.'); return }
       delete finalConfig.choices
+      finalConfig.validators = []
+      finalConfig.conditions = conditions.filter(c => c.fieldName)
+      finalConfig.conditionLogic = conditionLogic
       onSave(finalConfig)
       return
     }
@@ -145,7 +143,6 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
       finalConfig.bulkImportFields  = bulk.allowBulkImport ? bulk.bulkImportFields : []
     }
 
-    // Filter validators: regex needs pattern, crossfield needs compareField + operation
     finalConfig.validators = validators.filter(v => {
       if (v.type === 'regex') return v.regex && v.regex.trim()
       if (v.type === 'crossfield') return v.compareField && v.operation
@@ -159,6 +156,8 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  const isLookup = config.type === 'lookup'
+
   return (
     <div className="modal-overlay">
       <div className="modal-content modal-wide" onClick={e => e.stopPropagation()}>
@@ -169,13 +168,17 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
         </div>
 
         <div className="modal-tabs">
-          {(['basic', 'validators', 'conditions'] as Tab[]).map(tab => (
-            <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
-              {tab === 'basic'      && '⚙️ Basic'}
-              {tab === 'validators' && `✓ Validators${validators.length ? ` (${validators.length})` : ''}`}
-              {tab === 'conditions' && `⚡ Conditions${conditions.length ? ` (${conditions.length})` : ''}`}
-            </button>
-          ))}
+          {(['basic', 'validators', 'conditions'] as Tab[]).map(tab => {
+            // Lookup fields don't need validators tab
+            if (tab === 'validators' && isLookup) return null
+            return (
+              <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
+                {tab === 'basic'      && '⚙️ Basic'}
+                {tab === 'validators' && `✓ Validators${validators.length ? ` (${validators.length})` : ''}`}
+                {tab === 'conditions' && `⚡ Conditions${conditions.length ? ` (${conditions.length})` : ''}`}
+              </button>
+            )
+          })}
         </div>
 
         <div className="modal-body">
@@ -187,13 +190,11 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
               templateChoicesText={template.templateChoicesText}
               allowBulkImport={bulk.allowBulkImport}
               bulkImportFields={bulk.bulkImportFields}
-              crmLabels={crmLabels}
               expandedTemplateField={template.expandedTemplateField}
               expandedTemplateConditions={template.expandedTemplateConditions}
               allFields={allFields}
               onConfigChange={updates => setConfig(prev => ({ ...prev, ...updates }))}
               onChoicesChange={setChoicesText}
-              onCrmLabelsChange={updates => setCrmLabels(prev => ({ ...prev, ...updates }))}
               onAddTemplateField={template.addTemplateField}
               onUpdateTemplateField={template.updateTemplateField}
               onDeleteTemplateField={template.deleteTemplateField}
@@ -217,7 +218,7 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
             />
           )}
 
-          {activeTab === 'validators' && (
+          {activeTab === 'validators' && !isLookup && (
             <ValidatorsTab
               validators={validators}
               comparableFields={allFields}

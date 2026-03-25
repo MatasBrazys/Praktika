@@ -9,7 +9,7 @@ export const FIELD_TYPES = [
   { value: 'checkbox',     label: '☑️ Checkboxes' },
   { value: 'boolean',      label: '✓ Yes/No' },
   { value: 'paneldynamic', label: '🔁 Repeated Group' },
-  { value: 'crmlookup',    label: '🔍 CRM Lookup' },
+  { value: 'lookup',       label: '🔍 Lookup (API)' },
 ];
 
 export const TEXT_INPUT_TYPES = [

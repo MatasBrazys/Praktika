@@ -1,0 +1,230 @@
+/* ============================================================
+   LOOKUP CONFIGS — Only unique styles
+   src/styles/pages/admin/lookup-configs.css
+
+   Reuses: modal.css, form-list.css, field-editor.css, bulk-importer.css
+   ============================================================ */
+
+/* ── Section titles in modal ── */
+.lookup-section-title {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: var(--sp-5) 0 var(--sp-3);
+}
+
+.lookup-hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: var(--teal-50);
+  color: var(--color-primary);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  margin-left: var(--sp-2);
+  font-weight: var(--fw-normal);
+}
+
+/* ── Mappings header with discover button ── */
+.lookup-mappings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.lookup-mappings-header .lookup-section-title {
+  margin: 0;
+}
+
+.btn-discover {
+  padding: 6px var(--sp-3);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border: 1.5px solid var(--color-primary);
+  background: var(--teal-50);
+  color: var(--color-primary);
+  transition: all var(--t-fast);
+  white-space: nowrap;
+}
+
+.btn-discover:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: white;
+}
+
+.btn-discover:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lookup-discover-note {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+/* ── Discover panel ── */
+.discover-panel {
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  background: var(--teal-50);
+  margin: var(--sp-3) 0;
+  overflow: hidden;
+}
+
+.discover-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--color-primary);
+  color: white;
+  font-size: var(--text-sm);
+}
+
+.discover-panel__list {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: var(--sp-2);
+}
+
+.discover-field {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--t-fast);
+  font-size: var(--text-sm);
+}
+
+.discover-field:hover {
+  background: white;
+}
+
+.discover-field--selected {
+  background: white;
+  box-shadow: var(--shadow-xs);
+}
+
+.discover-field input[type="checkbox"] {
+  flex-shrink: 0;
+}
+
+.discover-field code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  min-width: 160px;
+}
+
+.discover-field__sample {
+  flex: 1;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.discover-field__type {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  background: var(--gray-100);
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+}
+
+.discover-panel__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-top: 1px solid var(--teal-200);
+}
+
+/* ── Config cards ── */
+.lookup-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.lookup-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--sp-5) var(--sp-6);
+  transition: all var(--t-base);
+}
+
+.lookup-card:hover {
+  border-color: var(--teal-200);
+  box-shadow: var(--shadow-md);
+}
+
+.lookup-card--inactive {
+  opacity: 0.6;
+  background: var(--gray-50);
+}
+
+.lookup-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--sp-3);
+}
+
+.lookup-card__header h3 { margin: 0; }
+.lookup-card__header p { font-size: var(--text-sm); color: var(--color-text-secondary); margin: var(--sp-1) 0 0; }
+
+.lookup-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  align-items: center;
+  margin-bottom: var(--sp-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.lookup-card__meta code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: var(--gray-50);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  word-break: break-all;
+}
+
+.lookup-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.lookup-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  padding: 2px 8px;
+  background: var(--teal-50);
+  border: 1px solid var(--teal-200);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--teal-700);
+}
+
+.lookup-tag code {
+  font-family: var(--font-mono);
+  font-weight: var(--fw-semibold);
+}

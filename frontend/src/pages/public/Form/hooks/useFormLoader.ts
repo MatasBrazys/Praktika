@@ -8,7 +8,7 @@ import { Model } from 'survey-core'
 import { formAPI, submissionAPI } from '../../../../services/api'
 import { useToast } from '../../../../contexts/ToastContext'
 import { attachRealtimeValidation } from '../utils/realtimeValidation'
-import { attachCrmBehavior } from '../utils/crmBehavior'
+import { attachLookupBehavior } from '../utils/lookupBehavior'
 import { attachDynamicChoicesBehavior } from '../utils/dynamicChoicesBehavior'
 import { attachCrossFieldValidation } from '../utils/crossFieldValidation'
 import { detectBulkPanels } from '../utils/bulkPanelDetector'
@@ -76,7 +76,7 @@ export function useFormLoader(
         model.showCompletedPage = false
 
         attachRealtimeValidation(model)
-        attachCrmBehavior(model)
+        attachLookupBehavior(model, rawJson)
         attachDynamicChoicesBehavior(model, rawJson)
         attachCrossFieldValidation(model, rawJson)
 

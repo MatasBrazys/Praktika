@@ -1,14 +1,12 @@
 // src/components/admin/FieldEditor/tabs/BasicTab.tsx
-// Basic tab — field type, title, name, description, choices, paneldynamic and CRM config.
+// Basic tab — field type, title, name, description, choices, paneldynamic and lookup config.
 
 import type { FieldConfig, BulkImportField, Validator, Condition, DynamicChoicesSource } from '../../../../types/form-builder.types';
 import TemplateFieldRow from '../sections/TemplateFieldRow';
 import BulkImportConfig from '../sections/BulkImportConfig';
-import CrmLookupConfig from '../sections/CrmLookupConfig';
+import LookupFieldConfig from '../sections/LookupFieldConfig';
 import DynamicChoicesConfig from '../sections/DynamicChoicesConfig';
 import { FIELD_TYPES, TEXT_INPUT_TYPES } from '../fieldTypes';
-
-interface CrmLabels { name: string; street: string; postcode: string; state: string; }
 
 interface Props {
   config: FieldConfig;
@@ -17,13 +15,11 @@ interface Props {
   templateChoicesText: Record<number, string>;
   allowBulkImport: boolean;
   bulkImportFields: BulkImportField[];
-  crmLabels: CrmLabels;
   expandedTemplateField: number | null;
   expandedTemplateConditions: number | null;
   allFields: FieldConfig[];
   onConfigChange: (updates: Partial<FieldConfig>) => void;
   onChoicesChange: (text: string) => void;
-  onCrmLabelsChange: (updates: Partial<CrmLabels>) => void;
   // template field handlers
   onAddTemplateField: () => void;
   onUpdateTemplateField: (idx: number, updates: Partial<FieldConfig>) => void;
@@ -51,9 +47,9 @@ interface Props {
 
 export default function BasicTab({
   config, choicesText, templateFields, templateChoicesText,
-  allowBulkImport, bulkImportFields, crmLabels,
+  allowBulkImport, bulkImportFields,
   expandedTemplateField, expandedTemplateConditions, allFields,
-  onConfigChange, onChoicesChange, onCrmLabelsChange,
+  onConfigChange, onChoicesChange,
   onAddTemplateField, onUpdateTemplateField, onDeleteTemplateField,
   onTemplateChoicesChange, onTemplateTypeChange, onTemplateInputTypeChange,
   onToggleTemplateValidators, onToggleTemplateConditions,
@@ -64,7 +60,7 @@ export default function BasicTab({
   onBulkImportToggle, onBulkFieldToggle, onBulkRequiredToggle,
   onDynamicChoicesChange,
 }: Props) {
-  const isCrmLookup = config.type === 'crmlookup';
+  const isLookup = config.type === 'lookup';
   const needsChoices = ['dropdown', 'radiogroup', 'checkbox'].includes(config.type);
   const showPlaceholder = config.type === 'text' || config.type === 'comment';
 
@@ -99,22 +95,27 @@ export default function BasicTab({
         </div>
       )}
 
-      <div className="form-group">
-        <label>Description</label>
-        <input type="text" value={config.description || ''} onChange={e => onConfigChange({ description: e.target.value })} placeholder="Help text shown below the field" />
-      </div>
+      {/* Only show description/placeholder for non-lookup (lookup has its own) */}
+      {!isLookup && (
+        <>
+          <div className="form-group">
+            <label>Description</label>
+            <input type="text" value={config.description || ''} onChange={e => onConfigChange({ description: e.target.value })} placeholder="Help text shown below the field" />
+          </div>
 
-      {showPlaceholder && (
-        <div className="form-row">
-          <div className="form-group">
-            <label>Placeholder</label>
-            <input type="text" value={config.placeholder || ''} onChange={e => onConfigChange({ placeholder: e.target.value })} placeholder="e.g., Enter value..." />
-          </div>
-          <div className="form-group">
-            <label>Default Value</label>
-            <input type="text" value={config.defaultValue || ''} onChange={e => onConfigChange({ defaultValue: e.target.value })} placeholder="Pre-filled value" />
-          </div>
-        </div>
+          {showPlaceholder && (
+            <div className="form-row">
+              <div className="form-group">
+                <label>Placeholder</label>
+                <input type="text" value={config.placeholder || ''} onChange={e => onConfigChange({ placeholder: e.target.value })} placeholder="e.g., Enter value..." />
+              </div>
+              <div className="form-group">
+                <label>Default Value</label>
+                <input type="text" value={config.defaultValue || ''} onChange={e => onConfigChange({ defaultValue: e.target.value })} placeholder="Pre-filled value" />
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {needsChoices && (
@@ -197,13 +198,11 @@ export default function BasicTab({
         </div>
       )}
 
-      {/* CRM Lookup config */}
-      {isCrmLookup && (
-        <CrmLookupConfig
+      {/* Lookup config */}
+      {isLookup && (
+        <LookupFieldConfig
           config={config}
-          crmLabels={crmLabels}
           onConfigChange={onConfigChange}
-          onLabelsChange={onCrmLabelsChange}
         />
       )}
 

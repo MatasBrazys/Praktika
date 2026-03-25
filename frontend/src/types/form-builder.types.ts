@@ -13,8 +13,8 @@ export interface Validator {
   minLength?: number;
   maxLength?: number;
   // crossfield specific
-  compareField?: string;   // name of the field to compare against
-  operation?: string;      // e.g. "subnet_contains", "not_equal", "less_than"
+  compareField?: string;
+  operation?: string;
 }
 
 // ── Cross-field operations ───────────────────────────────────────────────────
@@ -26,16 +26,15 @@ export interface CrossFieldOperation {
 }
 
 export const CROSSFIELD_OPERATIONS: CrossFieldOperation[] = [
-  { value: 'subnet_contains', label: '⊂ IP in subnet',     description: 'IP address must be within the CIDR subnet range' },
-  { value: 'not_equal',       label: '≠ Not equal',         description: 'Values must be different' },
-  { value: 'less_than',       label: '< Less than',         description: 'Number must be less than the other field' },
-  { value: 'greater_than',    label: '> Greater than',       description: 'Number must be greater than the other field' },
-  { value: 'before_date',     label: '◀ Before date',       description: 'Date must be earlier than the other field' },
-  { value: 'after_date',      label: '▶ After date',        description: 'Date must be later than the other field' },
+  { value: 'subnet_contains', label: '⊂ IP in subnet',  description: 'IP address must be within the CIDR subnet range' },
+  { value: 'not_equal',       label: '≠ Not equal',      description: 'Values must be different' },
+  { value: 'less_than',       label: '< Less than',      description: 'Number must be less than the other field' },
+  { value: 'greater_than',    label: '> Greater than',    description: 'Number must be greater than the other field' },
+  { value: 'before_date',     label: '◀ Before date',    description: 'Date must be earlier than the other field' },
+  { value: 'after_date',      label: '▶ After date',     description: 'Date must be later than the other field' },
 ];
 
-
-// ── Conditional visibility (maps to SurveyJS visibleIf expressions) ──────────
+// ── Conditional visibility ───────────────────────────────────────────────────
 
 export interface Condition {
   _id?: string;
@@ -44,18 +43,25 @@ export interface Condition {
   value: string;
 }
 
-// ── Bulk CSV import configuration per paneldynamic field ─────────────────────
+// ── Bulk CSV import configuration ────────────────────────────────────────────
 
 export interface BulkImportField {
   name: string;
   required: boolean;
 }
 
-// ── Dynamic choices — dropdown/radiogroup pulls choices from another field ───
+// ── Dynamic choices ─────────────────────────────────────────────────────────
 
 export interface DynamicChoicesSource {
   fieldName: string;
   subFieldName?: string;
+}
+
+// ── Lookup field mappings ───────────────────────────────────────────────────
+
+export interface LookupFieldMapping {
+  key: string;      // API response field path, e.g. "site.name"
+  label: string;    // Form label, e.g. "Site"
 }
 
 // ── Single form field configuration ──────────────────────────────────────────
@@ -85,16 +91,12 @@ export interface FieldConfig {
   bulkImportFields?: BulkImportField[];
   // dynamic choices
   dynamicChoicesSource?: DynamicChoicesSource;
-  // crmlookup specific
-  crmFieldLabels?: {
-    name?: string;
-    street?: string;
-    postcode?: string;
-    state?: string;
-  };
+  // lookup specific
+  lookupConfigId?: number;
+  lookupFieldMappings?: LookupFieldMapping[];
 }
 
-// ── Form page (multi-page forms) ──────────────────────────────────────────────
+// ── Form page ─────────────────────────────────────────────────────────────────
 
 export interface Page {
   id: string;
