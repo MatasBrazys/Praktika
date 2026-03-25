@@ -7,12 +7,14 @@ import { useParams } from 'react-router-dom'
 import { Survey } from 'survey-react-ui'
 import 'survey-core/survey-core.min.css'
 
-import BulkImporter from '../../../components/public/BulkImporter'
+import BulkImporter  from '../../../components/public/BulkImporter'
+import BackButton    from '../../../components/shared/BackButton'
+import ErrorBoundary from '../../../components/shared/ErrorBoundary'
 import { useFormLoader } from './hooks/useFormLoader'
 import '../../../styles/pages/public/form.css'
 import '../../../styles/components/bulk-importer.css'
+import '../../../styles/components/error-boundary.css'
 
-// Shape of the options object SurveyJS passes to onCurrentPageChanged
 interface PageChangedOptions {
   newCurrentPage?: { visibleIndex?: number }
 }
@@ -20,14 +22,11 @@ interface PageChangedOptions {
 export default function Form() {
   const { id, submissionId } = useParams<{ id: string; submissionId?: string }>()
 
-  // form - raw data from database, surveyModel -  form definition from types/index.ts
   const { form, surveyModel, bulkPanels, loading, error, isEditMode, submitting } = useFormLoader(id, submissionId)
 
   const [currentPageNo, setCurrentPageNo] = useState(0)
   const surveyWrapperRef = useRef<HTMLDivElement>(null)
 
-  // Track current page for bulk panel visibility.
-  // useEffect ensures the listener is added once per model, not on every render.
   useEffect(() => {
     if (!surveyModel) return
     const handler = (_sender: unknown, options: PageChangedOptions) => {
@@ -37,7 +36,6 @@ export default function Form() {
     return () => { surveyModel.onCurrentPageChanged.remove(handler) }
   }, [surveyModel])
 
-  // Moves focus to the next input on Enter — skips bulk importer fields
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'Enter') return
 
@@ -95,7 +93,6 @@ export default function Form() {
     </div>
   )
 
-  // Both form and surveyModel are set together — if one is null so is the other
   if (!surveyModel || !form) return null
 
   const visiblePanels = bulkPanels.filter(p => p.pageIndex === currentPageNo)
@@ -104,6 +101,10 @@ export default function Form() {
     <div className="public-page">
       <div className="public-form-container">
         <div className={`form-header ${isEditMode ? 'form-header--edit' : ''}`}>
+          <BackButton
+            to={isEditMode ? `/user/submissions/${form.id}` : '/user/forms'}
+            label={isEditMode ? 'Back to Submissions' : 'Back to Forms'}
+          />
           {isEditMode && <span className="form-edit-badge">Editing submission</span>}
           <h1>{form.title}</h1>
           {form.description && <p className="form-description">{form.description}</p>}
@@ -113,7 +114,9 @@ export default function Form() {
           {visiblePanels.map(panel => (
             <BulkImporter key={panel.questionName} surveyModel={surveyModel} config={panel} />
           ))}
-          <Survey model={surveyModel} />
+          <ErrorBoundary variant="inline">
+            <Survey model={surveyModel} />
+          </ErrorBoundary>
         </div>
       </div>
     </div>

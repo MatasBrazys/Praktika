@@ -94,6 +94,8 @@ export interface FieldConfig {
   // lookup specific
   lookupConfigId?: number;
   lookupFieldMappings?: LookupFieldMapping[];
+  // unique values (paneldynamic template fields only)
+  isUnique?: boolean;
 }
 
 // ── Form page ─────────────────────────────────────────────────────────────────

@@ -127,7 +127,7 @@ async def proxy_query(db: Session, config_id: int, query: str) -> dict:
     except httpx.TimeoutException:
         return {"found": False, "results": [], "error": "External API timeout"}
     except httpx.RequestError as e:
-        return {"found": False, "results": [], "error": "Cannot connect to external API"}
+        return {"found": False, "results": [], "error": f"{type(e).__name__}: {str(e)[:300]}"}
     except Exception as e:
         logger.error("Lookup proxy error: %s", str(e)[:200])
         return {"found": False, "results": [], "error": "Lookup failed"}

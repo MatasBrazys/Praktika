@@ -42,6 +42,11 @@ export function fieldToElement(field: FieldConfig, isTemplate = false): any {
         element.visibleIf = buildVisibleIf(field.conditions, field.conditionLogic, isTemplate);
     }
 
+    // ── Unique constraint (template fields only) ──
+    if (isTemplate && field.isUnique) {
+        element.isUnique = true;
+    }
+
     if (field.type === 'paneldynamic') {
         element.panelCount = field.panelCount || 1;
         element.minPanelCount = field.minPanelCount || 1;

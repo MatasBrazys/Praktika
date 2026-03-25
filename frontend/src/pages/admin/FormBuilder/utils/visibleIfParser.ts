@@ -65,6 +65,8 @@ function parseRegularElement(element: any, fallbackId: string): FieldConfig {
         removePanelText: element.removePanelText,
         minPanelCount: element.minPanelCount,
         panelCount: element.panelCount,
+        // Unique constraint — read back from stored JSON
+        isUnique: element.isUnique || false,
     };
 
     // ── Dynamic choices source ──

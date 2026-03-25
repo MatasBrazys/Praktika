@@ -3,6 +3,30 @@
    Used by: FieldEditor, any future modals
    ============================================================ */
 
+/* ── Back button (shared across pages) ── */
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  font-family: var(--font-sans);
+  cursor: pointer;
+  padding: 6px var(--sp-3);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--sp-4);
+  transition: all var(--t-fast);
+}
+
+.btn-back:hover {
+  background: var(--gray-50);
+  border-color: var(--gray-300);
+  color: var(--color-text);
+}
+
 /* ── Overlay ── */
 .modal-overlay {
   position: fixed;
@@ -139,7 +163,7 @@
   grid-template-columns: 1fr 1fr;
   gap: var(--sp-4);
   margin-bottom: var(--sp-5);
-  align-items: start; /* FIX: prevents stretch, keeps all columns top-aligned */
+  align-items: start;
 }
 
 .form-row.three-cols {
@@ -429,16 +453,14 @@
   text-align: center;
 }
 
-/* ── Validator regex row (replaces inline styles) ── */
+/* ── Validator regex row ── */
 .validator-regex-row {
   display: flex;
   gap: var(--sp-2);
   align-items: center;
 }
 
-.validator-regex-row .code-input {
-  flex: 1;
-}
+.validator-regex-row .code-input { flex: 1; }
 
 /* ── Conditions ── */
 .conditions-info {
@@ -586,13 +608,11 @@
 
 .template-field-row:hover { border-color: var(--gray-300); }
 
-/* ── Header section: delete button row ── */
 .template-field-row .header-section {
   display: flex;
   justify-content: flex-end;
   margin-bottom: var(--sp-2);
 }
-
 
 .template-field-row .form-row {
   gap: var(--sp-2);
@@ -727,10 +747,7 @@
   font-size: var(--text-sm);
 }
 
-.conditions-info-compact p {
-  margin: 0;
-  color: var(--gray-700);
-}
+.conditions-info-compact p { margin: 0; color: var(--gray-700); }
 
 .logic-toggle-compact {
   display: flex;

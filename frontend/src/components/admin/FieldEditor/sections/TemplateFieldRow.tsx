@@ -1,6 +1,6 @@
 // src/components/admin/FieldEditor/sections/TemplateFieldRow.tsx
 // A single repeatable field row inside a paneldynamic configuration.
-// Includes type, title, name, validators (regex + crossfield), and conditions.
+// Includes type, title, name, validators (regex + crossfield), conditions, and unique constraint.
 
 import type { FieldConfig, Validator, Condition } from '../../../../types/form-builder.types';
 import { CROSSFIELD_OPERATIONS } from '../../../../types/form-builder.types';
@@ -103,10 +103,22 @@ export default function TemplateFieldRow({
         </div>
       )}
 
+      {/* Required + Unique flags */}
       <div className="template-required-section">
         <label className="template-checkbox-label">
           <input type="checkbox" checked={tf.isRequired || false} onChange={e => onUpdate(idx, { isRequired: e.target.checked })} />
           Required field
+        </label>
+        <label className="template-checkbox-label" style={{ marginTop: 8 }}>
+          <input
+            type="checkbox"
+            checked={tf.isUnique || false}
+            onChange={e => onUpdate(idx, { isUnique: e.target.checked })}
+          />
+          Unique values only
+          <small style={{ marginLeft: 6, fontWeight: 400, color: 'var(--color-text-muted)' }}>
+            — no two rows can have the same value
+          </small>
         </label>
       </div>
 

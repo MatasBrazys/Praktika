@@ -3,6 +3,7 @@
    Reused from form-list.css: .user-page-container, .user-forms-wrapper,
      .page-header-simple, .empty-state-simple, .empty-icon
    Reused from index.css: .page-loading, .subtitle
+   Reused from modal.css: .btn-back
    ============================================================ */
 
 /* ══ PAGE 1 — Form list (reuses .form-list-item from form-list.css) ═══════ */
@@ -16,16 +17,6 @@
 }
 
 /* ══ PAGE 2 — Submission entries ════════════════════════════════ */
-
-.ms-back {
-  display: inline-flex; align-items: center;
-  background: none; border: none; color: var(--color-primary);
-  font-size: var(--text-sm); font-weight: var(--fw-semibold); font-family: var(--font-sans);
-  cursor: pointer; padding: 0; margin-bottom: var(--sp-2);
-  transition: color var(--t-fast);
-}
-
-.ms-back:hover { color: var(--color-primary-dark); }
 
 .ms-list { display: flex; flex-direction: column; gap: var(--sp-2); }
 

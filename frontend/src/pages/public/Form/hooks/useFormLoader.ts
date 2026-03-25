@@ -11,6 +11,7 @@ import { attachRealtimeValidation } from '../utils/realtimeValidation'
 import { attachLookupBehavior } from '../utils/lookupBehavior'
 import { attachDynamicChoicesBehavior } from '../utils/dynamicChoicesBehavior'
 import { attachCrossFieldValidation } from '../utils/crossFieldValidation'
+import { attachUniqueValidation } from '../utils/uniqueValidation'
 import { detectBulkPanels } from '../utils/bulkPanelDetector'
 import type { BulkPanelWithPage } from '../../../../types/survey.types'
 import type { FormDefinition } from '../../../../types'
@@ -79,6 +80,7 @@ export function useFormLoader(
         attachLookupBehavior(model, rawJson)
         attachDynamicChoicesBehavior(model, rawJson)
         attachCrossFieldValidation(model, rawJson)
+        attachUniqueValidation(model, rawJson)
 
         if (existingData) {
           model.data = existingData

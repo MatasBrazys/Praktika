@@ -8,6 +8,7 @@ import { submissionAPI }          from '../../services/api'
 import { useToast }               from '../../contexts/ToastContext'
 import { extractErrorMessage }    from '../../lib/apiClient'
 import Navbar                     from '../../components/shared/Navbar'
+import BackButton                 from '../../components/shared/BackButton'
 import type { Submission }        from '../../types'
 import '../../styles/pages/public/form-list.css'
 import '../../styles/pages/public/my-submissions.css'
@@ -70,9 +71,7 @@ export default function MyFormSubmissions() {
         <div className="user-forms-wrapper" style={{ maxWidth: 860 }}>
 
           <div className="page-header-simple">
-            <button className="ms-back" onClick={() => navigate('/user/submissions')}>
-              ← All Forms
-            </button>
+            <BackButton to="/user/submissions" label="All Forms" />
             <h1>{formType || 'Submissions'}</h1>
             <p>{submissions.length} submission{submissions.length !== 1 ? 's' : ''}</p>
           </div>
