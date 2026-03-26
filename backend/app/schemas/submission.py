@@ -1,17 +1,14 @@
 # app/schemas/submission.py
-# Pydantic schemas for form submission validation and serialization.
 
 from pydantic import BaseModel, field_validator
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Literal
 
 
-# Incoming submission request from the frontend
 class SubmissionRequest(BaseModel):
     form_type: str
     data: dict
 
-    # Rejects empty form_type — "unknown" is no longer silently accepted
     @field_validator("form_type")
     @classmethod
     def form_type_cannot_be_empty(cls, value: str) -> str:
@@ -19,7 +16,6 @@ class SubmissionRequest(BaseModel):
             raise ValueError("form_type cannot be empty")
         return value.strip()
 
-    # Rejects empty data — at least one field must be submitted
     @field_validator("data")
     @classmethod
     def data_cannot_be_empty(cls, value: dict) -> dict:
@@ -28,7 +24,6 @@ class SubmissionRequest(BaseModel):
         return value
 
 
-# Update request — only data changes, form_type stays the same
 class SubmissionUpdateRequest(BaseModel):
     data: dict
 
@@ -40,22 +35,27 @@ class SubmissionUpdateRequest(BaseModel):
         return value
 
 
-# Internal schema used by submission_service — not exposed directly in routers
+class StatusUpdateRequest(BaseModel):
+    status: Literal['pending', 'reviewed', 'archived']
+
+
 class SubmissionCreate(BaseModel):
     form_id: int
     form_type: str
     data: dict
 
 
-# Submission object returned in the admin submissions list
 class SubmissionResponse(BaseModel):
     id: int
     form_id: int
     form_type: str
     data: dict
+    status: str = 'pending'
     submitted_by_user_id: Optional[int] = None
+    submitted_by_username: Optional[str] = None
+    updated_by_user_id: Optional[int] = None
+    updated_by_username: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}

@@ -1,9 +1,4 @@
 // src/types/index.ts
-//
-// WHY single file: every type is imported from here — no circular deps,
-// no hunting across files to find where FormDefinition lives.
-//
-// POST-MVP: split into types/auth.ts, types/forms.ts etc if this grows > 150 lines.
 
 // ── Auth ───────────────────────────────────────────────────────────────────
 
@@ -42,12 +37,18 @@ export interface FormDefinition {
 
 // ── Submissions ────────────────────────────────────────────────────────────
 
+export type SubmissionStatus = 'pending' | 'reviewed' | 'archived';
+
 export interface Submission {
   id: number;
   form_id: number;
   form_type: string;
   data: Record<string, unknown>;
+  status: SubmissionStatus;
   submitted_by_user_id?: number;
+  submitted_by_username?: string;
+  updated_by_user_id?: number;
+  updated_by_username?: string;
   created_at: string;
   updated_at?: string;
 }
@@ -61,5 +62,5 @@ export interface Toast {
   type: ToastType;
   title: string;
   message?: string;
-  duration?: number;             // ms, default 4000
+  duration?: number;
 }

@@ -4,6 +4,7 @@ import { apiClient } from '../lib/apiClient';
 import type {
   FormDefinition,
   Submission,
+  SubmissionStatus,
   User,
   TokenResponse,
   LoginRequest,
@@ -17,7 +18,6 @@ export const authAPI = {
     return res.data;
   },
 
-  // token param — fix for race condition: localStorage might not be ready yet
   me: async (token?: string): Promise<User> => {
     const res = await apiClient.get<User>('/api/auth/me', {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -69,6 +69,18 @@ export const formAPI = {
     });
     return res.data;
   },
+
+  // Admin: update submission status
+  updateSubmissionStatus: async (formId: number, submissionId: number, status: SubmissionStatus): Promise<Submission> => {
+    const res = await apiClient.patch<Submission>(`/api/forms/${formId}/submissions/${submissionId}/status`, { status });
+    return res.data;
+  },
+
+  // Admin: edit any submission data
+  adminUpdateSubmission: async (formId: number, submissionId: number, data: Record<string, unknown>): Promise<Submission> => {
+    const res = await apiClient.put<Submission>(`/api/forms/${formId}/submissions/${submissionId}`, { data });
+    return res.data;
+  },
 };
 
 // ── Submissions (user-facing) ──────────────────────────────────────────────
@@ -89,9 +101,6 @@ export const submissionAPI = {
     return res.data;
   },
 };
-
-
-
 
 // ── Lookup Configs ─────────────────────────────────────────────────────────
 
@@ -182,6 +191,7 @@ export const lookupAPI = {
     const res = await apiClient.post(`/api/lookup/configs/${id}/test`);
     return res.data;
   },
+
   discoverFields: async (id: number): Promise<{ fields: Array<{ path: string; sample_value: string; type: string }>; error?: string }> => {
     const res = await apiClient.post(`/api/lookup/configs/${id}/discover-fields`);
     return res.data;
