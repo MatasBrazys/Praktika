@@ -10,7 +10,6 @@ import { useToast } from '../../contexts/ToastContext'
 import { extractErrorMessage } from '../../lib/apiClient'
 import { lookupAPI } from '../../services/api'
 import type { LookupConfigResponse, LookupFieldMapping } from '../../services/api'
-import Navbar from '../../components/shared/Navbar'
 import '../../styles/pages/admin/form-list.css'
 import '../../styles/components/field-editor.css'
 import '../../styles/components/modal.css'
@@ -248,15 +247,12 @@ export default function LookupConfigs() {
   // ── Render ────────────────────────────────────────────────────────────
 
   if (loading) return (
-    <>
-      <Navbar />
-      <div className="page-loading"><div className="spinner" />Loading configs…</div>
-    </>
+    <div className="page-loading"><div className="spinner" />Loading configs…</div>
   )
 
   return (
     <>
-      <Navbar />
+      
       <div className="page-container-admin">
         <div className="form-list-wrapper">
 
@@ -358,9 +354,9 @@ export default function LookupConfigs() {
                 <small>
                   <code className="lookup-hint">{'{query}'}</code> = what the user types in the form.
                   This controls <strong>which field</strong> the API searches by. Examples:
-                  <br/>• Search by CRM ID: <code>/api/clients/?crm_id={'{query}'}</code>
-                  <br/>• Search by name: <code>/api/devices/?name__ic={'{query}'}</code>
-                  <br/>• Search by IP: <code>/api/prefixes/?prefix={'{query}'}</code>
+                  <br />• Search by CRM ID: <code>/api/clients/?crm_id={'{query}'}</code>
+                  <br />• Search by name: <code>/api/devices/?name__ic={'{query}'}</code>
+                  <br />• Search by IP: <code>/api/prefixes/?prefix={'{query}'}</code>
                 </small>
               </div>
 

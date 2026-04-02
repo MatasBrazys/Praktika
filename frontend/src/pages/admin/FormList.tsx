@@ -5,7 +5,6 @@ import { useNavigate } from 'react-router-dom'
 import { formAPI } from '../../services/api'
 import { useToast } from '../../contexts/ToastContext'
 import { extractErrorMessage } from '../../lib/apiClient'
-import Navbar from '../../components/shared/Navbar'
 import type { FormDefinition } from '../../types'
 import '../../styles/pages/admin/form-list.css'
 
@@ -164,18 +163,17 @@ export default function FormList() {
     }
   }
 
-  if (loading) return(
-    <>
-    <Navbar/>
+  if (loading) return (
+
     <div className="page-loading"><div className="spinner" />Loading forms…</div>
-    </>  
+
   )
-   
+
 
 
   return (
     <>
-      <Navbar />
+    
       <div className="page-container-admin">
         <div className="form-list-wrapper">
 

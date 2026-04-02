@@ -18,27 +18,113 @@
   padding: 100px var(--sp-8) 96px;
 }
 
-/* Geometric decoration — large rotated square, CSS only */
-.home-hero__geo {
+/* ── Aurora blobs ── */
+.home-hero__aurora {
   position: absolute;
-  top: -80px;
-  right: -80px;
-  width: 480px;
-  height: 480px;
-  border: 1.5px solid rgba(255,255,255,0.04);
-  transform: rotate(18deg);
-  border-radius: var(--radius-lg);
+  inset: 0;
+  z-index: 0;
   pointer-events: none;
 }
 
-.home-hero__geo::before {
-  content: '';
-  position: absolute;
-  inset: 40px;
-  border: 1.5px solid rgba(255,255,255,0.04);
-  border-radius: var(--radius-md);
+@keyframes auroraA {
+  0%   { transform: translate(0%, 0%)    scale(1);    }
+  33%  { transform: translate(8%, -12%)  scale(1.1);  }
+  66%  { transform: translate(-6%, 8%)   scale(0.95); }
+  100% { transform: translate(0%, 0%)    scale(1);    }
 }
 
+@keyframes auroraB {
+  0%   { transform: translate(0%, 0%)    scale(1);    }
+  40%  { transform: translate(-10%, 6%)  scale(1.15); }
+  70%  { transform: translate(6%, -8%)   scale(0.9);  }
+  100% { transform: translate(0%, 0%)    scale(1);    }
+}
+
+@keyframes auroraC {
+  0%   { transform: translate(0%, 0%)    scale(1);    }
+  50%  { transform: translate(12%, 10%)  scale(1.08); }
+  100% { transform: translate(0%, 0%)    scale(1);    }
+}
+
+/* Blob 1 — teal, top-left */
+.home-hero__aurora::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 55%;
+  height: 140%;
+  background: radial-gradient(ellipse at center,
+    rgba(13, 148, 136, 0.18) 0%,
+    rgba(13, 148, 136, 0.06) 45%,
+    transparent 70%
+  );
+  filter: blur(40px);
+  animation: auroraA 14s ease-in-out infinite;
+}
+
+/* Blob 2 — blue/indigo, right */
+.home-hero__aurora::after {
+  content: '';
+  position: absolute;
+  top: -30%;
+  right: -15%;
+  width: 60%;
+  height: 150%;
+  background: radial-gradient(ellipse at center,
+    rgba(37, 99, 235, 0.14) 0%,
+    rgba(37, 99, 235, 0.05) 45%,
+    transparent 70%
+  );
+  filter: blur(50px);
+  animation: auroraB 18s ease-in-out infinite;
+  animation-delay: -6s;
+}
+
+/* Blob 3 — teal accent, bottom-center */
+.home-hero__blob3 {
+  position: absolute;
+  bottom: -20%;
+  left: 30%;
+  width: 50%;
+  height: 100%;
+  background: radial-gradient(ellipse at center,
+    rgba(45, 212, 191, 0.10) 0%,
+    rgba(45, 212, 191, 0.03) 50%,
+    transparent 70%
+  );
+  filter: blur(60px);
+  animation: auroraC 20s ease-in-out infinite;
+  animation-delay: -10s;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Noise texture overlay for depth */
+.home-hero__aurora-noise {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* Subtle grid lines */
+.home-hero__grid {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+}
+
+/* ── Inner content ── */
 .home-hero__inner {
   max-width: 760px;
   margin: 0 auto;
@@ -99,7 +185,6 @@
 .home-btn--primary {
   background: var(--color-primary);
   color: white;
-  box-shadow: 0 0 0 0 rgba(13,148,136,0);
 }
 
 .home-btn--primary:hover {
@@ -142,13 +227,10 @@
   gap: var(--sp-6);
   padding: var(--sp-8) 0;
   border-bottom: 1px solid var(--color-border);
-  transition: background var(--t-fast);
   align-items: start;
 }
 
-.home-feature:last-child {
-  border-bottom: none;
-}
+.home-feature:last-child { border-bottom: none; }
 
 .home-feature__num {
   font-size: var(--text-xs);
@@ -179,7 +261,6 @@
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .home-hero { padding: var(--sp-16) var(--sp-5) var(--sp-16); }
-  .home-hero__geo { display: none; }
   .home-features { padding: var(--sp-10) var(--sp-5) var(--sp-12); }
   .home-feature { grid-template-columns: 40px 1fr; gap: var(--sp-4); padding: var(--sp-6) 0; }
 }
@@ -187,4 +268,10 @@
 @media (max-width: 480px) {
   .home-hero__actions { flex-direction: column; }
   .home-btn { justify-content: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-hero__aurora::before,
+  .home-hero__aurora::after,
+  .home-hero__blob3 { animation: none; }
 }

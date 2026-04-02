@@ -17,7 +17,7 @@ function NavDropdown({ label, active, children }: {
     <div
       className="nav-dropdown"
       onMouseEnter={() => { if (timer.current) clearTimeout(timer.current); setOpen(true); }}
-      onMouseLeave={() => { timer.current = setTimeout(() => setOpen(false), 5000); }}
+      onMouseLeave={() => { timer.current = setTimeout(() => setOpen(false), 50); }}
     >
       <button className={active ? 'active' : ''} type="button">
         {label} ▾
@@ -83,10 +83,10 @@ export default function Navbar() {
         <div className="navbar-user">
           {isAuthenticated ? (
             <>
-              <div className="user-chip">
+              <Link to="/user/profile" className="user-chip">
                 <div className="user-avatar">{initials}</div>
                 <span className="user-name">{user?.username}</span>
-              </div>
+              </Link>
               <button type="button" className="btn-signout" onClick={handleLogout}>
                 Sign out
               </button>

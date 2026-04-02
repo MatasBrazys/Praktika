@@ -5,16 +5,16 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Model } from 'survey-core'
-import { formAPI, submissionAPI } from '../../../../services/api'
-import { useToast } from '../../../../contexts/ToastContext'
+import { formAPI, submissionAPI } from '../../../services/api'
+import { useToast } from '../../../contexts/ToastContext'
 import { attachRealtimeValidation } from '../utils/realtimeValidation'
 import { attachLookupBehavior } from '../utils/lookupBehavior'
 import { attachDynamicChoicesBehavior } from '../utils/dynamicChoicesBehavior'
 import { attachCrossFieldValidation } from '../utils/crossFieldValidation'
 import { attachUniqueValidation } from '../utils/uniqueValidation'
 import { detectBulkPanels } from '../utils/bulkPanelDetector'
-import type { BulkPanelWithPage } from '../../../../types/survey.types'
-import type { FormDefinition } from '../../../../types'
+import type { BulkPanelWithPage } from '../../../types/survey.types'
+import type { FormDefinition } from '../../../types'
 
 interface UseFormLoaderResult {
   form: FormDefinition | null

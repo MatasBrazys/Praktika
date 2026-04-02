@@ -7,13 +7,14 @@ import { useParams } from 'react-router-dom'
 import { Survey } from 'survey-react-ui'
 import 'survey-core/survey-core.min.css'
 
-import BulkImporter  from '../../../components/public/BulkImporter'
-import BackButton    from '../../../components/shared/BackButton'
-import ErrorBoundary from '../../../components/shared/ErrorBoundary'
+import BulkImporter  from '../../components/public/BulkImporter'
+import BackButton    from '../../components/shared/BackButton'
+import ErrorBoundary from '../../components/shared/ErrorBoundary'
 import { useFormLoader } from './hooks/useFormLoader'
-import '../../../styles/pages/public/form.css'
-import '../../../styles/components/bulk-importer.css'
-import '../../../styles/components/error-boundary.css'
+import '../../styles/pages/public/form.css'
+import '../../styles/components/bulk-importer.css'
+import '../../styles/components/error-boundary.css'
+import '../../components/shared/Navbar'
 
 interface PageChangedOptions {
   newCurrentPage?: { visibleIndex?: number }
@@ -98,6 +99,7 @@ export default function Form() {
   const visiblePanels = bulkPanels.filter(p => p.pageIndex === currentPageNo)
 
   return (
+
     <div className="public-page">
       <div className="public-form-container">
         <div className={`form-header ${isEditMode ? 'form-header--edit' : ''}`}>

@@ -1,0 +1,32 @@
+version: '3.9'
+
+# Development override — use with:
+#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Changes vs production:
+#   - Frontend: Vite dev server instead of Nginx (hot reload)
+#   - Frontend: port 5173 exposed
+#   - Backend: uvicorn --reload + source volume mount
+#   - Backend: port 8000 optionally exposed for debugging
+
+services:
+  backend:
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      VITE_API_URL: ""
+    depends_on:
+      - backend

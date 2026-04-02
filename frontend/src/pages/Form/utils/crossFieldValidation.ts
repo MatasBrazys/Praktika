@@ -10,7 +10,7 @@
 // So we detect which paneldynamic contains our rules and trigger on its name too.
 
 import type { Model } from 'survey-core'
-import { subnetContains } from '../../../../lib/subnetUtils'
+import { subnetContains } from '../../../lib/subnetUtils'
 
 // ── Types ─────────────────────────────────────────────────────────────────
 

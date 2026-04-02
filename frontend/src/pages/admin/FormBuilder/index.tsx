@@ -7,7 +7,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { formAPI } from '../../../services/api'
 import { useToast } from '../../../contexts/ToastContext'
 import { extractErrorMessage } from '../../../lib/apiClient'
-import Navbar from '../../../components/shared/Navbar'
 import FieldEditor from '../../../components/admin/FieldEditor'
 import FormPreview from '../../../components/admin/FormPreview'
 import { convertToSurveyJS } from './utils/surveyConverter'
@@ -110,20 +109,18 @@ export default function FormBuilder() {
 
   const allFields = pages.flatMap(p => p.fields)
   if (loading) return (
-  <>
-    <Navbar />
+
     <div className="page-container-admin">
       <div className="page-loading">
         <div className="spinner" />
         Loading form...
       </div>
     </div>
-  </>
 )
 
   return (
     <>
-      <Navbar />
+      
       <div className="page-container-admin">
         <div className="builder-wrapper">
 

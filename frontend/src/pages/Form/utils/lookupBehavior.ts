@@ -8,8 +8,8 @@
 // Race condition safe: each search has a request counter.
 
 import type { Model } from 'survey-core'
-import { lookupAPI } from '../../../../services/api'
-import { debounce } from '../../../../lib/utils'
+import { lookupAPI } from '../../../services/api'
+import { debounce } from '../../../lib/utils'
 
 interface LookupPanelConfig {
   triggerFieldName: string

@@ -1,7 +1,7 @@
 // src/pages/public/Form/utils/bulkPanelDetector.ts
 // Scans a SurveyJS JSON object for paneldynamic fields with bulk import enabled.
 
-import type { BulkPanelWithPage } from '../../../../types/survey.types';
+import type { BulkPanelWithPage } from '../../../types/survey.types';
 
 // Returns all paneldynamic fields that have allowBulkImport=true configured.
 // Handles both single-page (elements) and multi-page (pages) SurveyJS JSON formats.
