@@ -1,6 +1,4 @@
 # app/routers/auth.py
-# Authentication endpoints: login, current user info.
-# Dev-only seed endpoint is registered only when ENABLE_DEV_ROUTES=true in .env.
 
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -10,75 +8,110 @@ from app.config import settings
 from app.database import get_db
 from app.models.user import User
 from app.auth.utils import verify_password, create_access_token, hash_password
+from app.auth.ldap import ldap_authenticate, ldap_get_user_info
 from app.auth.dependencies import get_current_user
 from app.schemas.user import LoginRequest, TokenResponse, UserResponse
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
 
-# Returns a JWT token on successful login
 @router.post("/login", response_model=TokenResponse)
 def login(body: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(
         User.username == body.username,
-        User.is_active == True
+        User.is_active == True,
     ).first()
 
-    if not user or not verify_password(body.password, user.password_hash):
-        logger.warning("Failed login attempt for username: %r", body.username)
+    authenticated = False
+
+    if user and user.password_hash:
+        # ── Lokalus vartotojas (seed) — bcrypt ───────────────────────
+        authenticated = verify_password(body.password, user.password_hash)
+
+    else:
+        # ── LDAP vartotojas ──────────────────────────────────────────
+        authenticated = ldap_authenticate(body.username, body.password)
+
+        if authenticated:
+            info = ldap_get_user_info(body.username)
+
+            if not info:
+                # Vartotojas išdingo iš LDAP — deaktyvuoti DB įrašą
+                if user:
+                    user.is_active = False
+                    db.commit()
+                    logger.warning("User %r not found in LDAP — deactivated", body.username)
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Incorrect username or password",
+                )
+
+            if not user:
+                # Pirmas prisijungimas — sukurti DB įrašą
+                user = User(
+                    username=body.username,
+                    email=info["email"],
+                    role=info["role"],
+                    password_hash=None,
+                    is_active=True,
+                )
+                db.add(user)
+                db.commit()
+                db.refresh(user)
+                logger.info("Auto-created LDAP user: %r role=%s", body.username, info["role"])
+
+            else:
+                # Kiekvienas prisijungimas — atnaujinti rolę pagal LDAP grupę
+                if user.role != info["role"]:
+                    logger.info(
+                        "Role updated for %r: %s → %s",
+                        body.username, user.role, info["role"],
+                    )
+                    user.role = info["role"]
+                    db.commit()
+                    db.refresh(user)
+
+    if not authenticated or not user:
+        logger.warning("Failed login: %r", body.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
 
     token = create_access_token({"sub": str(user.id), "role": user.role})
-    logger.info("User logged in: id=%d username=%r", user.id, user.username)
+    logger.info("User logged in: id=%d username=%r role=%s", user.id, user.username, user.role)
     return TokenResponse(access_token=token, role=user.role, username=user.username)
 
 
-# Returns the currently authenticated user — used by frontend to restore session
 @router.get("/me", response_model=UserResponse)
 def me(current_user: User = Depends(get_current_user)):
     return current_user
 
 
-# Dev-only routes — completely absent in production (not even a 404)
 if settings.ENABLE_DEV_ROUTES:
-    logger.warning("ENABLE_DEV_ROUTES=true — dev endpoints are active, do not use in production")
+    logger.warning("ENABLE_DEV_ROUTES=true — dev endpoints active")
 
-    # Creates default admin/manager test users if they don't already exist
     @router.post("/seed", include_in_schema=False)
     def seed_users(db: Session = Depends(get_db)):
         default_users = [
             {"username": "admin",   "email": "admin@datagroup.de",   "role": "admin", "password": "admin123"},
             {"username": "manager", "email": "manager@datagroup.de", "role": "user",  "password": "user123"},
         ]
-
-        created_usernames = []
-
+        created = []
         try:
-            for user_data in default_users:
-                already_exists = db.query(User).filter(
-                    User.username == user_data["username"]
-                ).first()
-
-                if not already_exists:
+            for u in default_users:
+                if not db.query(User).filter(User.username == u["username"]).first():
                     db.add(User(
-                        username=user_data["username"],
-                        email=user_data["email"],
-                        role=user_data["role"],
-                        password_hash=hash_password(user_data["password"]),
+                        username=u["username"],
+                        email=u["email"],
+                        role=u["role"],
+                        password_hash=hash_password(u["password"]),
                         is_active=True,
                     ))
-                    created_usernames.append(user_data["username"])
-
+                    created.append(u["username"])
             db.commit()
-            logger.info("Seed: created users: %s", created_usernames)
-            return {"created": created_usernames}
-
-        except Exception as error:
+            return {"created": created}
+        except Exception as e:
             db.rollback()
-            logger.error("Seed failed: %s", error)
-            return {"error": str(error)}
+            return {"error": str(e)}
