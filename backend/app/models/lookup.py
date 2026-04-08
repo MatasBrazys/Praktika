@@ -2,7 +2,7 @@
 # Stores external API lookup configurations.
 # Admin creates these via UI — credentials never reach the frontend.
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, JSON
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, JSON, ForeignKey
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -40,3 +40,18 @@ class LookupConfig(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class LookupAuditLog(Base):
+    """Audit log for lookup API calls."""
+    __tablename__ = "lookup_audit_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    lookup_config_id = Column(Integer, ForeignKey('lookup_configs.id', ondelete='CASCADE'), nullable=False, index=True)
+    query = Column(String(255), nullable=False)
+    status_code = Column(Integer, nullable=True)
+    response_time_ms = Column(Integer, nullable=True)
+    success = Column(Boolean, default=False)
+    error_message = Column(Text, nullable=True)
+    requested_by_user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

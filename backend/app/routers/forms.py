@@ -9,8 +9,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.form import FormDefinitionCreate, FormDefinitionUpdate, FormDefinitionResponse
 from app.schemas.submission import SubmissionRequest, SubmissionResponse, StatusUpdateRequest, SubmissionUpdateRequest
-from app.services import form_service, submission_service
-from app.auth.dependencies import get_current_user, require_admin
+from app.services import form_service, submission_service, teams_notification_service
+from app.auth.dependencies import get_current_user, require_admin, require_form_confirmer
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,22 @@ def create_form(
     current_user: User = Depends(require_admin),
 ):
     logger.info("Admin id=%d creating form: %r", current_user.id, data.title)
-    return form_service.create(db, data)
+    created_form = form_service.create(db, data)
+    
+    # Send Teams notification about new form (fire and don't wait for result)
+    try:
+        teams_notification_service.notify_new_form_created(
+            form_id=created_form.id,
+            form_title=created_form.title,
+            creator_username=current_user.username,
+            form_description=created_form.description
+        )
+        logger.info("Teams notification queued for new form id=%d", created_form.id)
+    except Exception as e:
+        logger.error(f"Failed to send Teams notification for form {created_form.id}: {e}")
+        # Don't fail the form creation if notification fails
+    
+    return created_form
 
 
 @router.put("/{form_id}", response_model=FormDefinitionResponse)
@@ -89,6 +104,21 @@ def submit_form(
         submitted_by_user_id=current_user.id,
     )
     logger.info("User id=%d submitted form id=%d, submission id=%d", current_user.id, form_id, submission.id)
+    
+    # Send Teams notification about new submission (fire and don't wait)
+    try:
+        form = form_service.get_by_id(db, form_id)
+        teams_notification_service.notify_new_submission(
+            form_id=form_id,
+            form_title=form.title,
+            submission_id=submission.id,
+            submitted_by_username=current_user.username
+        )
+        logger.info("Teams notification sent for new submission id=%d", submission.id)
+    except Exception as e:
+        logger.error(f"Failed to send Teams notification for submission {submission.id}: {e}")
+        # Don't fail submission if notification fails
+    
     return {"message": "Form submitted successfully", "submission_id": submission.id}
 
 
@@ -98,7 +128,7 @@ def get_submissions(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    _: User = Depends(require_admin),
+    _: User = Depends(require_form_confirmer),
 ):
     return submission_service.get_by_form(db, form_id, skip, limit)
 
@@ -111,11 +141,15 @@ def update_submission_status(
     submission_id: int,
     body: StatusUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_form_confirmer),  # ← buvo require_admin
 ):
-    logger.info("Admin id=%d updating submission id=%d status to %s", current_user.id, submission_id, body.status)
+    # Confirmer gali tik reviewed, admin — viską
+    if current_user.role == 'form_confirmer' and body.status != 'reviewed':
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Form confirmers can only set status to 'reviewed'")
+    
+    logger.info("User id=%d updating submission id=%d status to %s", current_user.id, submission_id, body.status)
     return submission_service.update_status(db, submission_id, body.status, current_user.id)
-
 
 # ── Admin: edit any submission data ──────────────────────────────────────────
 

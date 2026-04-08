@@ -118,21 +118,21 @@ export default function BasicTab({
         </>
       )}
 
-      {needsChoices && (
-        <>
-          <DynamicChoicesConfig
-            source={config.dynamicChoicesSource}
-            allFields={allFields}
-            onChange={onDynamicChoicesChange}
-          />
-          {!config.dynamicChoicesSource?.fieldName && (
-            <div className="form-group">
-              <label>Choices (one per line) *</label>
-              <textarea value={choicesText} onChange={e => onChoicesChange(e.target.value)} placeholder="Type each option on a new line" rows={5} />
-            </div>
-          )}
-        </>
-      )}
+       {needsChoices && (
+         <>
+           <DynamicChoicesConfig
+             _source={config.dynamicChoicesSource}
+             allFields={allFields}
+             onChange={onDynamicChoicesChange}
+           />
+           {!config.dynamicChoicesSource?.fieldName && (
+             <div className="form-group">
+               <label>Choices (one per line) *</label>
+               <textarea value={choicesText} onChange={e => onChoicesChange(e.target.value)} placeholder="Type each option on a new line" rows={5} />
+             </div>
+           )}
+         </>
+       )}
 
       {/* Paneldynamic template fields */}
       {config.type === 'paneldynamic' && (
@@ -161,31 +161,31 @@ export default function BasicTab({
           )}
 
           {templateFields.map((tf, idx) => (
-            <TemplateFieldRow
-              key={tf.id}
-              tf={tf}
-              idx={idx}
-              allTemplateFields={templateFields}
-              choicesText={templateChoicesText[idx] ?? tf.choices?.join('\n') ?? ''}
-              expandedValidators={expandedTemplateField}
-              expandedConditions={expandedTemplateConditions}
-              onUpdate={onUpdateTemplateField}
-              onDelete={onDeleteTemplateField}
-              onChoicesChange={onTemplateChoicesChange}
-              onTypeChange={onTemplateTypeChange}
-              onInputTypeChange={onTemplateInputTypeChange}
-              onToggleValidators={onToggleTemplateValidators}
-              onToggleConditions={onToggleTemplateConditions}
-              onAddValidator={onAddTemplateValidator}
-              onAddCrossfieldValidator={onAddTemplateCrossfieldValidator}
-              onUpdateValidator={onUpdateTemplateValidator}
-              onDeleteValidator={onDeleteTemplateValidator}
-              onAddCondition={onAddTemplateCondition}
-              onUpdateCondition={onUpdateTemplateCondition}
-              onDeleteCondition={onDeleteTemplateCondition}
-              onConditionLogicChange={onTemplateConditionLogicChange}
-            />
-          ))}
+              <TemplateFieldRow
+                key={tf.id}
+                tf={tf}
+                idx={idx}
+                allTemplateFields={templateFields}
+                choicesText={templateChoicesText[idx] ?? tf.choices?.join('\n') ?? ''}
+               expandedValidators={expandedTemplateField}
+               expandedConditions={expandedTemplateConditions}
+               onUpdate={onUpdateTemplateField}
+               onDelete={onDeleteTemplateField}
+               onChoicesChange={onTemplateChoicesChange}
+               onTypeChange={onTemplateTypeChange}
+               onInputTypeChange={onTemplateInputTypeChange}
+               onToggleValidators={onToggleTemplateValidators}
+               onToggleConditions={onToggleTemplateConditions}
+               onAddValidator={onAddTemplateValidator}
+               onAddCrossfieldValidator={onAddTemplateCrossfieldValidator}
+               onUpdateValidator={onUpdateTemplateValidator}
+               onDeleteValidator={onDeleteTemplateValidator}
+               onAddCondition={onAddTemplateCondition}
+               onUpdateCondition={onUpdateTemplateCondition}
+               onDeleteCondition={onDeleteTemplateCondition}
+               onConditionLogicChange={onTemplateConditionLogicChange}
+             />
+           ))}
 
           <BulkImportConfig
             templateFields={templateFields}

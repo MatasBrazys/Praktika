@@ -1,7 +1,7 @@
 # app/models/form.py
 
 
-from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, JSON, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, JSON, ForeignKey, UniqueConstraint
 from sqlalchemy.sql import func
 from app.database import Base
 
@@ -31,3 +31,17 @@ class FormSubmission(Base):
     updated_by_user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class FormConfirmation(Base):
+    """Tracker for which users have confirmed which forms"""
+    __tablename__ = "form_confirmations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    form_id = Column(Integer, ForeignKey('form_definitions.id', ondelete='CASCADE'), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    submission_id = Column(Integer, ForeignKey('form_submissions.id', ondelete='SET NULL'), nullable=True)
+    confirmed_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Ensure a user can only confirm a form once
+    __table_args__ = (UniqueConstraint('form_id', 'user_id', name='_form_user_uc'),)

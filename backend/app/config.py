@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     LDAP_ADMIN_PASSWORD: str = ""
     LDAP_ADMIN_GROUP: str = "FormAdmin"
     LDAP_USER_GROUP: str = "FormUser"
+    LDAP_CONFIRMER_GROUP: str = "FormConfirmer"
+
+    # Microsoft Teams
+    TEAMS_WEBHOOK_URL: str = ""
+    TEAMS_NOTIFICATION_ENABLED: bool = False
+
+    # Frontend URL for Teams notification links
+    FRONTEND_URL: str = "http://localhost:5173"
 
     class Config:
         env_file = ".env"

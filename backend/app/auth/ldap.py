@@ -34,6 +34,7 @@ def ldap_get_user_info(username: str) -> dict | None:
     """
     Grąžina vartotojo info ir rolę pagal LDAP grupes.
     FormAdmin → role="admin"
+    FormConfirmer → role="form_confirmer"
     FormUser  → role="user"
     Jei nerastas nei vienoje grupėje → None (negalima prisijungti)
     """
@@ -71,6 +72,15 @@ def ldap_get_user_info(username: str) -> dict | None:
         )
         is_admin = len(conn.entries) > 0
 
+        # Tikrinti FormConfirmer grupę
+        confirmer_group_dn = f"cn={settings.LDAP_CONFIRMER_GROUP},ou=groups,{settings.ldap_base_dn}"
+        conn.search(
+            search_base=confirmer_group_dn,
+            search_filter=f"(member={user_dn})",
+            attributes=["cn"],
+        )
+        is_confirmer = len(conn.entries) > 0
+
         # Tikrinti FormUser grupę
         user_group_dn = f"cn={settings.LDAP_USER_GROUP},ou=groups,{settings.ldap_base_dn}"
         conn.search(
@@ -83,12 +93,17 @@ def ldap_get_user_info(username: str) -> dict | None:
         conn.unbind()
 
         # Jei nerastas nei vienoje grupėje — neleidžiame prisijungti
-        if not is_admin and not is_user:
+        if not is_admin and not is_confirmer and not is_user:
             logger.warning("User %r not in any allowed group — access denied", username)
             return None
 
-        # Admin turi prioritetą
-        role = "admin" if is_admin else "user"
+        # Role priority: admin > form_confirmer > user
+        if is_admin:
+            role = "admin"
+        elif is_confirmer:
+            role = "form_confirmer"
+        else:
+            role = "user"
 
         return {
             "username": str(entry.uid),

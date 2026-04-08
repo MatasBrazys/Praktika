@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base
-from app.routers import forms, auth, submissions, lookup
+from app.routers import forms, auth, submissions, lookup, form_confirmations
 
 
 # Create tables on startup
@@ -36,3 +36,4 @@ app.include_router(forms.router)
 app.include_router(auth.router)
 app.include_router(submissions.router)
 app.include_router(lookup.router)
+app.include_router(form_confirmations.router)

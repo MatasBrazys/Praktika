@@ -2,7 +2,7 @@
 
 // ── Auth ───────────────────────────────────────────────────────────────────
 
-export type UserRole = 'admin' | 'user';
+export type UserRole = 'admin' | 'form_confirmer' | 'user';
 
 export interface User {
   id: number;

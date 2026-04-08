@@ -44,6 +44,7 @@ export default function Navbar() {
   };
 
   const initials = user?.username?.slice(0, 2).toUpperCase() ?? '?';
+  const isFormConfirmer = user?.role === 'form_confirmer';
 
   return (
     <nav className="navbar">
@@ -69,6 +70,12 @@ export default function Navbar() {
               <Link to="/admin/forms">Manage Forms</Link>
               <Link to="/admin/form-builder">Create Form</Link>
               <Link to="/admin/lookup-configs">Lookup Configs</Link>
+            </NavDropdown>
+          )}
+
+          {isFormConfirmer && (
+            <NavDropdown label="Confirmations" active={isActive('/form-confirmations')}>
+              <Link to="/form-confirmations">Review Forms</Link>
             </NavDropdown>
           )}
 

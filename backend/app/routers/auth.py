@@ -18,66 +18,60 @@ router = APIRouter(prefix="/api/auth", tags=["Auth"])
 
 @router.post("/login", response_model=TokenResponse)
 def login(body: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(
-        User.username == body.username,
-        User.is_active == True,
-    ).first()
+    # ── LDAP vartotojas (visada) ────────────────────────────────────────
+    authenticated = ldap_authenticate(body.username, body.password)
 
-    authenticated = False
+    if authenticated:
+        info = ldap_get_user_info(body.username)
 
-    if user and user.password_hash:
-        # ── Lokalus vartotojas (seed) — bcrypt ───────────────────────
-        authenticated = verify_password(body.password, user.password_hash)
+        if not info:
+            # Vartotojas išdingo iš LDAP — neleidžiame prisijungti
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+            )
 
-    else:
-        # ── LDAP vartotojas ──────────────────────────────────────────
-        authenticated = ldap_authenticate(body.username, body.password)
+        user = db.query(User).filter(
+            User.username == body.username,
+            User.is_active == True
+        ).first()
 
-        if authenticated:
-            info = ldap_get_user_info(body.username)
+        if not user:
+            # Pirmas prisijungimas — sukurti DB įrašą
+            user = User(
+                username=body.username,
+                email=info["email"],
+                role=info["role"],
+                password_hash=None,  # Never store local password hash
+                is_active=True,
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            logger.info("Auto-created LDAP user: %r role=%s", body.username, info["role"])
 
-            if not info:
-                # Vartotojas išdingo iš LDAP — deaktyvuoti DB įrašą
-                if user:
-                    user.is_active = False
-                    db.commit()
-                    logger.warning("User %r not found in LDAP — deactivated", body.username)
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Incorrect username or password",
+        else:
+            # Kiekvienas prisijungimas — atnaujinti rolę pagal LDAP grupę
+            if user.role != info["role"]:
+                logger.info(
+                    "Role updated for %r: %s → %s",
+                    body.username, user.role, info["role"],
                 )
-
-            if not user:
-                # Pirmas prisijungimas — sukurti DB įrašą
-                user = User(
-                    username=body.username,
-                    email=info["email"],
-                    role=info["role"],
-                    password_hash=None,
-                    is_active=True,
-                )
-                db.add(user)
+                user.role = info["role"]
                 db.commit()
                 db.refresh(user)
-                logger.info("Auto-created LDAP user: %r role=%s", body.username, info["role"])
-
-            else:
-                # Kiekvienas prisijungimas — atnaujinti rolę pagal LDAP grupę
-                if user.role != info["role"]:
-                    logger.info(
-                        "Role updated for %r: %s → %s",
-                        body.username, user.role, info["role"],
-                    )
-                    user.role = info["role"]
-                    db.commit()
-                    db.refresh(user)
-
-    if not authenticated or not user:
-        logger.warning("Failed login: %r", body.username)
+    else:
+        logger.warning("LDAP auth failed for %r", body.username)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
         )
+
+    # Clear any existing local password hash to ensure LDAP-only auth
+    if user.password_hash is not None:
+        user.password_hash = None
+        db.commit()
+        db.refresh(user)
 
     token = create_access_token({"sub": str(user.id), "role": user.role})
     logger.info("User logged in: id=%d username=%r role=%s", user.id, user.username, user.role)

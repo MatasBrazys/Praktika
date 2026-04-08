@@ -21,6 +21,8 @@ import MySubmissions     from './pages/MySubmissions'
 import MyFormSubmissions from './pages/MyFormSubmissions'
 import SuccessPage       from './pages/Success'
 import LookupConfigs     from './pages/admin/LookupConfigs'
+import FormConfirmerList from './pages/form-confirmations'
+import FormConfirmationSubmissions from './pages/form-confirmation-submissions'
 
 import './styles/components/error-boundary.css'
 
@@ -68,13 +70,21 @@ export default function App() {
               </Route>
 
               {/* ── Protected: admin only ───────────────────── */}
-              <Route element={<PrivateRoute requireAdmin />}>
+              <Route element={<PrivateRoute allowedRoles={['admin']} />}>
                 <Route element={<Layout />}>
                   <Route path="/admin/forms"                   element={<FormList />} />
                   <Route path="/admin/form-builder"            element={<FormBuilder />} />
                   <Route path="/admin/form-builder/:id"        element={<FormBuilder />} />
                   <Route path="/admin/forms/:id/submissions"   element={<SubmissionList />} />
                   <Route path="/admin/lookup-configs"          element={<LookupConfigs />} />
+                </Route>
+              </Route>
+
+              {/* ── Protected: form_confirmer only ───────────────────── */}
+              <Route element={<PrivateRoute allowedRoles={['form_confirmer', 'admin']} />}>
+                <Route element={<Layout />}>
+                  <Route path="/form-confirmations"                        element={<FormConfirmerList />} />
+                  <Route path="/form-confirmations/submissions/:formId"    element={<FormConfirmationSubmissions />} />
                 </Route>
               </Route>
 

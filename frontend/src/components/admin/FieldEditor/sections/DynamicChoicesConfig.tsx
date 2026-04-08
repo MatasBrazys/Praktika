@@ -5,18 +5,18 @@
 import type { FieldConfig, DynamicChoicesSource } from '../../../../types/form-builder.types'
 
 interface Props {
-  source: DynamicChoicesSource | undefined
+  _source: DynamicChoicesSource | undefined
   allFields: FieldConfig[]             // all fields in the entire form (all pages)
   onChange: (source: DynamicChoicesSource | undefined) => void
 }
 
-export default function DynamicChoicesConfig({ source, allFields, onChange }: Props) {
+export default function DynamicChoicesConfig({ _source, allFields, onChange }: Props) {
   // Only paneldynamic and checkbox can serve as choice sources
   const sourceFields = allFields.filter(f =>
     f.type === 'paneldynamic' || f.type === 'checkbox'
   )
 
-  const selectedSource = sourceFields.find(f => f.name === source?.fieldName)
+  const selectedSource = sourceFields.find(f => f.name === _source?.fieldName)
   const isPaneldynamic = selectedSource?.type === 'paneldynamic'
   const subFields = selectedSource?.templateElements ?? []
 
@@ -38,11 +38,11 @@ export default function DynamicChoicesConfig({ source, allFields, onChange }: Pr
   }
 
   const handleSubFieldChange = (subFieldName: string) => {
-    if (!source) return
-    onChange({ ...source, subFieldName })
+    if (!_source) return
+    onChange({ ..._source, subFieldName })
   }
 
-  const isEnabled = !!source?.fieldName
+  const isEnabled = !!_source?.fieldName
 
   return (
     <div className="dynamic-choices-config">
@@ -62,52 +62,52 @@ export default function DynamicChoicesConfig({ source, allFields, onChange }: Pr
         </small>
       )}
 
-      {isEnabled && source && (
-        <div className="dynamic-choices-selectors">
-          <div className="form-group">
-            <label>Source field</label>
-            <select value={source.fieldName} onChange={e => handleSourceChange(e.target.value)}>
-              {sourceFields.map(f => (
-                <option key={f.name} value={f.name}>
-                  {f.title} ({f.type === 'paneldynamic' ? '🔁 Group' : '☑️ Checkbox'})
-                </option>
-              ))}
-            </select>
-            <small>
-              {isPaneldynamic
-                ? 'Choices will be collected from all rows of this repeatable group.'
-                : 'Choices will be the selected checkbox values.'}
-            </small>
-          </div>
+       {isEnabled && _source && (
+          <div className="dynamic-choices-selectors">
+           <div className="form-group">
+             <label>Source field</label>
+             <select value={_source?.fieldName ?? ''} onChange={e => handleSourceChange(e.target.value)}>
+               {sourceFields.map(f => (
+                 <option key={f.name} value={f.name}>
+                   {f.title} ({f.type === 'paneldynamic' ? '🔁 Group' : '☑️ Checkbox'})
+                 </option>
+               ))}
+             </select>
+             <small>
+               {isPaneldynamic
+                 ? 'Choices will be collected from all rows of this repeatable group.'
+                 : 'Choices will be the selected checkbox values.'}
+             </small>
+           </div>
 
-          {isPaneldynamic && subFields.length > 0 && (
-            <div className="form-group">
-              <label>Sub-field to use as choices</label>
-              <select
-                value={source.subFieldName ?? ''}
-                onChange={e => handleSubFieldChange(e.target.value)}
-              >
-                {subFields.map(sf => (
-                  <option key={sf.name} value={sf.name}>
-                    {sf.title} ({sf.name})
-                  </option>
-                ))}
-              </select>
-              <small>
-                Values from this column across all rows will appear as dropdown options.
-              </small>
-            </div>
-          )}
+           {isPaneldynamic && subFields.length > 0 && (
+             <div className="form-group">
+               <label>Sub-field to use as choices</label>
+               <select
+                 value={_source?.subFieldName ?? ''}
+                 onChange={e => handleSubFieldChange(e.target.value)}
+               >
+                 {subFields.map(sf => (
+                   <option key={sf.name} value={sf.name}>
+                     {sf.title} ({sf.name})
+                   </option>
+                 ))}
+               </select>
+               <small>
+                 Values from this column across all rows will appear as dropdown options.
+               </small>
+             </div>
+           )}
 
-          <div className="dynamic-choices-preview">
-            <strong>Runtime behavior:</strong>
-            <p>
-              {isPaneldynamic
-                ? `When user fills rows in "${selectedSource?.title}", the values from "${source.subFieldName}" column will appear as choices in this dropdown.`
-                : `When user checks items in "${selectedSource?.title}", those selected values will appear as choices in this dropdown.`}
-            </p>
-          </div>
-        </div>
+           <div className="dynamic-choices-preview">
+             <strong>Runtime behavior:</strong>
+             <p>
+               {isPaneldynamic
+                 ? `When user fills rows in "${selectedSource?.title}", the values from "${_source?.subFieldName}" column will appear as choices in this dropdown.`
+                 : `When user checks items in "${selectedSource?.title}", those selected values will appear as choices in this dropdown.`}
+             </p>
+           </div>
+         </div>
       )}
     </div>
   )

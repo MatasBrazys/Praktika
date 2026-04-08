@@ -2,25 +2,27 @@
 
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import type { UserRole } from '../../types';
 
 interface Props {
-  requireAdmin?: boolean;
+  allowedRoles?: UserRole[];
 }
 
-export default function PrivateRoute({ requireAdmin = false }: Props) {
-  const { isAuthenticated, isAdmin, isLoading } = useAuth();
+export default function PrivateRoute({ allowedRoles }: Props) {
+  const { isAuthenticated, user, isLoading } = useAuth();
   const location = useLocation();
 
-  // Show nothing while session is being restored from localStorage
   if (isLoading) return null;
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (requireAdmin && !isAdmin) {
-    // User is logged in but doesn't have admin role
-    return <Navigate to="/" replace />;
+  if (allowedRoles && allowedRoles.length > 0) {
+    const userRole = user?.role as UserRole;
+    if (!allowedRoles.includes(userRole)) {
+      return <Navigate to="/" replace />;
+    }
   }
 
   return <Outlet />;

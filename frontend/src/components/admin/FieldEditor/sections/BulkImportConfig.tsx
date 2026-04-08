@@ -7,9 +7,9 @@ interface Props {
   templateFields:   FieldConfig[];
   allowBulkImport:  boolean;
   bulkImportFields: BulkImportField[];
-  onToggle:         (enabled: boolean) => void;
-  onFieldToggle:    (fieldName: string, included: boolean) => void;
-  onRequiredToggle: (fieldName: string, required: boolean) => void;
+  onToggle:         (_enabled: boolean) => void;
+  onFieldToggle:    (_fieldName: string, _included: boolean) => void;
+  onRequiredToggle: (_fieldName: string, _required: boolean) => void;
 }
 
 export default function BulkImportConfig({

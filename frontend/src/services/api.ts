@@ -96,6 +96,11 @@ export const submissionAPI = {
     return res.data;
   },
 
+  getByForm: async (formId: number): Promise<Submission[]> => {
+    const res = await apiClient.get<Submission[]>(`/api/forms/${formId}/submissions`);
+    return res.data;
+  },
+
   update: async (id: number, data: Record<string, unknown>): Promise<Submission> => {
     const res = await apiClient.put<Submission>(`/api/submissions/${id}`, { data });
     return res.data;
