@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.form import FormDefinitionCreate, FormDefinitionUpdate, FormDefinitionResponse
 from app.schemas.submission import SubmissionRequest, SubmissionResponse, StatusUpdateRequest, SubmissionUpdateRequest
-from app.services import form_service, submission_service, teams_notification_service
+from app.services import form_service, submission_service
 from app.auth.dependencies import get_current_user, require_admin, require_form_confirmer
 from app.models.user import User
 
@@ -40,22 +40,7 @@ def create_form(
     current_user: User = Depends(require_admin),
 ):
     logger.info("Admin id=%d creating form: %r", current_user.id, data.title)
-    created_form = form_service.create(db, data)
-    
-    # Send Teams notification about new form (fire and don't wait for result)
-    try:
-        teams_notification_service.notify_new_form_created(
-            form_id=created_form.id,
-            form_title=created_form.title,
-            creator_username=current_user.username,
-            form_description=created_form.description
-        )
-        logger.info("Teams notification queued for new form id=%d", created_form.id)
-    except Exception as e:
-        logger.error(f"Failed to send Teams notification for form {created_form.id}: {e}")
-        # Don't fail the form creation if notification fails
-    
-    return created_form
+    return form_service.create(db, data)
 
 
 @router.put("/{form_id}", response_model=FormDefinitionResponse)
@@ -101,25 +86,32 @@ def submit_form(
         form_id=form_id,
         form_type=body.form_type,
         data=body.data,
-        submitted_by_user_id=current_user.id,
+        submitted_by_username=current_user.username,
+        submitted_by_email=current_user.email,
     )
-    logger.info("User id=%d submitted form id=%d, submission id=%d", current_user.id, form_id, submission.id)
     
-    # Send Teams notification about new submission (fire and don't wait)
-    try:
-        form = form_service.get_by_id(db, form_id)
-        teams_notification_service.notify_new_submission(
-            form_id=form_id,
-            form_title=form.title,
-            submission_id=submission.id,
-            submitted_by_username=current_user.username
-        )
-        logger.info("Teams notification sent for new submission id=%d", submission.id)
-    except Exception as e:
-        logger.error(f"Failed to send Teams notification for submission {submission.id}: {e}")
-        # Don't fail submission if notification fails
+    form = form_service.get_by_id(db, form_id)
     
-    return {"message": "Form submitted successfully", "submission_id": submission.id}
+    submission_service.notify_submission_created(
+        db, form_id, form.title, submission.id, current_user.email
+    )
+    
+    logger.info("User %s submitted form id=%d, submission id=%d", current_user.username, form_id, submission.id)
+    return {
+        "message": "Form submitted successfully",
+        "submission_id": submission.id,
+        "form_title": form.title
+    }
+
+
+@router.get("/my-submissions", response_model=List[SubmissionResponse])
+def get_my_submissions(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return submission_service.get_by_user(db, current_user.username, skip, limit)
 
 
 @router.get("/{form_id}/submissions", response_model=List[SubmissionResponse])
@@ -133,25 +125,75 @@ def get_submissions(
     return submission_service.get_by_form(db, form_id, skip, limit)
 
 
-# ── Admin: update submission status ──────────────────────────────────────────
-
 @router.patch("/{form_id}/submissions/{submission_id}/status", response_model=SubmissionResponse)
 def update_submission_status(
     form_id: int,
     submission_id: int,
     body: StatusUpdateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_form_confirmer),  # ← buvo require_admin
+    current_user: User = Depends(require_form_confirmer),
 ):
-    # Confirmer gali tik reviewed, admin — viską
-    if current_user.role == 'form_confirmer' and body.status != 'reviewed':
+    if current_user.role == 'form_confirmer' and body.status not in ('confirmed', 'declined'):
         from fastapi import HTTPException
-        raise HTTPException(status_code=403, detail="Form confirmers can only set status to 'reviewed'")
+        raise HTTPException(status_code=403, detail="Form confirmers can only approve or decline")
     
-    logger.info("User id=%d updating submission id=%d status to %s", current_user.id, submission_id, body.status)
-    return submission_service.update_status(db, submission_id, body.status, current_user.id)
+    result = submission_service.update_status(
+        db, submission_id, body.status, 
+        updated_by_username=current_user.username,
+        updated_by_email=current_user.email,
+        comment=body.comment
+    )
+    
+    form = form_service.get_by_id(db, form_id)
+    
+    if body.status == 'declined':
+        submission_service.notify_submission_declined(
+            db, submission_id, form.title, result.submitted_by_email, body.comment or ""
+        )
+    elif body.status == 'confirmed':
+        submission_service.notify_submission_confirmed(
+            db, submission_id, form.title, result.submitted_by_email
+        )
+    
+    logger.info("User %s updating submission id=%d status to %s", current_user.username, submission_id, body.status)
+    return result
 
-# ── Admin: edit any submission data ──────────────────────────────────────────
+
+@router.put("/my-submissions/{submission_id}", response_model=SubmissionResponse)
+def user_update_submission(
+    submission_id: int,
+    body: SubmissionUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    submission = submission_service.get_by_id(db, submission_id)
+    
+    if submission.submitted_by_username != current_user.username:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="You can only edit your own submissions")
+    
+    if submission.status not in ('declined', 'pending'):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="You can only edit declined or pending submissions")
+    
+    logger.info("User %s editing submission id=%d (was %s)", current_user.username, submission_id, submission.status)
+    updated = submission_service.update(
+        db, submission_id, body.data,
+        updated_by_username=current_user.username,
+        updated_by_email=current_user.email
+    )
+    
+    if submission.status == 'declined':
+        submission_service.update_status(
+            db, submission_id, 'pending',
+            updated_by_username=current_user.username,
+            updated_by_email=current_user.email
+        )
+        updated.status = 'pending'
+        logger.info("Submission id=%d status changed from declined to pending", submission_id)
+    
+    return updated
+
 
 @router.put("/{form_id}/submissions/{submission_id}", response_model=SubmissionResponse)
 def admin_update_submission(
@@ -161,5 +203,9 @@ def admin_update_submission(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    logger.info("Admin id=%d editing submission id=%d", current_user.id, submission_id)
-    return submission_service.update(db, submission_id, body.data, current_user.id, is_admin=True)
+    logger.info("Admin %s editing submission id=%d", current_user.username, submission_id)
+    return submission_service.update(
+        db, submission_id, body.data,
+        updated_by_username=current_user.username,
+        updated_by_email=current_user.email
+    )

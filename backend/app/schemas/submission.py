@@ -36,7 +36,8 @@ class SubmissionUpdateRequest(BaseModel):
 
 
 class StatusUpdateRequest(BaseModel):
-    status: Literal['pending', 'reviewed', 'archived']
+    status: Literal['pending', 'confirmed', 'declined']
+    comment: Optional[str] = None
 
 
 class SubmissionCreate(BaseModel):
@@ -51,10 +52,11 @@ class SubmissionResponse(BaseModel):
     form_type: str
     data: dict
     status: str = 'pending'
-    submitted_by_user_id: Optional[int] = None
+    decline_comment: Optional[str] = None
     submitted_by_username: Optional[str] = None
-    updated_by_user_id: Optional[int] = None
+    submitted_by_email: Optional[str] = None
     updated_by_username: Optional[str] = None
+    updated_by_email: Optional[str] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

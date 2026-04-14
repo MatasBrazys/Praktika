@@ -24,12 +24,17 @@ class Settings(BaseSettings):
     LDAP_USER_GROUP: str = "FormUser"
     LDAP_CONFIRMER_GROUP: str = "FormConfirmer"
 
-    # Microsoft Teams
-    TEAMS_WEBHOOK_URL: str = ""
-    TEAMS_NOTIFICATION_ENABLED: bool = False
+    # LDAP Background Sync
+    LDAP_SYNC_INTERVAL_MINUTES: float = 5
+    LDAP_SYNC_ENABLED: bool = True
 
-    # Frontend URL for Teams notification links
-    FRONTEND_URL: str = "http://localhost:5173"
+    # Email SMTP
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "IT Portal <noreply@company.com>"
+    EMAIL_ENABLED: bool = False
 
     class Config:
         env_file = ".env"

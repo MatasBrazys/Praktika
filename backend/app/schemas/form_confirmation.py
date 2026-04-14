@@ -8,7 +8,7 @@ from app.models.form import FormConfirmation
 
 class FormConfirmationBase(BaseModel):
     form_id: int
-    user_id: int
+    username: str
     submission_id: Optional[int] = None
 
 

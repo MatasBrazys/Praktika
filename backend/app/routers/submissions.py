@@ -26,7 +26,7 @@ def my_submissions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return submission_service.get_by_user(db, current_user.id, skip, limit)
+    return submission_service.get_by_user(db, current_user.username, skip, limit)
 
 
 @router.get("/{submission_id}", response_model=SubmissionResponse)
@@ -36,8 +36,7 @@ def get_submission(
     current_user: User = Depends(get_current_user),
 ):
     submission = submission_service.get_by_id(db, submission_id)
-    # Admins can view any submission; users only their own
-    if current_user.role != 'admin' and submission.submitted_by_user_id != current_user.id:
+    if current_user.role != 'admin' and submission.submitted_by_username != current_user.username:
         raise HTTPException(status_code=403, detail="You can only view your own submissions")
     return submission
 
@@ -49,6 +48,12 @@ def update_submission(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    logger.info("User id=%d updating submission id=%d", current_user.id, submission_id)
-    is_admin = current_user.role == 'admin'
-    return submission_service.update(db, submission_id, body.data, current_user.id, is_admin=is_admin)
+    submission = submission_service.get_by_id(db, submission_id)
+    if submission.submitted_by_username != current_user.username:
+        raise HTTPException(status_code=403, detail="You can only edit your own submissions")
+    logger.info("User %s updating submission id=%d", current_user.username, submission_id)
+    return submission_service.update(
+        db, submission_id, body.data,
+        updated_by_username=current_user.username,
+        updated_by_email=current_user.email
+    )

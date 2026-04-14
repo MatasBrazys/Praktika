@@ -37,7 +37,7 @@ export interface FormDefinition {
 
 // ── Submissions ────────────────────────────────────────────────────────────
 
-export type SubmissionStatus = 'pending' | 'reviewed' | 'archived';
+export type SubmissionStatus = 'pending' | 'confirmed' | 'declined';
 
 export interface Submission {
   id: number;
@@ -45,10 +45,11 @@ export interface Submission {
   form_type: string;
   data: Record<string, unknown>;
   status: SubmissionStatus;
-  submitted_by_user_id?: number;
+  decline_comment?: string;
   submitted_by_username?: string;
-  updated_by_user_id?: number;
+  submitted_by_email?: string;
   updated_by_username?: string;
+  updated_by_email?: string;
   created_at: string;
   updated_at?: string;
 }

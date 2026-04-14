@@ -18,9 +18,33 @@ function getLabel(data: Record<string, unknown>): string {
   return ''
 }
 
-function getFirstFieldName(data: Record<string, unknown>): string {
-  const key = Object.keys(data)[0]
-  return key ? key.replace(/_/g, ' ') : ''
+function StatusBadge({ status, comment }: { status: string; comment?: string }) {
+  const colors: Record<string, string> = {
+    pending: '#f59e0b',
+    confirmed: '#10b981',
+    declined: '#ef4444',
+  }
+  const labels: Record<string, string> = {
+    pending: 'Pending',
+    confirmed: 'Confirmed',
+    declined: 'Declined',
+  }
+  
+  return (
+    <div className="status-badge-wrapper">
+      <span 
+        className="status-badge" 
+        style={{ backgroundColor: colors[status] || '#6b7280' }}
+      >
+        {labels[status] || status}
+      </span>
+      {comment && (
+        <div className="decline-comment">
+          <strong>Reason:</strong> {comment}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function MyFormSubmissions() {
@@ -99,8 +123,8 @@ export default function MyFormSubmissions() {
           <div className="ms-list">
             {filtered.map((sub, idx) => {
               const label = getLabel(sub.data)
-              const fieldHint = getFirstFieldName(sub.data)
               const isOpen = expandedId === sub.id
+              const canEdit = sub.status === 'declined' || sub.status === 'pending'
 
               return (
                 <div key={sub.id} className="ms-entry" style={{ animationDelay: `${idx * 40}ms` }}>
@@ -109,7 +133,7 @@ export default function MyFormSubmissions() {
 
                     <div className="ms-entry__body">
                       <h3 className="ms-entry__label">{label || `Submission #${sub.id}`}</h3>
-                      {label && fieldHint && <span className="ms-entry__field">{fieldHint}</span>}
+                      <StatusBadge status={sub.status} comment={sub.decline_comment} />
                     </div>
 
                     <div className="ms-entry__date">
@@ -118,9 +142,14 @@ export default function MyFormSubmissions() {
                     </div>
 
                     <div className="ms-entry__actions">
-                      <button className="ms-btn-edit" onClick={() => navigate(`/user/forms/${sub.form_id}/edit/${sub.id}`)}>
-                        Edit
-                      </button>
+                      {canEdit && (
+                        <button 
+                          className="ms-btn-edit" 
+                          onClick={() => navigate(`/user/forms/${sub.form_id}/edit/${sub.id}`)}
+                        >
+                          Edit
+                        </button>
+                      )}
                       <button
                         className={`ms-btn-data ${isOpen ? 'ms-btn-data--open' : ''}`}
                         onClick={() => setExpandedId(isOpen ? null : sub.id)}

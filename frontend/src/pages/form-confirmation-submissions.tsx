@@ -2,15 +2,12 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { apiClient } from '../lib/apiClient'
 import { formAPI } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { extractErrorMessage } from '../lib/apiClient'
 import BackButton from '../components/shared/BackButton'
-import type { Submission, SubmissionStatus } from '../types'
+import type { Submission } from '../types'
 import '../styles/pages/admin/submission-list.css'
-
-// ── Data display ──────────────────────────────────────────────────────────
 
 function flattenData(data: Record<string, unknown>): { key: string; value: string }[] {
   const entries: { key: string; value: string }[] = []
@@ -55,8 +52,6 @@ function DataDisplay({ data }: { data: Record<string, unknown> }) {
   )
 }
 
-// ── Main ──────────────────────────────────────────────────────────────────
-
 export default function FormConfirmationSubmissions() {
   const { formId } = useParams<{ formId: string }>()
   const navigate = useNavigate()
@@ -67,8 +62,10 @@ export default function FormConfirmationSubmissions() {
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
-  const [filterStatus, setFilterStatus] = useState<SubmissionStatus | 'all'>('all')
-  const [confirmingId, setConfirmingId] = useState<number | null>(null)
+  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [processingId, setProcessingId] = useState<number | null>(null)
+  const [showDeclineModal, setShowDeclineModal] = useState<number | null>(null)
+  const [declineComment, setDeclineComment] = useState('')
 
   const loadData = useCallback(async () => {
     try {
@@ -90,24 +87,41 @@ export default function FormConfirmationSubmissions() {
   useEffect(() => { loadData() }, [loadData])
 
   const handleConfirm = async (submissionId: number) => {
-    setConfirmingId(submissionId)
+    setProcessingId(submissionId)
     try {
-      await apiClient.patch(
-        `/api/forms/${formId}/submissions/${submissionId}/status`,
-        { status: 'reviewed' }
-      )
-      toast.success('Confirmed', `Submission #${submissionId} marked as reviewed.`)
+      await formAPI.updateSubmissionStatus(Number(formId), submissionId, 'confirmed')
+      toast.success('Confirmed', `Submission #${submissionId} has been approved.`)
       await loadData()
     } catch (err) {
       toast.error('Failed to confirm', extractErrorMessage(err))
     } finally {
-      setConfirmingId(null)
+      setProcessingId(null)
+    }
+  }
+
+  const handleDecline = async () => {
+    if (!showDeclineModal || !declineComment.trim()) {
+      toast.error('Comment required', 'Please explain why this submission is being declined.')
+      return
+    }
+    
+    setProcessingId(showDeclineModal)
+    try {
+      await formAPI.updateSubmissionStatus(Number(formId), showDeclineModal, 'declined', declineComment.trim())
+      toast.success('Declined', `Submission #${showDeclineModal} has been declined.`)
+      setShowDeclineModal(null)
+      setDeclineComment('')
+      await loadData()
+    } catch (err) {
+      toast.error('Failed to decline', extractErrorMessage(err))
+    } finally {
+      setProcessingId(null)
     }
   }
 
   const filtered = useMemo(() => {
     let result = submissions
-    if (filterStatus !== 'all') result = result.filter(s => (s.status ?? 'pending') === filterStatus)
+    if (filterStatus !== 'all') result = result.filter(s => s.status === filterStatus)
     if (search.trim()) {
       const q = search.trim().toLowerCase()
       result = result.filter(s =>
@@ -121,9 +135,9 @@ export default function FormConfirmationSubmissions() {
 
   const counts = useMemo(() => ({
     all: submissions.length,
-    pending: submissions.filter(s => (s.status ?? 'pending') === 'pending').length,
-    reviewed: submissions.filter(s => s.status === 'reviewed').length,
-    archived: submissions.filter(s => s.status === 'archived').length,
+    pending: submissions.filter(s => s.status === 'pending').length,
+    confirmed: submissions.filter(s => s.status === 'confirmed').length,
+    declined: submissions.filter(s => s.status === 'declined').length,
   }), [submissions])
 
   if (loading) return (
@@ -152,7 +166,7 @@ export default function FormConfirmationSubmissions() {
             placeholder="Search by content, username or ID…"
           />
           <div className="sub-filter-group">
-            {(['all', 'pending', 'reviewed', 'archived'] as const).map(s => (
+            {(['all', 'pending', 'confirmed', 'declined'] as const).map(s => (
               <button
                 key={s}
                 className={`sub-filter-btn ${filterStatus === s ? 'active' : ''}`}
@@ -160,12 +174,45 @@ export default function FormConfirmationSubmissions() {
               >
                 {s === 'all' ? `All (${counts.all})` :
                  s === 'pending' ? `Pending (${counts.pending})` :
-                 s === 'reviewed' ? `Reviewed (${counts.reviewed})` :
-                 `Archived (${counts.archived})`}
+                 s === 'confirmed' ? `Confirmed (${counts.confirmed})` :
+                 `Declined (${counts.declined})`}
               </button>
             ))}
           </div>
         </div>
+
+        {/* ── Decline Modal ── */}
+        {showDeclineModal !== null && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h3>Decline Submission #{showDeclineModal}</h3>
+              <p>Please provide a reason for declining this submission. The user will see this comment.</p>
+              <textarea
+                value={declineComment}
+                onChange={e => setDeclineComment(e.target.value)}
+                placeholder="Enter reason for decline..."
+                rows={4}
+                style={{ width: '100%', margin: '12px 0', padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }}
+              />
+              <div className="modal-actions">
+                <button 
+                  className="sub-btn sub-btn--cancel"
+                  onClick={() => { setShowDeclineModal(null); setDeclineComment('') }}
+                  disabled={processingId !== null}
+                >
+                  Cancel
+                </button>
+                <button 
+                  className="sub-btn sub-btn--danger"
+                  onClick={handleDecline}
+                  disabled={processingId !== null || !declineComment.trim()}
+                >
+                  {processingId === showDeclineModal ? 'Declining…' : 'Decline'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── List ── */}
         {filtered.length === 0 ? (
@@ -177,7 +224,7 @@ export default function FormConfirmationSubmissions() {
           <div className="sub-list">
             {filtered.map(sub => {
               const isOpen = expandedId === sub.id
-              const isPending = (sub.status ?? 'pending') === 'pending'
+              const isPending = sub.status === 'pending'
 
               return (
                 <div key={sub.id} className={`sub-entry ${isOpen ? 'sub-entry--open' : ''}`}>
@@ -185,20 +232,30 @@ export default function FormConfirmationSubmissions() {
 
                     <span className="sub-entry__id">#{sub.id}</span>
 
-                    {/* Status badge — read only for confirmer */}
-                    <span className={`sub-status sub-status--${sub.status ?? 'pending'}`}>
-                      {sub.status ?? 'pending'}
+                    <span className={`sub-status sub-status--${sub.status}`}>
+                      {sub.status}
                     </span>
 
                     <div className="sub-entry__meta">
-                      <span className="sub-entry__user">
-                        {sub.submitted_by_username ?? `user #${sub.submitted_by_user_id ?? '?'}`}
-                      </span>
+                      <h3 className="sub-entry__label">
+                        {(() => {
+                          const vals = Object.values(sub.data)
+                          for (const v of vals) {
+                            if (typeof v === 'string' && v.trim()) return v.trim()
+                            if (typeof v === 'number') return String(v)
+                          }
+                          return `#${sub.id}`
+                        })()}
+                      </h3>
+                      <p className="sub-entry__submitter">
+                        Submitted: {sub.submitted_by_username ?? 'Unknown'}
+                        {sub.submitted_by_email && ` (${sub.submitted_by_email})`}
+                      </p>
                       <span className="sub-entry__dates">
                         {new Date(sub.created_at).toLocaleString()}
-                        {sub.updated_at && sub.updated_by_user_id && (
+                        {sub.updated_at && sub.updated_by_username && (
                           <span className="sub-entry__edited">
-                            · reviewed {new Date(sub.updated_at).toLocaleString()}
+                            · {sub.status === 'confirmed' ? 'approved' : 'processed'} {new Date(sub.updated_at).toLocaleString()}
                             {sub.updated_by_username && ` by ${sub.updated_by_username}`}
                           </span>
                         )}
@@ -207,13 +264,22 @@ export default function FormConfirmationSubmissions() {
 
                     <div className="sub-entry__actions">
                       {isPending && (
-                        <button
-                          className="sub-btn sub-btn--edit"
-                          onClick={() => handleConfirm(sub.id)}
-                          disabled={confirmingId === sub.id}
-                        >
-                          {confirmingId === sub.id ? 'Confirming…' : '✓ Confirm'}
-                        </button>
+                        <>
+                          <button
+                            className="sub-btn sub-btn--approve"
+                            onClick={() => handleConfirm(sub.id)}
+                            disabled={processingId === sub.id}
+                          >
+                            {processingId === sub.id ? '…' : '✓ Approve'}
+                          </button>
+                          <button
+                            className="sub-btn sub-btn--decline"
+                            onClick={() => setShowDeclineModal(sub.id)}
+                            disabled={processingId === sub.id}
+                          >
+                            ✗ Decline
+                          </button>
+                        </>
                       )}
                       <button
                         className={`sub-btn sub-btn--data ${isOpen ? 'active' : ''}`}

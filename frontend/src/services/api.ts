@@ -62,6 +62,18 @@ export const formAPI = {
     return res.data;
   },
 
+  // User: get my submissions
+  getMySubmissions: async (): Promise<Submission[]> => {
+    const res = await apiClient.get<Submission[]>('/api/forms/my-submissions');
+    return res.data;
+  },
+
+  // User: update own declined submission
+  updateMySubmission: async (submissionId: number, data: Record<string, unknown>): Promise<Submission> => {
+    const res = await apiClient.put<Submission>(`/api/forms/my-submissions/${submissionId}`, { data });
+    return res.data;
+  },
+
   submitForm: async (formId: number, formTitle: string, data: Record<string, unknown>): Promise<{ submission_id: number }> => {
     const res = await apiClient.post<{ message: string; submission_id: number }>(`/api/forms/${formId}/submit`, {
       form_type: formTitle,
@@ -70,9 +82,9 @@ export const formAPI = {
     return res.data;
   },
 
-  // Admin: update submission status
-  updateSubmissionStatus: async (formId: number, submissionId: number, status: SubmissionStatus): Promise<Submission> => {
-    const res = await apiClient.patch<Submission>(`/api/forms/${formId}/submissions/${submissionId}/status`, { status });
+  // Confirmer: update submission status (approve/decline)
+  updateSubmissionStatus: async (formId: number, submissionId: number, status: SubmissionStatus, comment?: string): Promise<Submission> => {
+    const res = await apiClient.patch<Submission>(`/api/forms/${formId}/submissions/${submissionId}/status`, { status, comment });
     return res.data;
   },
 

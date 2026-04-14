@@ -30,6 +30,27 @@ def ldap_authenticate(username: str, password: str) -> bool:
         return False
 
 
+def _get_user_role(conn: Connection, user_dn: str) -> str | None:
+    """Nustato vartotojo rolę pagal LDAP grupes. Grąžina None jei ne jokioje grupėje."""
+    groups = [
+        (settings.LDAP_ADMIN_GROUP, "admin"),
+        (settings.LDAP_CONFIRMER_GROUP, "form_confirmer"),
+        (settings.LDAP_USER_GROUP, "user"),
+    ]
+    
+    for group_name, role in groups:
+        group_dn = f"cn={group_name},ou=groups,{settings.ldap_base_dn}"
+        conn.search(
+            search_base=group_dn,
+            search_filter=f"(member={user_dn})",
+            attributes=["cn"],
+        )
+        if len(conn.entries) > 0:
+            return role
+    
+    return None
+
+
 def ldap_get_user_info(username: str) -> dict | None:
     """
     Grąžina vartotojo info ir rolę pagal LDAP grupes.
@@ -48,7 +69,6 @@ def ldap_get_user_info(username: str) -> dict | None:
             auto_bind=True,
         )
 
-        # Gauti vartotojo atributus
         conn.search(
             search_base=f"ou=users,{settings.ldap_base_dn}",
             search_filter=f"(uid={username})",
@@ -62,55 +82,104 @@ def ldap_get_user_info(username: str) -> dict | None:
 
         entry = conn.entries[0]
         user_dn = f"uid={username},ou=users,{settings.ldap_base_dn}"
-
-        # Tikrinti FormAdmin grupę
-        admin_group_dn = f"cn={settings.LDAP_ADMIN_GROUP},ou=groups,{settings.ldap_base_dn}"
-        conn.search(
-            search_base=admin_group_dn,
-            search_filter=f"(member={user_dn})",
-            attributes=["cn"],
-        )
-        is_admin = len(conn.entries) > 0
-
-        # Tikrinti FormConfirmer grupę
-        confirmer_group_dn = f"cn={settings.LDAP_CONFIRMER_GROUP},ou=groups,{settings.ldap_base_dn}"
-        conn.search(
-            search_base=confirmer_group_dn,
-            search_filter=f"(member={user_dn})",
-            attributes=["cn"],
-        )
-        is_confirmer = len(conn.entries) > 0
-
-        # Tikrinti FormUser grupę
-        user_group_dn = f"cn={settings.LDAP_USER_GROUP},ou=groups,{settings.ldap_base_dn}"
-        conn.search(
-            search_base=user_group_dn,
-            search_filter=f"(member={user_dn})",
-            attributes=["cn"],
-        )
-        is_user = len(conn.entries) > 0
+        role = _get_user_role(conn, user_dn)
 
         conn.unbind()
 
-        # Jei nerastas nei vienoje grupėje — neleidžiame prisijungti
-        if not is_admin and not is_confirmer and not is_user:
+        if role is None:
             logger.warning("User %r not in any allowed group — access denied", username)
             return None
 
-        # Role priority: admin > form_confirmer > user
-        if is_admin:
-            role = "admin"
-        elif is_confirmer:
-            role = "form_confirmer"
-        else:
-            role = "user"
-
+        email = str(entry.mail) if entry.mail else ""
+        
         return {
             "username": str(entry.uid),
-            "email":    str(entry.mail) if entry.mail else f"{username}@{settings.LDAP_DOMAIN}",
+            "email":    email,
             "role":     role,
         }
 
     except LDAPException as e:
         logger.error("LDAP user info fetch failed: %s", str(e))
+        return None
+
+
+def ldap_get_all_users() -> list[dict]:
+    """
+    Grąžina visų LDAP vartotojų sąrašą su jų rolėmis.
+    Naudojamas background sync.
+    """
+    try:
+        server = Server(settings.LDAP_HOST, port=settings.LDAP_PORT, get_info=ALL)
+        conn = Connection(
+            server,
+            user=settings.ldap_admin_dn,
+            password=settings.LDAP_ADMIN_PASSWORD,
+            authentication=SIMPLE,
+            auto_bind=True,
+        )
+
+        conn.search(
+            search_base=f"ou=users,{settings.ldap_base_dn}",
+            search_filter="(objectClass=inetOrgPerson)",
+            attributes=["uid", "mail"],
+        )
+
+        users = []
+        for entry in conn.entries:
+            username = str(entry.uid)
+            user_dn = f"uid={username},ou=users,{settings.ldap_base_dn}"
+            role = _get_user_role(conn, user_dn)
+            
+            if role is None:
+                continue
+            
+            email = str(entry.mail) if entry.mail else ""
+            
+            users.append({
+                "username": username,
+                "email":    email,
+                "role":     role,
+            })
+
+        conn.unbind()
+        logger.info("LDAP: fetched %d users", len(users))
+        return users
+
+    except LDAPException as e:
+        logger.error("LDAP get all users failed: %s", str(e))
+        return []
+
+
+def ldap_get_user_email(username: str) -> str | None:
+    """
+    Gauna konkretaus vartotojo email iš LDAP.
+    Naudojamas siunčiant notifications.
+    """
+    try:
+        server = Server(settings.LDAP_HOST, port=settings.LDAP_PORT, get_info=ALL)
+        conn = Connection(
+            server,
+            user=settings.ldap_admin_dn,
+            password=settings.LDAP_ADMIN_PASSWORD,
+            authentication=SIMPLE,
+            auto_bind=True,
+        )
+
+        conn.search(
+            search_base=f"ou=users,{settings.ldap_base_dn}",
+            search_filter=f"(uid={username})",
+            attributes=["mail"],
+        )
+
+        if not conn.entries:
+            conn.unbind()
+            logger.warning("User %r not found in LDAP", username)
+            return None
+
+        email = str(conn.entries[0].mail) if conn.entries[0].mail else None
+        conn.unbind()
+        return email
+
+    except LDAPException as e:
+        logger.error("LDAP get user email failed for %r: %s", username, str(e))
         return None

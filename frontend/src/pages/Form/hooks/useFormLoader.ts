@@ -63,6 +63,10 @@ export function useFormLoader(
               setError('Submission does not belong to this form')
               return
             }
+            if (submission.status === 'confirmed') {
+              setError('Confirmed submissions cannot be edited')
+              return
+            }
             existingData = submission.data
           } catch {
             setError('Submission not found or access denied')
@@ -98,12 +102,14 @@ export function useFormLoader(
             }
 
             if (submissionId) {
-              await submissionAPI.update(Number(submissionId), survey.data)
+              await formAPI.updateMySubmission(Number(submissionId), survey.data)
               toast.success('Submission updated', 'Your changes have been saved.')
-              navigate('/user/submissions')
+              navigate(`/user/submissions/${formData.id}`)
             } else {
               await formAPI.submitForm(formData.id, formData.title, survey.data)
-              navigate(`/user/forms/${id}/success`)
+              navigate(`/user/forms/${id}/success`, {
+                state: { formTitle: formData.title }
+              })
             }
           } catch {
             setSubmitting(false)

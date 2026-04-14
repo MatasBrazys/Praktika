@@ -31,8 +31,8 @@ def create_form_confirmation(
     current_user: User = Depends(require_form_confirmer),
 ):
     """Create or update a form confirmation"""
-    logger.info("User id=%d confirming form id=%d", current_user.id, data.form_id)
-    return create_confirmation(db, data.form_id, data.user_id, data.submission_id)
+    logger.info("User %s confirming form id=%d", current_user.username, data.form_id)
+    return create_confirmation(db, data.form_id, current_user.username, data.submission_id)
 
 
 @router.get("/my-confirmations", response_model=List[FormConfirmationResponse])
@@ -43,7 +43,7 @@ def get_my_confirmations(
     current_user: User = Depends(get_current_user),
 ):
     """Get all forms confirmed by the current user"""
-    return get_user_confirmations(db, current_user.id, skip, limit)
+    return get_user_confirmations(db, current_user.username, skip, limit)
 
 
 @router.get("/form/{form_id}", response_model=List[FormConfirmationResponse])
@@ -65,7 +65,7 @@ def check_user_confirmation(
     current_user: User = Depends(get_current_user),
 ):
     """Check if current user has confirmed a specific form"""
-    confirmation = get_confirmation(db, form_id, current_user.id)
+    confirmation = get_confirmation(db, form_id, current_user.username)
     if not confirmation:
         raise HTTPException(status_code=404, detail="Confirmation not found")
     return confirmation
@@ -75,10 +75,10 @@ def check_user_confirmation(
 def get_confirmation_details(
     form_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_form_confirmer),
 ):
     """Get confirmation details with form and submission info"""
-    details = get_confirmation_with_details(db, form_id, current_user.id)
+    details = get_confirmation_with_details(db, form_id, current_user.username)
     if not details:
         raise HTTPException(status_code=404, detail="Confirmation not found")
     return details
@@ -91,13 +91,12 @@ def delete_form_confirmation(
     current_user: User = Depends(require_form_confirmer),
 ):
     """Delete a form confirmation"""
-    success = delete_confirmation(db, form_id, current_user.id)
+    success = delete_confirmation(db, form_id, current_user.username)
     if not success:
         raise HTTPException(status_code=404, detail="Confirmation not found")
     return {"message": "Confirmation deleted successfully"}
 
 
-# Admin-only endpoints for oversight
 @router.get("/admin/all", response_model=List[FormConfirmationResponse])
 def get_all_confirmations(
     skip: int = 0,
@@ -106,6 +105,4 @@ def get_all_confirmations(
     current_user: User = Depends(require_admin),
 ):
     """Get all form confirmations (admin only)"""
-    # This would require a service method to get all confirmations
-    # For now, we'll return empty list as placeholder
-    return []
+    return db.query(FormConfirmation).offset(skip).limit(limit).all()

@@ -27,8 +27,13 @@ class FormSubmission(Base):
     form_type = Column(String(50), nullable=False)
     data = Column(JSON, nullable=False)
     status = Column(String(20), default='pending', nullable=False)
-    submitted_by_user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
-    updated_by_user_id = Column(Integer, ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    decline_comment = Column(Text, nullable=True)
+    
+    submitted_by_username = Column(String(100), nullable=True, index=True)
+    submitted_by_email = Column(String(255), nullable=True)
+    updated_by_username = Column(String(100), nullable=True)
+    updated_by_email = Column(String(255), nullable=True)
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -39,9 +44,9 @@ class FormConfirmation(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     form_id = Column(Integer, ForeignKey('form_definitions.id', ondelete='CASCADE'), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
+    username = Column(String(100), nullable=False, index=True)
     submission_id = Column(Integer, ForeignKey('form_submissions.id', ondelete='SET NULL'), nullable=True)
     confirmed_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Ensure a user can only confirm a form once
-    __table_args__ = (UniqueConstraint('form_id', 'user_id', name='_form_user_uc'),)
+    __table_args__ = (UniqueConstraint('form_id', 'username', name='_form_user_uc'),)

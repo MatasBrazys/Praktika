@@ -59,6 +59,20 @@
 .success-actions {
   display: flex;
   justify-content: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.form-title-badge {
+  display: inline-block;
+  background: var(--teal-50);
+  border: 1px solid var(--teal-200);
+  color: var(--color-primary);
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  margin-bottom: var(--sp-3);
 }
 
 .btn-home {

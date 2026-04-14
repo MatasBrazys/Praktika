@@ -9,7 +9,8 @@ from app.database import get_db
 from app.models.user import User
 from app.auth.utils import verify_password, create_access_token, hash_password
 from app.auth.ldap import ldap_authenticate, ldap_get_user_info
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, require_admin
+from app.services.ldap_sync_service import LdapSyncService
 from app.schemas.user import LoginRequest, TokenResponse, UserResponse
 
 logger = logging.getLogger(__name__)
@@ -81,6 +82,16 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserResponse)
 def me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.post("/ldap-sync")
+def trigger_ldap_sync(_: User = Depends(require_admin)):
+    try:
+        LdapSyncService.sync_all_users()
+        return {"status": "ok", "message": "LDAP sync completed"}
+    except Exception as e:
+        logger.error("LDAP sync failed: %s", str(e))
+        return {"status": "error", "message": str(e)}
 
 
 if settings.ENABLE_DEV_ROUTES:

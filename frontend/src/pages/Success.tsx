@@ -1,21 +1,30 @@
 // frontend/src/components/public/SuccessPage.tsx
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/pages/public/success.css';
 
 export default function Success() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const formTitle = (location.state as { formTitle?: string })?.formTitle;
 
   return (
     <div className="success-page">
       <div className="success-container">
         <div className="success-icon">✅</div>
         <h1>Form Submitted Successfully!</h1>
-        <p>Thank you for your submission. We have received your information.</p>
+        {formTitle && <p className="form-title-badge">{formTitle}</p>}
+        <p>Your submission has been sent for review. You will be notified once it's processed.</p>
         
         <div className="success-actions">
           <button 
             className="btn-home"
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/user/submissions')}
+          >
+            View My Submissions
+          </button>
+          <button 
+            className="btn-home"
+            onClick={() => navigate('/user/forms')}
           >
             Return to Home
           </button>

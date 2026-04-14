@@ -13,14 +13,14 @@ import '../../styles/pages/admin/submission-list.css'
 
 const STATUS_OPTIONS: { value: SubmissionStatus; label: string }[] = [
   { value: 'pending',  label: 'Pending'  },
-  { value: 'reviewed', label: 'Reviewed' },
-  { value: 'archived', label: 'Archived' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'declined', label: 'Declined' },
 ]
 
 const STATUS_CLASS: Record<SubmissionStatus, string> = {
   pending:  'sub-status sub-status--pending',
-  reviewed: 'sub-status sub-status--reviewed',
-  archived: 'sub-status sub-status--archived',
+  confirmed: 'sub-status sub-status--confirmed',
+  declined: 'sub-status sub-status--declined',
 }
 
 // ── Data display helpers ──────────────────────────────────────────────────
@@ -149,7 +149,7 @@ export default function SubmissionList() {
       ...filtered.map(s => [
         String(s.id),
         s.status ?? 'pending',
-        s.submitted_by_username ?? String(s.submitted_by_user_id ?? ''),
+        s.submitted_by_username ?? '',
         new Date(s.created_at).toLocaleString(),
         s.updated_at ? new Date(s.updated_at).toLocaleString() : '',
         ...allFields.map(f => String((s.data as Record<string, unknown>)[f] ?? '')),
@@ -210,7 +210,7 @@ export default function SubmissionList() {
             placeholder="Search by content, username or ID…"
           />
           <div className="sub-filter-group">
-            {(['all', 'pending', 'reviewed', 'archived'] as const).map(s => (
+            {(['all', 'pending', 'confirmed', 'declined'] as const).map(s => (
               <button
                 key={s}
                 className={`sub-filter-btn ${filterStatus === s ? 'active' : ''}`}
@@ -218,7 +218,7 @@ export default function SubmissionList() {
               >
                 {s === 'all'
                   ? `All (${submissions.length})`
-                  : `${STATUS_OPTIONS.find(o => o.value === s)?.label} (${submissions.filter(x => (x.status ?? 'pending') === s).length})`
+                  : `${STATUS_OPTIONS.find(o => o.value === s)?.label} (${submissions.filter(x => x.status === s).length})`
                 }
               </button>
             ))}
@@ -250,12 +250,12 @@ export default function SubmissionList() {
 
                     <div className="sub-entry__meta">
                       <span className="sub-entry__user">
-                        {sub.submitted_by_username ?? `user #${sub.submitted_by_user_id ?? '?'}`}
+                        {sub.submitted_by_username ?? 'Unknown'}
                       </span>
                       <span className="sub-entry__dates">
                         <span title="Submitted">{new Date(sub.created_at).toLocaleString()}</span>
-                        {sub.updated_at && sub.updated_by_user_id && (
-                          <span className="sub-entry__edited" title={`Edited by ${sub.updated_by_username ?? 'unknown'}`}>
+                        {sub.updated_at && sub.updated_by_username && (
+                          <span className="sub-entry__edited" title={`Edited by ${sub.updated_by_username}`}>
                             · edited {new Date(sub.updated_at).toLocaleString()}
                             {sub.updated_by_username && ` by ${sub.updated_by_username}`}
                           </span>
