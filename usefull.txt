@@ -1,0 +1,13 @@
+alembic upgrade head
+
+
+backend:
+snake_case
+
+frontend:
+tsx -> PascalCase
+ts -> camalCase
+.css -> kebab-case
+
+
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build

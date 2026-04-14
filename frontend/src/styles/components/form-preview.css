@@ -1,0 +1,46 @@
+/* ============================================================
+   FORM PREVIEW
+   ============================================================ */
+.preview-container {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: var(--sp-5);
+  min-height: 300px;
+  border: 1px solid var(--color-border);
+}
+
+.preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: var(--color-text-muted);
+  text-align: center;
+  gap: var(--sp-3);
+}
+
+.preview-empty .empty-icon { font-size: 40px; opacity: 0.4; }
+.preview-empty p { font-size: var(--text-base); }
+
+
+.preview-container .sd-checkbox__svg,
+.preview-container .sd-radio__svg,
+.preview-container .sd-item__decorator svg {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px;
+  min-height: 24px;
+  max-width: 24px;
+  max-height: 24px;
+}
+
+.preview-container .sd-checkbox__decorator,
+.preview-container .sd-radio__decorator,
+.preview-container .sd-item__decorator {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px;
+  min-height: 24px;
+  flex-shrink: 0;
+}

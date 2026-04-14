@@ -3,4 +3,6 @@
 .env.server
 .env.local
 /certs/*
+node_modules
+.VSCodeCounter
 # --------------------------------

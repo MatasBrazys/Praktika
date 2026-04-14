@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   db:
     image: postgres:15-alpine
@@ -8,45 +6,89 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    # No ports — DB not accessible from host
+    
+  openldap:
+    image: osixia/openldap:1.5.0
+    container_name: it-services-ldap
+    environment:
+      LDAP_ORGANISATION: ${LDAP_ORGANISATION}
+      LDAP_DOMAIN: ${LDAP_DOMAIN}
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD}
+      LDAP_TLS: "false"
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+    restart: unless-stopped
+
 
   backend:
     build: ./backend
     container_name: it-services-backend
-    ports:
-      - "8000:8000"
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      DATABASE_URL: ${DATABASE_URL_DOCKER}
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      LDAP_HOST: openldap
+      LDAP_PORT: 389
+      LDAP_DOMAIN: ${LDAP_DOMAIN}
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD}
+      LDAP_ADMIN_GROUP: ${LDAP_ADMIN_GROUP}
+      LDAP_USER_GROUP: ${LDAP_USER_GROUP}
+      LDAP_CONFIRMER_GROUP: ${LDAP_CONFIRMER_GROUP}
+      EMAIL_ENABLED: ${EMAIL_ENABLED}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
     depends_on:
       db:
         condition: service_healthy
+      openldap:
+        condition: service_started
     volumes:
-      - ./backend:/app
       - ./certs:/certs:ro
 
   frontend:
     build:
-      context: ./frontend      # ← build: su context
-      args:
-        VITE_API_URL: ${VITE_API_URL}  # ← args po build
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: it-services-frontend
     ports:
-      - "3000:80"
-      - "3001:443"
+      - "80:80"
+      - "443:443"
     volumes:
       - ./certs:/etc/nginx/ssl:ro
     depends_on:
       - backend
 
+  mock-api:
+    build:
+      context: ./mock_api
+      dockerfile: Dockerfile
+    container_name: it-services-mock-api
+    restart: unless-stopped
+    # No ports — only accessible internally
+
+  
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: it-services-dozzle
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - "127.0.0.1:9999:8080"  # tik localhost, ne tinkle
+    restart: unless-stopped
+
 volumes:
   postgres_data:
+  ldap_data:     
+  ldap_config:   

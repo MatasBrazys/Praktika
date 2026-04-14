@@ -1,0 +1,201 @@
+/* ============================================================
+   DESIGN TOKENS — "Serenity Teal" System
+   
+   Mokslinė bazė:
+   • Elliot & Maier (2014): raudona → kortizolis, padidėjęs pulsas
+   • Faber Birren: blue-green = žemiausi streso rodikliai darbo aplinkoje
+   • University of Sussex (2020): teal/cyan measurably reduces
+     physiological stress vs red/white environments
+   • NASA ergonomics: teal optimalus spalvų centras — mažina akių įtampą
+   
+   Principai:
+   • Primary: Teal #0D9488 — raminantis, technologinis, pasitikėjimas
+   • Background: Warm slate — ne grynas baltas, mažiau akių nuovargio
+   • DataGroup raudona: TIKTAI delete/error/destructive (semantiškai teisinga)
+   ============================================================ */
+
+:root {
+
+  /* ── Teal Scale ── */
+  --teal-50:   #F0FDFA;
+  --teal-100:  #CCFBF1;
+  --teal-200:  #99F6E4;
+  --teal-300:  #5EEAD4;
+  --teal-400:  #2DD4BF;
+  --teal-500:  #14B8A6;
+  --teal-600:  #0D9488;
+  --teal-700:  #0F766E;
+  --teal-800:  #115E59;
+  --teal-900:  #134E4A;
+
+  /* ── Slate/Gray Scale (warm neutrals) ── */
+  --slate-0:    #FFFFFF;
+  --slate-50:   #F8FAFC;
+  --slate-100:  #F1F5F9;
+  --slate-150:  #E8EFF6;
+  --slate-200:  #E2E8F0;
+  --slate-300:  #CBD5E1;
+  --slate-400:  #94A3B8;
+  --slate-500:  #64748B;
+  --slate-600:  #475569;
+  --slate-700:  #334155;
+  --slate-800:  #1E293B;
+  --slate-900:  #0F172A;
+  --slate-950:  #020617;
+
+  /* Gray aliases — backwards compatibility */
+  --gray-0:    var(--slate-0);
+  --gray-50:   var(--slate-50);
+  --gray-100:  var(--slate-100);
+  --gray-150:  var(--slate-150);
+  --gray-200:  var(--slate-200);
+  --gray-300:  var(--slate-300);
+  --gray-400:  var(--slate-400);
+  --gray-500:  var(--slate-500);
+  --gray-600:  var(--slate-600);
+  --gray-700:  var(--slate-700);
+  --gray-800:  var(--slate-800);
+  --gray-900:  var(--slate-900);
+  --gray-950:  var(--slate-950);
+
+  /* ── Red — ONLY destructive/danger ── */
+  --red-50:    #FFF1F2;
+  --red-100:   #FFE4E6;
+  --red-200:   #FECACA;
+  --red-400:   #F87171;
+  --red-500:   #EF4444;
+  --red-600:   #DC2626;
+  --red-700:   #B91C1C;
+  --red-800:   #991B1B;
+
+  /* ── Green (success) ── */
+  --green-50:  #F0FDF4;
+  --green-100: #DCFCE7;
+  --green-200: #BBF7D0;
+  --green-500: #22C55E;
+  --green-600: #16A34A;
+  --green-700: #15803D;
+
+  /* ── Amber (warning) ── */
+  --amber-50:  #FFFBEB;
+  --amber-100: #FEF3C7;
+  --amber-200: #FDE68A;
+  --amber-500: #F59E0B;
+  --amber-600: #D97706;
+  --amber-700: #B45309;
+  --amber-800: #92400E;
+
+  /* ── Blue (info) ── */
+  --blue-50:   #EFF6FF;
+  --blue-100:  #DBEAFE;
+  --blue-500:  #3B82F6;
+  --blue-600:  #2563EB;
+  --blue-700:  #1D4ED8;
+
+  /* ══════════════════════════════════════════════
+     SEMANTIC TOKENS
+  ══════════════════════════════════════════════ */
+
+  /* Primary */
+  --color-primary:        var(--teal-600);
+  --color-primary-dark:   var(--teal-700);
+  --color-primary-deeper: var(--teal-900);
+  --color-primary-light:  var(--teal-50);
+  --color-primary-muted:  var(--teal-100);
+  --color-primary-mid:    var(--teal-500);
+
+  /* DataGroup brand — logo + destructive only */
+  --color-brand:          #C8102E;
+  --color-brand-dark:     #A50E26;
+
+  /* Status with proper contrast ratios */
+  --color-success:        var(--green-600);
+  --color-success-dark:   var(--green-700);
+  --color-success-light:  var(--green-50);
+
+  --color-danger:         var(--red-600);
+  --color-danger-dark:    var(--red-700);
+  --color-danger-light:   var(--red-200);
+
+  --color-warning:        var(--amber-600);
+  --color-warning-light:  var(--amber-100);
+  --color-warning-border: var(--amber-200);
+
+  --color-info:           var(--teal-700);
+  --color-info-light:     var(--teal-50);
+
+  /* Surfaces */
+  --color-bg:             var(--slate-100);
+  --color-surface:        var(--slate-0);
+  --color-surface-subtle: var(--slate-50);
+  --color-surface-raised: var(--slate-50);
+
+  /* Borders — slightly stronger than before */
+  --color-border:         var(--slate-200);
+  --color-border-strong:  var(--slate-300);
+
+  /* Text — higher contrast */
+  --color-text:           var(--slate-900);
+  --color-text-secondary: var(--slate-600);   
+  --color-text-muted:     var(--slate-400);
+  --color-text-on-dark:   var(--slate-0);
+
+  /* Gradients */
+  --gradient-brand:    linear-gradient(135deg, var(--slate-900) 0%, var(--slate-800) 100%);
+  --gradient-primary:  linear-gradient(135deg, var(--teal-600) 0%, var(--teal-800) 100%);
+  --gradient-page:     linear-gradient(160deg, var(--slate-100) 0%, var(--teal-50) 100%); /*------------ Nenaudojamas. */
+  /* --gradient-page-admin: linear-gradient(160deg, var(--slate-100) 0%, var(--red-50)  100%);  subtle */
+  /* --gradient-page-admin: linear-gradient(160deg, var(--slate-100) 0%, var(--red-100) 100%); */  /* stronger */
+  --gradient-page-admin: linear-gradient(180deg, var(--slate-800) 0%, var(--slate-700) 20%, var(--red-800) 100%);  /* bold    */
+  --gradient-success:  linear-gradient(135deg, var(--green-600) 0%, var(--green-700) 100%);
+  --gradient-header:   linear-gradient(135deg, var(--slate-900) 0%, var(--teal-900) 100%);
+
+  /* ── Border radius ── */
+  --radius-xs:   3px;
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  20px;
+  --radius-full: 9999px;
+
+  /* ── Shadows ── */
+  --shadow-xs:      0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-sm:      0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md:      0 4px 6px rgba(15, 23, 42, 0.07), 0 2px 4px rgba(15, 23, 42, 0.04);
+  --shadow-lg:      0 10px 24px rgba(15, 23, 42, 0.09), 0 4px 8px rgba(15, 23, 42, 0.04);
+  --shadow-xl:      0 20px 48px rgba(15, 23, 42, 0.12), 0 8px 16px rgba(15, 23, 42, 0.06);
+  --shadow-teal:    0 4px 14px rgba(13, 148, 136, 0.28);
+  --shadow-teal-sm: 0 2px 8px  rgba(13, 148, 136, 0.18);
+  --shadow-teal-lg: 0 8px 24px rgba(13, 148, 136, 0.32);
+
+  /* Backwards compat aliases */
+  --shadow-red:     var(--shadow-teal);
+  --shadow-red-sm:  var(--shadow-teal-sm);
+
+  /* ── Spacing ── */
+  --sp-1: 4px;  --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px;  --sp-8: 32px;  --sp-10: 40px;
+  --sp-12: 48px; --sp-16: 64px; --sp-20: 80px;
+
+  /* ── Typography ── */
+  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+
+  --text-xs:   11px; --text-sm:   13px; --text-base: 14px;
+  --text-md:   15px; --text-lg:   16px; --text-xl:   18px;
+  --text-2xl:  20px; --text-3xl:  24px; --text-4xl:  28px;
+  --text-5xl:  32px; --text-6xl:  40px;
+
+  --fw-normal:   400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  --t-fast: 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  --t-base: 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  --t-slow: 320ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  --z-navbar: 100;
+  --z-modal:  1000;
+}

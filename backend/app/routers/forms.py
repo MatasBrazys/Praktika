@@ -1,16 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from typing import List
-from app.database import get_db
-from app.models.form import FormDefinition,FormSubmission
-from app.schemas.form import (
-    FormDefinitionCreate,
-    FormDefinitionUpdate,
-    FormDefinitionResponse,
-    FormSubmissionResponse   
-)
+# app/routers/forms.py
 
-router = APIRouter(prefix="/api/forms", tags=["Forms Management"])
+import logging
+from typing import List
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.schemas.form import FormDefinitionCreate, FormDefinitionUpdate, FormDefinitionResponse
+from app.schemas.submission import SubmissionRequest, SubmissionResponse, StatusUpdateRequest, SubmissionUpdateRequest
+from app.services import form_service, submission_service
+from app.auth.dependencies import get_current_user, require_admin, require_form_confirmer
+from app.models.user import User
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/forms", tags=["Forms"])
 
 
 @router.get("/", response_model=List[FormDefinitionResponse])
@@ -18,120 +23,189 @@ def list_forms(
     skip: int = 0,
     limit: int = 100,
     active_only: bool = False,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
-    """List all forms (with optional filtering)"""
-    query = db.query(FormDefinition)
-    
-    if active_only:
-        query = query.filter(FormDefinition.is_active == True)
-    
-    forms = query.offset(skip).limit(limit).all()
-    return forms
+    return form_service.get_all(db, skip, limit, active_only)
 
 
 @router.get("/{form_id}", response_model=FormDefinitionResponse)
 def get_form(form_id: int, db: Session = Depends(get_db)):
-    """Get single form by ID"""
-    form = db.query(FormDefinition).filter(FormDefinition.id == form_id).first()
-    
-    if not form:
-        raise HTTPException(status_code=404, detail="Form not found")
-    
-    return form
+    return form_service.get_by_id(db, form_id)
 
 
 @router.post("/", response_model=FormDefinitionResponse)
 def create_form(
-    form_data: FormDefinitionCreate,
-    db: Session = Depends(get_db)
+    data: FormDefinitionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ):
-    """Create new form"""
-    new_form = FormDefinition(
-        title=form_data.title,
-        description=form_data.description,
-        surveyjs_json=form_data.surveyjs_json,
-        is_active=form_data.is_active
-    )
-    
-    db.add(new_form)
-    db.commit()
-    db.refresh(new_form)
-    
-    return new_form
+    logger.info("Admin id=%d creating form: %r", current_user.id, data.title)
+    return form_service.create(db, data)
 
 
 @router.put("/{form_id}", response_model=FormDefinitionResponse)
 def update_form(
     form_id: int,
-    form_data: FormDefinitionUpdate,
-    db: Session = Depends(get_db)
+    data: FormDefinitionUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
 ):
-    """Update existing form"""
-    form = db.query(FormDefinition).filter(FormDefinition.id == form_id).first()
-    
-    if not form:
-        raise HTTPException(status_code=404, detail="Form not found")
-    
-    # Update only provided fields
-    update_data = form_data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(form, key, value)
-    
-    db.commit()
-    db.refresh(form)
-    
-    return form
+    logger.info("Admin id=%d updating form id=%d", current_user.id, form_id)
+    return form_service.update(db, form_id, data)
 
 
 @router.delete("/{form_id}")
-def delete_form(form_id: int, db: Session = Depends(get_db)):
-    """Delete form"""
-    form = db.query(FormDefinition).filter(FormDefinition.id == form_id).first()
-    
-    if not form:
-        raise HTTPException(status_code=404, detail="Form not found")
-    
-    db.delete(form)
-    db.commit()
-    
-    return {"message": "Form deleted successfully", "id": form_id}
+def delete_form(
+    form_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    logger.warning("Admin id=%d deleting form id=%d", current_user.id, form_id)
+    return form_service.delete(db, form_id)
 
 
 @router.patch("/{form_id}/toggle")
-def toggle_form_active(form_id: int, db: Session = Depends(get_db)):
-    """Toggle form active status"""
-    form = db.query(FormDefinition).filter(FormDefinition.id == form_id).first()
-    
-    if not form:
-        raise HTTPException(status_code=404, detail="Form not found")
-    
-    form.is_active = not form.is_active
-    db.commit()
-    db.refresh(form)
-    
-    return {"message": "Form status toggled", "is_active": form.is_active}
+def toggle_active(
+    form_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    logger.info("Admin id=%d toggling form id=%d", current_user.id, form_id)
+    return form_service.toggle_active(db, form_id)
 
-@router.get("/{form_id}/submissions", response_model=List[FormSubmissionResponse])
-def get_form_submissions(
+
+@router.post("/{form_id}/submit")
+def submit_form(
+    form_id: int,
+    body: SubmissionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    submission = submission_service.create(
+        db,
+        form_id=form_id,
+        form_type=body.form_type,
+        data=body.data,
+        submitted_by_username=current_user.username,
+        submitted_by_email=current_user.email,
+    )
+    
+    form = form_service.get_by_id(db, form_id)
+    
+    submission_service.notify_submission_created(
+        db, form_id, form.title, submission.id, current_user.email
+    )
+    
+    logger.info("User %s submitted form id=%d, submission id=%d", current_user.username, form_id, submission.id)
+    return {
+        "message": "Form submitted successfully",
+        "submission_id": submission.id,
+        "form_title": form.title
+    }
+
+
+@router.get("/my-submissions", response_model=List[SubmissionResponse])
+def get_my_submissions(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return submission_service.get_by_user(db, current_user.username, skip, limit)
+
+
+@router.get("/{form_id}/submissions", response_model=List[SubmissionResponse])
+def get_submissions(
     form_id: int,
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _: User = Depends(require_form_confirmer),
 ):
-    """Get all submissions for a specific form"""
-    # Verify form exists
-    form = db.query(FormDefinition).filter(FormDefinition.id == form_id).first()
-    if not form:
-        raise HTTPException(status_code=404, detail="Form not found")
-    
-    # Get submissions by form_id
-    submissions = db.query(FormSubmission)\
-        .filter(FormSubmission.form_id == form_id)\
-        .order_by(FormSubmission.created_at.desc())\
-        .offset(skip)\
-        .limit(limit)\
-        .all()
-    
-    return submissions
+    return submission_service.get_by_form(db, form_id, skip, limit)
 
+
+@router.patch("/{form_id}/submissions/{submission_id}/status", response_model=SubmissionResponse)
+def update_submission_status(
+    form_id: int,
+    submission_id: int,
+    body: StatusUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_form_confirmer),
+):
+    if current_user.role == 'form_confirmer' and body.status not in ('confirmed', 'declined'):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Form confirmers can only approve or decline")
+    
+    result = submission_service.update_status(
+        db, submission_id, body.status, 
+        updated_by_username=current_user.username,
+        updated_by_email=current_user.email,
+        comment=body.comment
+    )
+    
+    form = form_service.get_by_id(db, form_id)
+    
+    if body.status == 'declined':
+        submission_service.notify_submission_declined(
+            db, submission_id, form.title, result.submitted_by_email, body.comment or ""
+        )
+    elif body.status == 'confirmed':
+        submission_service.notify_submission_confirmed(
+            db, submission_id, form.title, result.submitted_by_email
+        )
+    
+    logger.info("User %s updating submission id=%d status to %s", current_user.username, submission_id, body.status)
+    return result
+
+
+@router.put("/my-submissions/{submission_id}", response_model=SubmissionResponse)
+def user_update_submission(
+    submission_id: int,
+    body: SubmissionUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    submission = submission_service.get_by_id(db, submission_id)
+    
+    if submission.submitted_by_username != current_user.username:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="You can only edit your own submissions")
+    
+    if submission.status not in ('declined', 'pending'):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="You can only edit declined or pending submissions")
+    
+    logger.info("User %s editing submission id=%d (was %s)", current_user.username, submission_id, submission.status)
+    updated = submission_service.update(
+        db, submission_id, body.data,
+        updated_by_username=current_user.username,
+        updated_by_email=current_user.email
+    )
+    
+    if submission.status == 'declined':
+        submission_service.update_status(
+            db, submission_id, 'pending',
+            updated_by_username=current_user.username,
+            updated_by_email=current_user.email
+        )
+        updated.status = 'pending'
+        logger.info("Submission id=%d status changed from declined to pending", submission_id)
+    
+    return updated
+
+
+@router.put("/{form_id}/submissions/{submission_id}", response_model=SubmissionResponse)
+def admin_update_submission(
+    form_id: int,
+    submission_id: int,
+    body: SubmissionUpdateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    logger.info("Admin %s editing submission id=%d", current_user.username, submission_id)
+    return submission_service.update(
+        db, submission_id, body.data,
+        updated_by_username=current_user.username,
+        updated_by_email=current_user.email
+    )

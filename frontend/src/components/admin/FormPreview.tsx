@@ -1,29 +1,37 @@
-// frontend/src/components/admin/FormPreview.tsx
-import { Model } from 'survey-core';
-import { Survey } from 'survey-react-ui';
-import "survey-core/survey-core.min.css";
-import '../../styles/FormPreview.css';
+// src/components/admin/FormPreview.tsx
+
+import { Model }  from 'survey-core'
+import { Survey } from 'survey-react-ui'
+import 'survey-core/survey-core.min.css'
+import '../../styles/components/form-preview.css'
 
 interface Props {
-  surveyJson: any;
+  surveyJson:       Record<string, unknown>
+  activePageIndex?: number
 }
 
-export default function FormPreview({ surveyJson }: Props) {
-  if (!surveyJson.elements || surveyJson.elements.length === 0) {
+export default function FormPreview({ surveyJson, activePageIndex = 0 }: Props) {
+  const pages      = (surveyJson.pages as Array<{ elements?: unknown[] }> | undefined)
+                     ?? [{ elements: (surveyJson.elements as unknown[] | undefined) ?? [] }]
+  const activePage = pages[activePageIndex]
+  const elements   = activePage?.elements ?? []
+
+  if (!elements.length) {
     return (
       <div className="preview-empty">
         <div className="empty-icon">📝</div>
         <p>Add fields to see live preview</p>
       </div>
-    );
+    )
   }
 
-  const survey = new Model(surveyJson);
-  survey.mode = 'display'; // Read-only preview
-  
+  // Render only the active page so the preview stays in sync with the selected tab
+  const survey = new Model({ elements })
+  survey.mode  = 'display'
+
   return (
     <div className="preview-container">
       <Survey model={survey} />
     </div>
-  );
+  )
 }

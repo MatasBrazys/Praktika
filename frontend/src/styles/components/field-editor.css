@@ -1,0 +1,191 @@
+/* ============================================================
+   FIELD EDITOR — component-specific only
+   All shared styles → components/modal.css
+   ============================================================ */
+
+.info-box {
+  background: var(--color-info-light);
+  border: 1px solid #BAE0F7;
+  border-radius: var(--radius-md);
+  padding: var(--sp-3) var(--sp-4);
+  margin: var(--sp-3) 0;
+  font-size: var(--text-sm);
+  color: #0C4A6E;
+}
+
+.info-box p   { margin: 0 0 var(--sp-1); font-weight: var(--fw-medium); }
+.info-box small { font-size: var(--text-xs); opacity: 0.85; }
+
+/* ── CRM Lookup section ── */
+.crm-section {
+  background: var(--color-info-light);
+  border: 1px solid #BAE0F7;
+  border-radius: var(--radius-md);
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+
+.crm-section h3 {
+  font-size: var(--text-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--sp-3);
+}
+
+.crm-section p {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--sp-4);
+  line-height: 1.5;
+}
+
+.crm-section .crm-labels-title {
+  font-weight: var(--fw-semibold);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  margin: 0 0 var(--sp-2);
+}
+
+.crm-field-names {
+  background: var(--color-info-light);
+  border: 1px solid #BAE0F7;
+  border-radius: var(--radius-sm);
+  padding: var(--sp-3) var(--sp-4);
+  margin-top: var(--sp-2);
+  font-size: var(--text-sm);
+  color: #1a5276;
+}
+
+.crm-field-names strong {
+  display: block;
+  margin-bottom: var(--sp-2);
+  font-weight: var(--fw-semibold);
+}
+
+.crm-field-names ul {
+  margin: 0;
+  padding-left: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+}
+
+.crm-field-names code {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  background: rgba(255,255,255,0.6);
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+}
+
+/* ── Bulk import table ── */
+.bulk-col-center { text-align: center; }
+
+.bulk-field-name {
+  margin-left: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.bulk-import-hint {
+  color: var(--color-text-muted);
+  margin-top: var(--sp-2);
+  display: block;
+}
+
+/* ── Template field row ── */
+.btn-full-width {
+  margin-top: var(--sp-2);
+  width: 100%;
+}
+
+/* ── Dynamic Choices Config ────────────────────────────────────────────────── */
+
+.dynamic-choices-config {
+  margin-bottom: var(--sp-4);
+  padding: var(--sp-4);
+  background: var(--teal-50);
+  border: 1px solid var(--teal-200);
+  border-radius: var(--radius-md);
+}
+
+.dynamic-choices-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--text-base);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+  cursor: pointer;
+  margin: 0;
+}
+
+.dynamic-choices-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-primary);
+}
+
+.dynamic-choices-toggle input:disabled {
+  cursor: not-allowed;
+}
+
+.dynamic-choices-hint {
+  display: block;
+  margin-top: var(--sp-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.dynamic-choices-selectors {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--teal-200);
+}
+
+.dynamic-choices-preview {
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+}
+
+.dynamic-choices-preview strong {
+  display: block;
+  margin-bottom: var(--sp-1);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+}
+
+.dynamic-choices-preview p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+/* ── Cross-Field Validator Config ─────────────────────────────────────────
+   APPEND to src/styles/components/field-editor.css
+   ────────────────────────────────────────────────────────────────────── */
+
+.crossfield-config {
+  background: var(--teal-50);
+  border: 1px solid var(--teal-200);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+
+.crossfield-hint {
+  margin-top: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
