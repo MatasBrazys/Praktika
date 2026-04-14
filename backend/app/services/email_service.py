@@ -31,8 +31,9 @@ def send_email(to: List[str], subject: str, html_body: str, text_body: str = "")
         msg.attach(MIMEText(html_body, "html"))
         
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-            server.starttls()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            if settings.SMTP_USER:
+                server.starttls()
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
             server.sendmail(settings.SMTP_FROM, to, msg.as_string())
         
         logger.info("Email sent successfully to %s: %s", to, subject)
