@@ -1,0 +1,27 @@
+# Users OU
+dn: ou=users,dc=company,dc=local
+objectClass: organizationalUnit
+ou: users
+
+# Groups OU
+dn: ou=groups,dc=company,dc=local
+objectClass: organizationalUnit
+ou: groups
+
+# FormAdmin group
+dn: cn=FormAdmin,ou=groups,dc=company,dc=local
+objectClass: groupOfNames
+cn: FormAdmin
+member: cn=admin,dc=company,dc=local
+
+# FormConfirmer group
+dn: cn=FormConfirmer,ou=groups,dc=company,dc=local
+objectClass: groupOfNames
+cn: FormConfirmer
+member: cn=admin,dc=company,dc=local
+
+# FormUser group
+dn: cn=FormUser,ou=groups,dc=company,dc=local
+objectClass: groupOfNames
+cn: FormUser
+member: cn=admin,dc=company,dc=local
