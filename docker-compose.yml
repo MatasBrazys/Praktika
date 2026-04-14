@@ -79,6 +79,18 @@ services:
     # No ports — only accessible internally
 
   
+  phpldapadmin:
+    image: osixia/phpldapadmin:latest
+    container_name: it-services-phpldapadmin
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: openldap
+      PHPLDAPADMIN_HTTPS: "false"
+    ports:
+      - "127.0.0.1:8081:80"
+    depends_on:
+      - openldap
+    restart: unless-stopped
+
   dozzle:
     image: amir20/dozzle:latest
     container_name: it-services-dozzle
