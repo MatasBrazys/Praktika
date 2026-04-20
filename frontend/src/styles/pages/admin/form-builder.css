@@ -45,17 +45,17 @@
 .form-meta-inputs { display: flex; gap: var(--sp-3); }
 
 .meta-input {
-  padding: 8px var(--sp-3);
-  border: 1.5px solid var(--color-border);
+  padding: 10px var(--sp-3);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--text-base);
   font-family: var(--font-sans);
   color: var(--color-text);
   outline: none;
-  transition: border-color var(--t-fast);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
 }
 
-.meta-input:focus { border-color: var(--color-primary); }
+.meta-input:focus { border: 1.5px solid var(--color-primary); box-shadow: 0 0 0 3px var(--teal-100); }
 .meta-input::placeholder { color: var(--color-text-muted); }
 .title-input { font-weight: var(--fw-semibold); min-width: 220px; }
 
@@ -89,6 +89,7 @@
   background: var(--color-primary-light);
   color: var(--color-primary);
   font-weight: var(--fw-semibold);
+  box-shadow: var(--shadow-xs);
 }
 
 .page-tab-input {
@@ -168,44 +169,7 @@
   letter-spacing: -0.01em;
 }
 
-/* ── Buttons ── */
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  padding: 9px var(--sp-5);
-  border-radius: var(--radius-md);
-  font-size: var(--text-base);
-  font-weight: var(--fw-semibold);
-  font-family: var(--font-sans);
-  cursor: pointer;
-  transition: all var(--t-fast);
-  box-shadow: var(--shadow-red-sm);
-}
-
-.btn-primary:hover:not(:disabled) { background: var(--color-primary-dark); box-shadow: var(--shadow-red); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  border: 1.5px solid var(--color-border);
-  padding: 9px var(--sp-5);
-  border-radius: var(--radius-md);
-  font-size: var(--text-base);
-  font-weight: var(--fw-medium);
-  font-family: var(--font-sans);
-  cursor: pointer;
-  transition: all var(--t-fast);
-}
-
-.btn-secondary:hover { border-color: var(--gray-300); color: var(--color-text); }
+/* .btn-primary and .btn-secondary are defined in components/modal.css */
 
 .btn-add {
   display: inline-flex;

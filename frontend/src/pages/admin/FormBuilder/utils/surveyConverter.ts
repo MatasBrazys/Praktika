@@ -106,8 +106,15 @@ function buildLookupPanel(field: FieldConfig): any {
                 name: `${prefix}_${m.key.replace(/\./g, '_')}`,
                 title: m.label,
                 readOnly: true,
-                visibleIf: `{${prefix}} notempty`,
             })),
+            {
+                type: 'radiogroup',
+                name: `${prefix}_picker`,
+                title: 'Select a result:',
+                visible: false,
+                includeIntoResult: false,
+                choices: [],
+            },
         ],
     };
 }

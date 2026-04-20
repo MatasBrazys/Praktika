@@ -178,11 +178,11 @@
   font-family: var(--font-sans);
   cursor: pointer;
   transition: all var(--t-fast);
-  box-shadow: var(--shadow-red-sm);
+  box-shadow: var(--shadow-teal-sm);
 }
 
 .btn-retry:hover {
   background: var(--color-primary-dark);
-  box-shadow: var(--shadow-red);
+  box-shadow: var(--shadow-teal);
   transform: translateY(-1px);
 }

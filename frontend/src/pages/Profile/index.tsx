@@ -2,17 +2,15 @@
 
 import { useState } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
-import ProfileTab  from './tabs/ProfileTab'
-import StatsTab    from './tabs/StatsTab'
-import SettingsTab from './tabs/SettingsTab'
+import ProfileTab from './tabs/ProfileTab'
+import StatsTab   from './tabs/StatsTab'
 import './profile.css'
 
-type Tab = 'profile' | 'stats' | 'settings'
+type Tab = 'profile' | 'stats'
 
 const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'profile',  label: 'Profile',    icon: '👤' },
-  { id: 'stats',    label: 'Statistics', icon: '📊' },
-  { id: 'settings', label: 'Settings',   icon: '⚙️' },
+  { id: 'profile', label: 'Profile',    icon: '👤' },
+  { id: 'stats',   label: 'Statistics', icon: '📊' },
 ]
 
 export default function ProfilePage() {
@@ -53,9 +51,8 @@ export default function ProfilePage() {
 
         {/* ── Content ── */}
         <main className="profile-content">
-          {activeTab === 'profile'  && <ProfileTab />}
-          {activeTab === 'stats'    && <StatsTab />}
-          {activeTab === 'settings' && <SettingsTab />}
+          {activeTab === 'profile' && <ProfileTab />}
+          {activeTab === 'stats'   && <StatsTab />}
         </main>
 
       </div>
