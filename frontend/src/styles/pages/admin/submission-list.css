@@ -127,18 +127,23 @@
 .sub-status--declined:hover  { background: var(--red-200); }
 .sub-status--loading         { opacity: 0.6; cursor: wait; }
 
+/* Compound class used in TSX: `${STATUS_CLASS[status]} sub-status-select` — inherits .sub-status styles */
+.sub-status-select {
+  cursor: pointer;
+}
+
 /* ── Entry list ── */
 .sub-list { display: flex; flex-direction: column; gap: var(--sp-2); }
 
 .sub-entry {
   background: var(--color-surface);
-  border: 1.5px solid var(--color-border);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: border-color var(--t-fast);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
 }
 
-.sub-entry:hover    { border-color: var(--gray-300); }
+.sub-entry:hover    { border-color: var(--gray-300); box-shadow: var(--shadow-card); }
 .sub-entry--open    { border-color: var(--teal-200); }
 
 .sub-entry__row {
@@ -207,12 +212,12 @@
 .sub-btn--data:hover         { border-color: var(--gray-300); color: var(--color-text); }
 .sub-btn--data.active        { border-color: var(--color-primary); color: var(--color-primary); background: var(--teal-50); }
 
-.sub-btn--approve            { background: #10b981; color: white; }
-.sub-btn--approve:hover      { background: #059669; }
-.sub-btn--decline            { background: #ef4444; color: white; }
-.sub-btn--decline:hover      { background: #dc2626; }
-.sub-btn--danger             { background: #ef4444; color: white; }
-.sub-btn--danger:hover       { background: #dc2626; }
+.sub-btn--approve            { background: var(--color-success); color: white; }
+.sub-btn--approve:hover      { background: var(--color-success-dark); }
+.sub-btn--decline            { background: var(--color-danger); color: white; }
+.sub-btn--decline:hover      { background: var(--color-danger-dark); }
+.sub-btn--danger             { background: var(--color-danger); color: white; }
+.sub-btn--danger:hover       { background: var(--color-danger-dark); }
 .sub-btn--cancel             { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-300); }
 .sub-btn--cancel:hover       { background: var(--gray-200); }
 
@@ -283,8 +288,9 @@
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   overflow-x: auto;
-  color: var(--gray-700);
+  color: var(--color-text-secondary);
   line-height: 1.7;
+  tab-size: 2;
   margin: 0;
   white-space: pre;
 }
@@ -302,44 +308,3 @@
   .sub-filter-group { overflow-x: auto; }
 }
 
-/* ── Decline Modal ── */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  max-width: 500px;
-  width: 90%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-}
-
-.modal-content h3 {
-  margin: 0 0 8px 0;
-  font-size: 18px;
-  color: #1f2937;
-}
-
-.modal-content p {
-  margin: 0;
-  color: #6b7280;
-  font-size: 14px;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 16px;
-}

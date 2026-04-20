@@ -1,6 +1,8 @@
 // src/components/admin/FieldEditor/sections/LookupFieldConfig.tsx
 // Admin picks a lookup config → sees field mappings preview.
 // Stores lookupConfigId and lookupFieldMappings on the FieldConfig.
+// Detects when the config's field_mappings have changed since the form was last saved,
+// and offers a one-click re-sync so the admin doesn't have to manually redo the config.
 
 import { useState, useEffect } from 'react'
 import { lookupAPI } from '../../../../services/api'
@@ -15,6 +17,7 @@ interface Props {
 export default function LookupFieldConfig({ config, onConfigChange }: Props) {
   const [configs, setConfigs] = useState<LookupConfigResponse[]>([])
   const [loading, setLoading] = useState(true)
+  const [isStale, setIsStale] = useState(false)
 
   useEffect(() => {
     lookupAPI.listActiveConfigs()
@@ -22,6 +25,16 @@ export default function LookupFieldConfig({ config, onConfigChange }: Props) {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
+
+  // Check if the stored field_mappings are out of sync with the current config
+  useEffect(() => {
+    if (!config.lookupConfigId || !configs.length) return
+    const currentCfg = configs.find(c => c.id === config.lookupConfigId)
+    if (!currentCfg) return
+    const storedKeys = (config.lookupFieldMappings ?? []).map(m => m.key).sort().join(',')
+    const currentKeys = currentCfg.field_mappings.map(m => m.key).sort().join(',')
+    setIsStale(storedKeys !== currentKeys)
+  }, [configs, config.lookupConfigId, config.lookupFieldMappings])
 
   const selected = configs.find(c => c.id === config.lookupConfigId)
 
@@ -36,6 +49,15 @@ export default function LookupFieldConfig({ config, onConfigChange }: Props) {
       lookupConfigId: cfg.id,
       lookupFieldMappings: cfg.field_mappings.map(m => ({ key: m.key, label: m.label })),
     })
+    setIsStale(false)
+  }
+
+  const handleResync = () => {
+    if (!selected) return
+    onConfigChange({
+      lookupFieldMappings: selected.field_mappings.map(m => ({ key: m.key, label: m.label })),
+    })
+    setIsStale(false)
   }
 
   if (loading) return <p>Loading lookup configs…</p>
@@ -53,6 +75,23 @@ export default function LookupFieldConfig({ config, onConfigChange }: Props) {
     <div className="crm-section">
       <h3>🔍 Lookup Configuration</h3>
       <p>Select an API config. When a user searches, matched fields will auto-fill.</p>
+
+      {isStale && (
+        <div
+          className="info-box"
+          style={{ borderColor: 'var(--amber-200)', background: 'var(--amber-50)', color: 'var(--amber-800)' }}
+        >
+          <p>⚠️ This config's fields have changed since the form was last saved.</p>
+          <button
+            className="btn-primary"
+            style={{ marginTop: 'var(--sp-2)' }}
+            onClick={handleResync}
+            type="button"
+          >
+            Re-sync fields
+          </button>
+        </div>
+      )}
 
       <div className="form-group">
         <label>Lookup Config *</label>

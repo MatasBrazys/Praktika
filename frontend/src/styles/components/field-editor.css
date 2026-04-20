@@ -5,12 +5,12 @@
 
 .info-box {
   background: var(--color-info-light);
-  border: 1px solid #BAE0F7;
+  border: 1px solid var(--teal-200);
   border-radius: var(--radius-md);
   padding: var(--sp-3) var(--sp-4);
   margin: var(--sp-3) 0;
   font-size: var(--text-sm);
-  color: #0C4A6E;
+  color: var(--teal-900);
 }
 
 .info-box p   { margin: 0 0 var(--sp-1); font-weight: var(--fw-medium); }
@@ -19,7 +19,7 @@
 /* ── CRM Lookup section ── */
 .crm-section {
   background: var(--color-info-light);
-  border: 1px solid #BAE0F7;
+  border: 1px solid var(--teal-200);
   border-radius: var(--radius-md);
   padding: var(--sp-4);
   margin-bottom: var(--sp-4);
@@ -48,12 +48,12 @@
 
 .crm-field-names {
   background: var(--color-info-light);
-  border: 1px solid #BAE0F7;
+  border: 1px solid var(--teal-200);
   border-radius: var(--radius-sm);
   padding: var(--sp-3) var(--sp-4);
   margin-top: var(--sp-2);
   font-size: var(--text-sm);
-  color: #1a5276;
+  color: var(--teal-800);
 }
 
 .crm-field-names strong {
