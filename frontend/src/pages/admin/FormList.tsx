@@ -203,7 +203,7 @@ export default function FormList() {
                   <div className="card-header">
                     <h3>{form.title}</h3>
                     <span className={`status ${form.is_active ? 'active' : 'inactive'}`}>
-                      {form.is_active ? '● Active' : '○ Inactive'}
+                      {form.is_active ? ' Active' : ' Inactive'}
                     </span>
                   </div>
                   <p className="card-description">{form.description ?? 'No description provided'}</p>

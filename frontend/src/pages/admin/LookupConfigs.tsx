@@ -282,7 +282,7 @@ export default function LookupConfigs() {
                       {config.description && <p>{config.description}</p>}
                     </div>
                     <span className={`status ${config.is_active ? 'active' : 'inactive'}`}>
-                      {config.is_active ? '● Active' : '○ Inactive'}
+                      {config.is_active ? ' Active' : ' Inactive'}
                     </span>
                   </div>
 
