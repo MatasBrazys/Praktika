@@ -33,6 +33,7 @@ def _admin_stats(db: Session) -> dict:
         "recent_submissions": [
             {
                 "id": s.id,
+                "form_id": s.form_id,
                 "form_type": s.form_type,
                 "submitted_by_username": s.submitted_by_username or "unknown",
                 "status": s.status,
@@ -76,6 +77,7 @@ def _user_stats(db: Session, username: str) -> dict:
         "recent_submissions": [
             {
                 "id": s.id,
+                "form_id": s.form_id,
                 "form_type": s.form_type,
                 "status": s.status,
                 "created_at": s.created_at.isoformat() if s.created_at else "",

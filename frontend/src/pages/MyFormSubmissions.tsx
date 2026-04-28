@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { submissionAPI } from '../services/api'
+import { submissionAPI, formAPI } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { extractErrorMessage } from '../lib/apiClient'
 import BackButton from '../components/shared/BackButton'
@@ -98,6 +98,7 @@ export default function MyFormSubmissions() {
   const [formType, setFormType] = useState('')
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [deletingId, setDeletingId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
   const [dateRange, setDateRange] = useState<DateRange>('all')
 
@@ -118,6 +119,18 @@ export default function MyFormSubmissions() {
   }, [formId, toast])
 
   useEffect(() => { load() }, [load])
+
+  const handleDelete = async (sub: Submission) => {
+    try {
+      await formAPI.deleteSubmission(sub.form_id, sub.id)
+      setSubmissions(prev => prev.filter(s => s.id !== sub.id))
+      setDeletingId(null)
+      toast.success('Deleted', `Submission #${sub.id} has been deleted.`)
+    } catch (err) {
+      toast.error('Failed to delete', extractErrorMessage(err))
+      setDeletingId(null)
+    }
+  }
 
   const filtered = useMemo(() => {
     let result = submissions.filter(s => inRange(s.created_at, dateRange))
@@ -206,6 +219,22 @@ export default function MyFormSubmissions() {
                         >
                           Edit
                         </button>
+                      )}
+                      {sub.status === 'declined' && (
+                        deletingId === sub.id ? (
+                          <>
+                            <button className="ms-btn-delete-confirm" onClick={() => handleDelete(sub)}>
+                              Confirm
+                            </button>
+                            <button className="ms-btn-cancel" onClick={() => setDeletingId(null)}>
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <button className="ms-btn-delete" onClick={() => setDeletingId(sub.id)}>
+                            Delete
+                          </button>
+                        )
                       )}
                       <button
                         className={`ms-btn-data ${isOpen ? 'ms-btn-data--open' : ''}`}

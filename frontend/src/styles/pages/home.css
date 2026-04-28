@@ -369,6 +369,97 @@
 .dash-alert__text  { flex: 1; font-size: var(--text-sm); font-weight: var(--fw-medium); color: var(--color-text); }
 .dash-alert__arrow { font-size: var(--text-xs); color: var(--color-text-muted); flex-shrink: 0; font-weight: var(--fw-semibold); }
 
+/* ── Quick action cards ── */
+.dash-quick-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+
+.dash-qa-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast), transform var(--t-fast);
+  font-family: var(--font-sans);
+  text-align: left;
+}
+
+.dash-qa-card:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-1px);
+}
+
+.dash-qa-card--warn {
+  border-color: var(--amber-200);
+  background: var(--amber-50);
+}
+
+.dash-qa-card--warn:hover {
+  border-color: var(--amber-500);
+}
+
+.dash-qa-card__icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-primary);
+}
+
+.dash-qa-card--warn .dash-qa-card__icon {
+  background: var(--amber-100);
+  border-color: var(--amber-200);
+  color: var(--amber-700);
+}
+
+.dash-qa-card__body { flex: 1; min-width: 0; }
+
+.dash-qa-card__title {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--color-text);
+}
+
+.dash-qa-card__sub {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.dash-qa-card__sub strong {
+  color: var(--amber-700);
+  font-weight: var(--fw-semibold);
+}
+
+.dash-qa-card__arrow {
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+  flex-shrink: 0;
+  transition: color var(--t-fast), transform var(--t-fast);
+}
+
+.dash-qa-card:hover .dash-qa-card__arrow {
+  color: var(--color-primary);
+  transform: translateX(2px);
+}
+
+@media (max-width: 480px) {
+  .dash-quick-actions { grid-template-columns: 1fr; }
+}
+
 /* ── Section header ── */
 .dash-section-hd {
   display: flex;

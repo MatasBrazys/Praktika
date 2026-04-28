@@ -73,6 +73,7 @@ export default function SubmissionList() {
   const [processingId,    setProcessingId]    = useState<number | null>(null)
   const [showDeclineModal, setShowDeclineModal] = useState<number | null>(null)
   const [declineComment,   setDeclineComment]   = useState('')
+  const [deletingId, setDeletingId] = useState<number | null>(null)
 
   const loadData = useCallback(async () => {
     try {
@@ -121,6 +122,18 @@ export default function SubmissionList() {
       toast.error('Failed to decline', extractErrorMessage(err))
     } finally {
       setProcessingId(null)
+    }
+  }
+
+  const handleDelete = async (submissionId: number) => {
+    try {
+      await formAPI.deleteSubmission(Number(id), submissionId)
+      setSubmissions(prev => prev.filter(s => s.id !== submissionId))
+      setDeletingId(null)
+      toast.success('Deleted', `Submission #${submissionId} has been deleted.`)
+    } catch (err) {
+      toast.error('Failed to delete', extractErrorMessage(err))
+      setDeletingId(null)
     }
   }
 
@@ -330,6 +343,31 @@ export default function SubmissionList() {
                         <button className="sub-btn sub-btn--edit" onClick={() => navigate(`/user/forms/${sub.form_id}/edit/${sub.id}`)}>
                           Edit
                         </button>
+                      )}
+                      {status === 'declined' && (
+                        deletingId === sub.id ? (
+                          <>
+                            <button
+                              className="sub-btn sub-btn--danger"
+                              onClick={() => handleDelete(sub.id)}
+                            >
+                              Confirm
+                            </button>
+                            <button
+                              className="sub-btn sub-btn--edit"
+                              onClick={() => setDeletingId(null)}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            className="sub-btn sub-btn--danger"
+                            onClick={() => setDeletingId(sub.id)}
+                          >
+                            Delete
+                          </button>
+                        )
                       )}
                       <button
                         className={`sub-btn sub-btn--data ${isOpen ? 'active' : ''}`}

@@ -93,6 +93,11 @@ export const formAPI = {
     const res = await apiClient.put<Submission>(`/api/forms/${formId}/submissions/${submissionId}`, { data });
     return res.data;
   },
+
+  // Admin or submitter: delete a declined submission
+  deleteSubmission: async (formId: number, submissionId: number): Promise<void> => {
+    await apiClient.delete(`/api/forms/${formId}/submissions/${submissionId}`);
+  },
 };
 
 // ── Submissions (user-facing) ──────────────────────────────────────────────
@@ -177,9 +182,9 @@ export interface LookupQueryResponse {
 // ── Dashboard ──────────────────────────────────────────────────────────────
 
 export type DashboardData =
-  | { role: 'admin';          total_forms: number; active_forms: number; total_submissions: number; pending: number; confirmed: number; declined: number; recent_submissions: { id: number; form_type: string; submitted_by_username: string; status: string; created_at: string }[] }
+  | { role: 'admin';          total_forms: number; active_forms: number; total_submissions: number; pending: number; confirmed: number; declined: number; recent_submissions: { id: number; form_id: number; form_type: string; submitted_by_username: string; status: string; created_at: string }[] }
   | { role: 'form_confirmer'; pending_total: number; forms_with_pending: { id: number; title: string; pending_count: number }[] }
-  | { role: 'user';           total: number; pending: number; confirmed: number; declined: number; active_forms_count: number; recent_submissions: { id: number; form_type: string; status: string; created_at: string }[] }
+  | { role: 'user';           total: number; pending: number; confirmed: number; declined: number; active_forms_count: number; recent_submissions: { id: number; form_id: number; form_type: string; status: string; created_at: string }[] }
 
 export const dashboardAPI = {
   get: async (): Promise<DashboardData> => {

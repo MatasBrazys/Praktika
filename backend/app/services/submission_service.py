@@ -104,6 +104,17 @@ def update_status(
     return submission
 
 
+def delete_declined(db: Session, submission_id: int, requesting_username: str, is_admin: bool) -> None:
+    submission = get_by_id(db, submission_id)
+    if submission.status != 'declined':
+        raise HTTPException(status_code=400, detail="Only declined submissions can be deleted")
+    if not is_admin and submission.submitted_by_username != requesting_username:
+        raise HTTPException(status_code=403, detail="You can only delete your own submissions")
+    db.delete(submission)
+    db.commit()
+    logger.info("Submission deleted: id=%d by %s (admin=%s)", submission_id, requesting_username, is_admin)
+
+
 def get_by_form(db: Session, form_id: int, skip: int = 0, limit: int = 100) -> list[FormSubmission]:
     form_exists = db.query(FormDefinition).filter(FormDefinition.id == form_id).first()
     if not form_exists:
