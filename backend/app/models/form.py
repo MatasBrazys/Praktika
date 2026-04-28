@@ -14,6 +14,7 @@ class FormDefinition(Base):
     description = Column(Text, nullable=True)
     surveyjs_json = Column(JSON, nullable=False)
     is_active = Column(Boolean, default=True)
+    requires_confirmation = Column(Boolean, default=True, nullable=False, server_default='true')
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

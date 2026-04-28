@@ -62,7 +62,8 @@ export default function FormConfirmationSubmissions() {
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<string>('pending')
+  const [dateRange, setDateRange] = useState<'all' | 'today' | '7d' | '30d' | '3m'>('all')
   const [processingId, setProcessingId] = useState<number | null>(null)
   const [showDeclineModal, setShowDeclineModal] = useState<number | null>(null)
   const [declineComment, setDeclineComment] = useState('')
@@ -122,6 +123,18 @@ export default function FormConfirmationSubmissions() {
   const filtered = useMemo(() => {
     let result = submissions
     if (filterStatus !== 'all') result = result.filter(s => s.status === filterStatus)
+    if (dateRange !== 'all') {
+      const cutoff = new Date()
+      if (dateRange === 'today') {
+        const today = new Date().toDateString()
+        result = result.filter(s => new Date(s.created_at).toDateString() === today)
+      } else {
+        if (dateRange === '7d')  cutoff.setDate(cutoff.getDate() - 7)
+        if (dateRange === '30d') cutoff.setDate(cutoff.getDate() - 30)
+        if (dateRange === '3m')  cutoff.setMonth(cutoff.getMonth() - 3)
+        result = result.filter(s => new Date(s.created_at) >= cutoff)
+      }
+    }
     if (search.trim()) {
       const q = search.trim().toLowerCase()
       result = result.filter(s =>
@@ -130,8 +143,8 @@ export default function FormConfirmationSubmissions() {
         String(s.id).includes(q)
       )
     }
-    return result
-  }, [submissions, filterStatus, search])
+    return [...result].sort((a, b) => b.created_at.localeCompare(a.created_at))
+  }, [submissions, filterStatus, search, dateRange])
 
   const counts = useMemo(() => ({
     all: submissions.length,
@@ -178,6 +191,17 @@ export default function FormConfirmationSubmissions() {
                  `Declined (${counts.declined})`}
               </button>
             ))}
+            <select
+              className="ms-date-select"
+              value={dateRange}
+              onChange={e => setDateRange(e.target.value as typeof dateRange)}
+            >
+              <option value="all">All time</option>
+              <option value="today">Today</option>
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+              <option value="3m">Last 3 months</option>
+            </select>
           </div>
         </div>
 

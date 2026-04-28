@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from app.config import settings
 
@@ -12,6 +12,16 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
+
+def run_column_migrations() -> None:
+    """Add new columns to existing tables without a full migration framework."""
+    with engine.connect() as conn:
+        conn.execute(text(
+            "ALTER TABLE form_definitions "
+            "ADD COLUMN IF NOT EXISTS requires_confirmation BOOLEAN NOT NULL DEFAULT TRUE"
+        ))
+        conn.commit()
+
 
 # Dependency for routes
 def get_db():

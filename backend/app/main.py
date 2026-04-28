@@ -7,8 +7,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.database import engine, Base
-from app.routers import forms, auth, submissions, lookup, form_confirmations
+from app.database import engine, Base, run_column_migrations
+from app.routers import forms, auth, submissions, lookup, form_confirmations, dashboard
 from app.services.ldap_sync_service import LdapSyncService
 
 logger = logging.getLogger(__name__)
@@ -40,6 +40,7 @@ async def lifespan(app: FastAPI):
 
 
 Base.metadata.create_all(bind=engine)
+run_column_migrations()
 
 app = FastAPI(
     title="IT Services Portal API",
@@ -68,3 +69,4 @@ app.include_router(auth.router)
 app.include_router(submissions.router)
 app.include_router(lookup.router)
 app.include_router(form_confirmations.router)
+app.include_router(dashboard.router)

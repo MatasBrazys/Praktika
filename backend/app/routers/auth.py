@@ -52,13 +52,22 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
             logger.info("Auto-created LDAP user: %r role=%s", body.username, info["role"])
 
         else:
-            # Kiekvienas prisijungimas — atnaujinti rolę pagal LDAP grupę
+            # Kiekvienas prisijungimas — atnaujinti rolę ir emailą pagal LDAP
+            changed = False
             if user.role != info["role"]:
-                logger.info(
-                    "Role updated for %r: %s → %s",
-                    body.username, user.role, info["role"],
-                )
+                logger.info("Role updated for %r: %s → %s", body.username, user.role, info["role"])
                 user.role = info["role"]
+                changed = True
+            if info["email"] and user.email != info["email"]:
+                taken = db.query(User).filter(User.email == info["email"], User.id != user.id).first()
+                if not taken:
+                    logger.info("Email updated for %r: %s → %s", body.username, user.email, info["email"])
+                    user.email = info["email"]
+                    changed = True
+                else:
+                    logger.warning("Email %s already used by %r, skipping update for %r",
+                                   info["email"], taken.username, body.username)
+            if changed:
                 db.commit()
                 db.refresh(user)
     else:

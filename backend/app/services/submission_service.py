@@ -124,49 +124,74 @@ def get_confirmers_emails(db: Session) -> list[str]:
     return [u.email for u in confirmers if u.email]
 
 
-def notify_submission_created(db: Session, form_id: int, form_title: str, submission_id: int, submitted_by_email: str | None):
-    """Siunčia email confirmeriams kai sukuriamas submission."""
+def notify_submission_created(
+    db: Session,
+    form_id: int,
+    form_title: str,
+    submission_id: int,
+    submitted_by_email: str | None,
+    submitted_by_username: str | None = None,
+    submission_data: dict | None = None,
+):
     confirmers = get_confirmers_emails(db)
-    
     if not confirmers:
         logger.warning("No confirmers found for new submission %d", submission_id)
         return
-    
-    submitted_by = submitted_by_email or "Unknown"
-    
+    submitted_by = submitted_by_username or submitted_by_email or "Unknown"
     logger.info("Sending notification to %d confirmers about submission %d", len(confirmers), submission_id)
     notify_confirmers_new_submission(
         form_title=form_title,
         submission_id=submission_id,
         submitted_by=submitted_by,
-        confirmers=confirmers
+        confirmers=confirmers,
+        form_id=form_id,
+        submission_data=submission_data,
     )
 
 
-def notify_submission_declined(db: Session, submission_id: int, form_title: str, submitter_email: str | None, comment: str):
-    """Siunčia email submitteriui kai jo submission atmetamas."""
+def notify_submission_declined(
+    db: Session,
+    submission_id: int,
+    form_title: str,
+    submitter_email: str | None,
+    comment: str,
+    form_id: int,
+    submitted_by_username: str | None = None,
+    submission_data: dict | None = None,
+):
     if not submitter_email:
         logger.warning("No submitter email for declined submission %d", submission_id)
         return
-    
     logger.info("Sending decline notification to %s for submission %d", submitter_email, submission_id)
     notify_submitter_declined(
         form_title=form_title,
         submission_id=submission_id,
         decline_reason=comment,
-        submitter_email=submitter_email
+        submitter_email=submitter_email,
+        form_id=form_id,
+        submitted_by=submitted_by_username or submitter_email,
+        submission_data=submission_data,
     )
 
 
-def notify_submission_confirmed(db: Session, submission_id: int, form_title: str, submitter_email: str | None):
-    """Siunčia email submitteriui kai jo submission patvirtinamas."""
+def notify_submission_confirmed(
+    db: Session,
+    submission_id: int,
+    form_title: str,
+    submitter_email: str | None,
+    form_id: int,
+    submitted_by_username: str | None = None,
+    submission_data: dict | None = None,
+):
     if not submitter_email:
         logger.warning("No submitter email for confirmed submission %d", submission_id)
         return
-    
     logger.info("Sending confirmation notification to %s for submission %d", submitter_email, submission_id)
     notify_submitter_confirmed(
         form_title=form_title,
         submission_id=submission_id,
-        submitter_email=submitter_email
+        submitter_email=submitter_email,
+        form_id=form_id,
+        submitted_by=submitted_by_username or submitter_email,
+        submission_data=submission_data,
     )
