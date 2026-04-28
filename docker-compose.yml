@@ -50,9 +50,9 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CORS_ORIGINS: ${CORS_ORIGINS}
       LDAP_HOST: openldap
-      LDAP_PORT: ${LDAP_PORT:-389}
-      LDAP_USE_SSL: ${LDAP_USE_SSL:-false}
-      LDAP_TLS_VERIFY: ${LDAP_TLS_VERIFY:-false}
+      LDAP_PORT: ${LDAP_PORT:-636}
+      LDAP_USE_SSL: ${LDAP_USE_SSL:-true}
+      LDAP_TLS_VERIFY: ${LDAP_TLS_VERIFY:-true}
       LDAP_DOMAIN: ${LDAP_DOMAIN}
       LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD}
       LDAP_BIND_USER: ${LDAP_BIND_USER:-svc-readonly}

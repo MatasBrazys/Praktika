@@ -70,29 +70,61 @@ function AdminView({ data }: { data: Extract<DashboardData, { role: 'admin' }> }
         </div>
       </div>
 
-      {/* Pending alert */}
-      {data.pending > 0 && (
-        <div className="dash-alert dash-alert--warn" onClick={() => navigate('/form-confirmations')}>
-          <span className="dash-alert__dot" />
-          <span className="dash-alert__text">
-            {data.pending} submission{data.pending !== 1 ? 's' : ''} awaiting review
-          </span>
-          <span className="dash-alert__arrow">Review →</span>
-        </div>
-      )}
+      {/* Quick action cards */}
+      <div className="dash-quick-actions">
+        <button
+          className={`dash-qa-card ${data.pending > 0 ? 'dash-qa-card--warn' : ''}`}
+          onClick={() => navigate('/form-confirmations')}
+        >
+          <div className="dash-qa-card__icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+          </div>
+          <div className="dash-qa-card__body">
+            <div className="dash-qa-card__title">Review Submissions</div>
+            <div className="dash-qa-card__sub">
+              {data.pending > 0
+                ? <><strong>{data.pending}</strong> awaiting review</>
+                : 'No pending submissions'}
+            </div>
+          </div>
+          <span className="dash-qa-card__arrow">→</span>
+        </button>
+
+        <button
+          className="dash-qa-card"
+          onClick={() => navigate('/admin/forms')}
+        >
+          <div className="dash-qa-card__icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+            </svg>
+          </div>
+          <div className="dash-qa-card__body">
+            <div className="dash-qa-card__title">Manage Forms</div>
+            <div className="dash-qa-card__sub">{data.total_forms} forms · {data.active_forms} active</div>
+          </div>
+          <span className="dash-qa-card__arrow">→</span>
+        </button>
+      </div>
 
       {/* Recent submissions */}
-      {data.recent_submissions.length > 0 && (
+      {data.recent_submissions.length > 0 ? (
         <>
           <div className="dash-section-hd">
             <span className="dash-section-hd__title">Recent submissions</span>
-            <button className="dash-section-hd__link" onClick={() => navigate('/admin/forms')}>
-              View all forms →
+            <button className="dash-section-hd__link" onClick={() => navigate('/form-confirmations')}>
+              View all →
             </button>
           </div>
           <div className="dash-list">
             {data.recent_submissions.map(s => (
-              <div key={s.id} className="dash-list-row">
+              <div
+                key={s.id}
+                className="dash-list-row"
+                onClick={() => navigate(`/admin/forms/${s.form_id}/submissions`)}
+              >
                 <span className="dash-list-id">#{s.id}</span>
                 <StatusDot status={s.status} />
                 <div className="dash-list-main">
@@ -105,9 +137,7 @@ function AdminView({ data }: { data: Extract<DashboardData, { role: 'admin' }> }
             ))}
           </div>
         </>
-      )}
-
-      {data.total_submissions === 0 && (
+      ) : (
         <div className="dash-empty">
           <p className="dash-empty__title">No submissions yet</p>
           <p className="dash-empty__sub">Submissions will appear here once users start filling forms.</p>
@@ -204,16 +234,6 @@ function UserView({ data }: { data: Extract<DashboardData, { role: 'user' }> }) 
         </div>
       </div>
 
-      {/* Declined alert */}
-      {data.declined > 0 && (
-        <div className="dash-alert dash-alert--danger" onClick={() => navigate('/user/submissions')}>
-          <span className="dash-alert__text">
-            {data.declined} submission{data.declined !== 1 ? 's' : ''} declined — review feedback and resubmit
-          </span>
-          <span className="dash-alert__arrow">View →</span>
-        </div>
-      )}
-
       {/* Recent activity */}
       {data.recent_submissions.length > 0 && (
         <>
@@ -225,7 +245,11 @@ function UserView({ data }: { data: Extract<DashboardData, { role: 'user' }> }) 
           </div>
           <div className="dash-list">
             {data.recent_submissions.map(s => (
-              <div key={s.id} className="dash-list-row">
+              <div
+                key={s.id}
+                className="dash-list-row"
+                onClick={() => navigate(`/user/submissions/${s.form_id}`)}
+              >
                 <span className="dash-list-id">#{s.id}</span>
                 <StatusDot status={s.status} />
                 <div className="dash-list-main">

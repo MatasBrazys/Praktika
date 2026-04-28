@@ -217,6 +217,22 @@ def user_update_submission(
     return updated
 
 
+@router.delete("/{form_id}/submissions/{submission_id}")
+def delete_submission(
+    form_id: int,
+    submission_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    submission_service.delete_declined(
+        db, submission_id,
+        requesting_username=current_user.username,
+        is_admin=(current_user.role == 'admin'),
+    )
+    logger.info("Submission id=%d deleted by %s", submission_id, current_user.username)
+    return {"message": "Submission deleted", "id": submission_id}
+
+
 @router.put("/{form_id}/submissions/{submission_id}", response_model=SubmissionResponse)
 def admin_update_submission(
     form_id: int,
