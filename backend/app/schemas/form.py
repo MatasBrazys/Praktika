@@ -10,6 +10,7 @@ class FormDefinitionBase(BaseModel):
     description: Optional[str] = None
     surveyjs_json: dict
     is_active: bool = True
+    requires_confirmation: bool = True
 
 
 class FormDefinitionCreate(FormDefinitionBase):
@@ -21,6 +22,7 @@ class FormDefinitionUpdate(BaseModel):
     description: Optional[str] = None
     surveyjs_json: Optional[dict] = None
     is_active: Optional[bool] = None
+    requires_confirmation: Optional[bool] = None
 
 
 class FormDefinitionResponse(FormDefinitionBase):

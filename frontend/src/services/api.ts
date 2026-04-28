@@ -174,6 +174,22 @@ export interface LookupQueryResponse {
   error?: string;
 }
 
+// ── Dashboard ──────────────────────────────────────────────────────────────
+
+export type DashboardData =
+  | { role: 'admin';          total_forms: number; active_forms: number; total_submissions: number; pending: number; confirmed: number; declined: number; recent_submissions: { id: number; form_type: string; submitted_by_username: string; status: string; created_at: string }[] }
+  | { role: 'form_confirmer'; pending_total: number; forms_with_pending: { id: number; title: string; pending_count: number }[] }
+  | { role: 'user';           total: number; pending: number; confirmed: number; declined: number; active_forms_count: number; recent_submissions: { id: number; form_type: string; status: string; created_at: string }[] }
+
+export const dashboardAPI = {
+  get: async (): Promise<DashboardData> => {
+    const res = await apiClient.get<DashboardData>('/api/dashboard/')
+    return res.data
+  },
+}
+
+// ── Lookup Configs ─────────────────────────────────────────────────────────
+
 export const lookupAPI = {
   listConfigs: async (): Promise<LookupConfigResponse[]> => {
     const res = await apiClient.get<LookupConfigResponse[]>('/api/lookup/configs');

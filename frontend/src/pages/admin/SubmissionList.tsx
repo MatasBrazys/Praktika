@@ -8,20 +8,7 @@ import { extractErrorMessage } from '../../lib/apiClient'
 import BackButton from '../../components/shared/BackButton'
 import type { Submission, SubmissionStatus } from '../../types'
 import '../../styles/pages/admin/submission-list.css'
-
-// ── Status config ─────────────────────────────────────────────────────────
-
-const STATUS_OPTIONS: { value: SubmissionStatus; label: string }[] = [
-  { value: 'pending',  label: 'Pending'  },
-  { value: 'confirmed', label: 'Confirmed' },
-  { value: 'declined', label: 'Declined' },
-]
-
-const STATUS_CLASS: Record<SubmissionStatus, string> = {
-  pending:  'sub-status sub-status--pending',
-  confirmed: 'sub-status sub-status--confirmed',
-  declined: 'sub-status sub-status--declined',
-}
+import '../../styles/components/modal.css'
 
 // ── Data display helpers ──────────────────────────────────────────────────
 
@@ -68,31 +55,6 @@ function DataDisplay({ data }: { data: Record<string, unknown> }) {
   )
 }
 
-// ── Status dropdown ───────────────────────────────────────────────────────
-
-function StatusDropdown({
-  status,
-  loading,
-  onChange,
-}: {
-  status: SubmissionStatus
-  loading: boolean
-  onChange: (s: SubmissionStatus) => void
-}) {
-  return (
-    <select
-      className={`${STATUS_CLASS[status]} sub-status-select`}
-      value={status}
-      disabled={loading}
-      onChange={e => onChange(e.target.value as SubmissionStatus)}
-      onClick={e => e.stopPropagation()}
-    >
-      {STATUS_OPTIONS.map(opt => (
-        <option key={opt.value} value={opt.value}>{opt.label}</option>
-      ))}
-    </select>
-  )
-}
 
 // ── Main ──────────────────────────────────────────────────────────────────
 
@@ -106,8 +68,11 @@ export default function SubmissionList() {
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
-  const [filterStatus, setFilterStatus] = useState<SubmissionStatus | 'all'>('all')
-  const [updatingId, setUpdatingId] = useState<number | null>(null)
+  const [filterStatus, setFilterStatus] = useState<SubmissionStatus | 'all'>('pending')
+  const [dateRange,    setDateRange]    = useState<'all' | 'today' | '7d' | '30d' | '3m'>('all')
+  const [processingId,    setProcessingId]    = useState<number | null>(null)
+  const [showDeclineModal, setShowDeclineModal] = useState<number | null>(null)
+  const [declineComment,   setDeclineComment]   = useState('')
 
   const loadData = useCallback(async () => {
     try {
@@ -127,17 +92,35 @@ export default function SubmissionList() {
 
   useEffect(() => { loadData() }, [loadData])
 
-  const handleStatusChange = async (sub: Submission, newStatus: SubmissionStatus) => {
-    if (newStatus === (sub.status ?? 'pending')) return
-    setUpdatingId(sub.id)
+  const handleConfirm = async (submissionId: number) => {
+    setProcessingId(submissionId)
     try {
-      const updated = await formAPI.updateSubmissionStatus(Number(id), sub.id, newStatus)
-      setSubmissions(prev => prev.map(s => s.id === sub.id ? updated : s))
-      toast.success('Status updated', `Submission #${sub.id} → ${newStatus}`)
+      const updated = await formAPI.updateSubmissionStatus(Number(id), submissionId, 'confirmed')
+      setSubmissions(prev => prev.map(s => s.id === submissionId ? updated : s))
+      toast.success('Approved', `Submission #${submissionId} has been approved.`)
     } catch (err) {
-      toast.error('Failed to update status', extractErrorMessage(err))
+      toast.error('Failed to approve', extractErrorMessage(err))
     } finally {
-      setUpdatingId(null)
+      setProcessingId(null)
+    }
+  }
+
+  const handleDecline = async () => {
+    if (!showDeclineModal || !declineComment.trim()) {
+      toast.error('Comment required', 'Please provide a reason for declining.')
+      return
+    }
+    setProcessingId(showDeclineModal)
+    try {
+      const updated = await formAPI.updateSubmissionStatus(Number(id), showDeclineModal, 'declined', declineComment.trim())
+      setSubmissions(prev => prev.map(s => s.id === showDeclineModal ? updated : s))
+      toast.success('Declined', `Submission #${showDeclineModal} has been declined.`)
+      setShowDeclineModal(null)
+      setDeclineComment('')
+    } catch (err) {
+      toast.error('Failed to decline', extractErrorMessage(err))
+    } finally {
+      setProcessingId(null)
     }
   }
 
@@ -169,6 +152,18 @@ export default function SubmissionList() {
   const filtered = useMemo(() => {
     let result = submissions
     if (filterStatus !== 'all') result = result.filter(s => (s.status ?? 'pending') === filterStatus)
+    if (dateRange !== 'all') {
+      const cutoff = new Date()
+      if (dateRange === 'today') {
+        const today = new Date().toDateString()
+        result = result.filter(s => new Date(s.created_at).toDateString() === today)
+      } else {
+        if (dateRange === '7d')  cutoff.setDate(cutoff.getDate() - 7)
+        if (dateRange === '30d') cutoff.setDate(cutoff.getDate() - 30)
+        if (dateRange === '3m')  cutoff.setMonth(cutoff.getMonth() - 3)
+        result = result.filter(s => new Date(s.created_at) >= cutoff)
+      }
+    }
     if (search.trim()) {
       const q = search.trim().toLowerCase()
       result = result.filter(s =>
@@ -177,8 +172,8 @@ export default function SubmissionList() {
         String(s.id).includes(q)
       )
     }
-    return result
-  }, [submissions, filterStatus, search])
+    return [...result].sort((a, b) => b.created_at.localeCompare(a.created_at))
+  }, [submissions, filterStatus, dateRange, search])
 
   if (loading) return (
     <div className="page-loading"><div className="spinner" />Loading submissions…</div>
@@ -218,12 +213,64 @@ export default function SubmissionList() {
               >
                 {s === 'all'
                   ? `All (${submissions.length})`
-                  : `${STATUS_OPTIONS.find(o => o.value === s)?.label} (${submissions.filter(x => x.status === s).length})`
+                  : `${s.charAt(0).toUpperCase() + s.slice(1)} (${submissions.filter(x => x.status === s).length})`
                 }
               </button>
             ))}
+            <select
+              className="ms-date-select"
+              value={dateRange}
+              onChange={e => setDateRange(e.target.value as typeof dateRange)}
+            >
+              <option value="all">All time</option>
+              <option value="today">Today</option>
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+              <option value="3m">Last 3 months</option>
+            </select>
           </div>
         </div>
+
+        {/* Decline modal */}
+        {showDeclineModal !== null && (
+          <div className="modal-overlay">
+            <div className="modal-content" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Decline Submission #{showDeclineModal}</h3>
+                <button className="close-btn" onClick={() => { setShowDeclineModal(null); setDeclineComment('') }}>×</button>
+              </div>
+              <div className="modal-body">
+                <p style={{ marginBottom: 12, color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>
+                  This reason will be visible to the submitter and included in the notification email.
+                </p>
+                <textarea
+                  value={declineComment}
+                  onChange={e => setDeclineComment(e.target.value)}
+                  placeholder="Enter reason for declining…"
+                  rows={4}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: 'var(--radius-md)', border: '1.5px solid var(--color-border)', fontFamily: 'var(--font-sans)', fontSize: 'var(--text-sm)', resize: 'vertical', outline: 'none' }}
+                  autoFocus
+                />
+              </div>
+              <div className="modal-footer">
+                <button
+                  className="btn-secondary"
+                  onClick={() => { setShowDeclineModal(null); setDeclineComment('') }}
+                  disabled={processingId !== null}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="sub-btn sub-btn--danger"
+                  onClick={handleDecline}
+                  disabled={processingId !== null || !declineComment.trim()}
+                >
+                  {processingId === showDeclineModal ? 'Declining…' : 'Decline'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {filtered.length === 0 ? (
           <div className="empty-state">
@@ -235,6 +282,7 @@ export default function SubmissionList() {
             {filtered.map(sub => {
               const status = (sub.status ?? 'pending') as SubmissionStatus
               const isOpen = expandedId === sub.id
+              const isPending = status === 'pending'
 
               return (
                 <div key={sub.id} className={`sub-entry ${isOpen ? 'sub-entry--open' : ''}`}>
@@ -242,11 +290,7 @@ export default function SubmissionList() {
 
                     <span className="sub-entry__id">#{sub.id}</span>
 
-                    <StatusDropdown
-                      status={status}
-                      loading={updatingId === sub.id}
-                      onChange={newStatus => handleStatusChange(sub, newStatus)}
-                    />
+                    <span className={`sub-status sub-status--${status}`}>{status}</span>
 
                     <div className="sub-entry__meta">
                       <span className="sub-entry__user">
@@ -255,18 +299,38 @@ export default function SubmissionList() {
                       <span className="sub-entry__dates">
                         <span title="Submitted">{new Date(sub.created_at).toLocaleString()}</span>
                         {sub.updated_at && sub.updated_by_username && (
-                          <span className="sub-entry__edited" title={`Edited by ${sub.updated_by_username}`}>
-                            · edited {new Date(sub.updated_at).toLocaleString()}
-                            {sub.updated_by_username && ` by ${sub.updated_by_username}`}
+                          <span className="sub-entry__edited" title={`Processed by ${sub.updated_by_username}`}>
+                            · {status === 'confirmed' ? 'approved' : 'declined'} {new Date(sub.updated_at).toLocaleString()}
+                            {` by ${sub.updated_by_username}`}
                           </span>
                         )}
                       </span>
                     </div>
 
                     <div className="sub-entry__actions">
-                      <button className="sub-btn sub-btn--edit" onClick={() => navigate(`/user/forms/${sub.form_id}/edit/${sub.id}`)}>
-                        Edit
-                      </button>
+                      {isPending && (
+                        <>
+                          <button
+                            className="sub-btn sub-btn--approve"
+                            onClick={() => handleConfirm(sub.id)}
+                            disabled={processingId === sub.id}
+                          >
+                            {processingId === sub.id ? '…' : '✓ Approve'}
+                          </button>
+                          <button
+                            className="sub-btn sub-btn--decline"
+                            onClick={() => setShowDeclineModal(sub.id)}
+                            disabled={processingId === sub.id}
+                          >
+                            ✗ Decline
+                          </button>
+                        </>
+                      )}
+                      {status !== 'confirmed' && (
+                        <button className="sub-btn sub-btn--edit" onClick={() => navigate(`/user/forms/${sub.form_id}/edit/${sub.id}`)}>
+                          Edit
+                        </button>
+                      )}
                       <button
                         className={`sub-btn sub-btn--data ${isOpen ? 'active' : ''}`}
                         onClick={() => setExpandedId(isOpen ? null : sub.id)}

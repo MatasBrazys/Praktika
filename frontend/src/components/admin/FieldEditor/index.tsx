@@ -1,7 +1,7 @@
 // src/components/admin/FieldEditor/index.tsx
 // Shell component — owns top-level state, delegates template/bulk to hooks.
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import type { FieldConfig, Validator, Condition, DynamicChoicesSource } from '../../../types/form-builder.types'
 import { VALIDATOR_PRESETS, AUTO_PRESET_REGEXES } from './validatorPresets'
 import { useToast } from '../../../contexts/ToastContext'
@@ -61,10 +61,6 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
       return manual
     })
   }, [])
-
-  useEffect(() => {
-    applyPresetValidator(config.inputType ?? '', config.type)
-  }, [config.inputType, config.type, applyPresetValidator])
 
   // ── Top-level validator handlers ──────────────────────────────────────────
 
@@ -193,7 +189,14 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
               expandedTemplateField={template.expandedTemplateField}
               expandedTemplateConditions={template.expandedTemplateConditions}
               allFields={allFields}
-              onConfigChange={updates => setConfig(prev => ({ ...prev, ...updates }))}
+              onConfigChange={updates => {
+                setConfig(prev => ({ ...prev, ...updates }))
+                if ('inputType' in updates || 'type' in updates) {
+                  const nextInputType = ('inputType' in updates ? updates.inputType : config.inputType) ?? ''
+                  const nextType      = ('type'      in updates ? updates.type      : config.type)
+                  applyPresetValidator(nextInputType as string, nextType as string)
+                }
+              }}
               onChoicesChange={setChoicesText}
               onAddTemplateField={template.addTemplateField}
               onUpdateTemplateField={template.updateTemplateField}

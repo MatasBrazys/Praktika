@@ -31,6 +31,7 @@ export default function FormBuilder() {
 
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [requiresConfirmation, setRequiresConfirmation] = useState(true)
   const [editingField, setEditingField] = useState<FieldConfig | null>(null)
   const [showFieldEditor, setShowFieldEditor] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -49,6 +50,7 @@ export default function FormBuilder() {
       const form = await formAPI.get(Number(id))
       setTitle(form.title)
       setDescription(form.description ?? '')
+      setRequiresConfirmation(form.requires_confirmation ?? true)
 
       const json = form.surveyjs_json as StoredSurveyJson
       const rawPages = json.pages ?? [{ name: 'page1', title: 'Page 1', elements: json.elements ?? [] }]
@@ -96,8 +98,8 @@ export default function FormBuilder() {
     setSaving(true)
     try {
       const surveyjs_json = convertToSurveyJS(pages)
-      if (isEditMode) await formAPI.update(Number(id), { title, description, surveyjs_json })
-      else await formAPI.create({ title, description, surveyjs_json, is_active: true })
+      if (isEditMode) await formAPI.update(Number(id), { title, description, surveyjs_json, requires_confirmation: requiresConfirmation })
+      else await formAPI.create({ title, description, surveyjs_json, is_active: true, requires_confirmation: requiresConfirmation })
       toast.success(isEditMode ? 'Form updated' : 'Form created', `"${title}" has been saved.`)
       navigate('/admin/forms')
     } catch (err) {
@@ -130,6 +132,10 @@ export default function FormBuilder() {
               <div className="form-meta-inputs">
                 <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Form title *" className="meta-input title-input" />
                 <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optional)" className="meta-input" />
+                <label className="meta-toggle">
+                  <input type="checkbox" checked={requiresConfirmation} onChange={e => setRequiresConfirmation(e.target.checked)} />
+                  Requires confirmation
+                </label>
               </div>
             </div>
             <div className="header-actions">

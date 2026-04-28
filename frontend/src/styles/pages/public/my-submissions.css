@@ -118,10 +118,108 @@
   color: #dc2626;
 }
 
+/* ── Toolbar ── */
+.ms-toolbar {
+  display: flex;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  align-items: center;
+}
+
+.ms-toolbar .sub-search { flex: 1; }
+
+/* ── Date select ── */
+.ms-date-select {
+  padding: 8px var(--sp-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+  background: var(--color-surface);
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  flex-shrink: 0;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+.ms-date-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--teal-100);
+}
+
+/* ── Status pill ── */
+.ms-status-pill {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: var(--fw-bold);
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+/* ── Entry headline ── */
+.ms-entry__headline {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-1);
+}
+
+/* ── Timeline ── */
+.ms-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.ms-timeline__event {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.ms-timeline__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ms-timeline__dot--submit    { background: var(--gray-400); }
+.ms-timeline__dot--confirmed { background: var(--color-success); }
+.ms-timeline__dot--declined  { background: var(--color-danger); }
+.ms-timeline__dot--pending   { background: #f59e0b; }
+
+.ms-timeline__text strong { color: var(--color-text); font-weight: var(--fw-semibold); }
+
+.ms-timeline__reason {
+  margin-left: 13px;
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding: 4px 10px;
+  background: #fef2f2;
+  border-left: 2px solid var(--color-danger);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
+  .ms-toolbar { flex-wrap: wrap; }
   .ms-entry__row { flex-wrap: wrap; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); }
-  .ms-entry__date { flex-direction: row; align-items: center; gap: var(--sp-2); }
   .ms-entry__actions { width: 100%; }
   .ms-btn-edit, .ms-btn-data { flex: 1; justify-content: center; }
 }

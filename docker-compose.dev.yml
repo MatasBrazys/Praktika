@@ -30,6 +30,7 @@ services:
       - backend
   openldap:
     ports:
-      - "127.0.0.1:389:389"   # LDAP — tik localhost debuginimui
+      - "127.0.0.1:389:389"   # LDAP plain — Apache Directory Studio
+      - "127.0.0.1:636:636"   # LDAPS — backend
 
   

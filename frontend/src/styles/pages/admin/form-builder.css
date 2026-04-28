@@ -59,6 +59,19 @@
 .meta-input::placeholder { color: var(--color-text-muted); }
 .title-input { font-weight: var(--fw-semibold); min-width: 220px; }
 
+.meta-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+}
+.meta-toggle input[type="checkbox"] { accent-color: var(--color-primary); width: 15px; height: 15px; cursor: pointer; }
+
 /* ── Page tabs ── */
 .page-tabs {
   display: flex;

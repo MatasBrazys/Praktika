@@ -45,11 +45,19 @@ class LdapSyncService:
                     db_user = db_users[username]
                     changed = False
 
-                    if db_user.email != ldap_user["email"]:
-                        logger.info("LDAP sync: %s email changed: %s → %s", 
-                                  username, db_user.email, ldap_user["email"])
-                        db_user.email = ldap_user["email"]
-                        changed = True
+                    if ldap_user["email"] and db_user.email != ldap_user["email"]:
+                        taken = db.query(User).filter(
+                            User.email == ldap_user["email"],
+                            User.username != username
+                        ).first()
+                        if not taken:
+                            logger.info("LDAP sync: %s email changed: %s → %s",
+                                      username, db_user.email, ldap_user["email"])
+                            db_user.email = ldap_user["email"]
+                            changed = True
+                        else:
+                            logger.warning("LDAP sync: email %s already used by %s, skipping for %s",
+                                          ldap_user["email"], taken.username, username)
 
                     if db_user.role != ldap_user["role"]:
                         logger.info("LDAP sync: %s role changed: %s → %s", 

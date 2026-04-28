@@ -75,6 +75,27 @@
 .sub-search:focus { border-color: var(--color-primary); }
 .sub-search::placeholder { color: var(--color-text-muted); }
 
+.ms-date-select {
+  padding: 8px var(--sp-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-family: var(--font-sans);
+  font-weight: var(--fw-medium);
+  color: var(--color-text);
+  background: var(--color-surface);
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  flex-shrink: 0;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+.ms-date-select:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--teal-100); }
+
 .sub-filter-group {
   display: flex;
   gap: var(--sp-1);

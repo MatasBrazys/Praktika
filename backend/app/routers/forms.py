@@ -81,6 +81,8 @@ def submit_form(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    form = form_service.get_by_id(db, form_id)
+
     submission = submission_service.create(
         db,
         form_id=form_id,
@@ -89,14 +91,28 @@ def submit_form(
         submitted_by_username=current_user.username,
         submitted_by_email=current_user.email,
     )
-    
-    form = form_service.get_by_id(db, form_id)
-    
-    submission_service.notify_submission_created(
-        db, form_id, form.title, submission.id, current_user.email
-    )
-    
-    logger.info("User %s submitted form id=%d, submission id=%d", current_user.username, form_id, submission.id)
+
+    if form.requires_confirmation:
+        submission_service.notify_submission_created(
+            db, form_id, form.title, submission.id, current_user.email,
+            submitted_by_username=current_user.username,
+            submission_data=submission.data,
+        )
+    else:
+        submission_service.update_status(
+            db, submission.id, 'confirmed',
+            updated_by_username='system',
+            updated_by_email=None,
+        )
+        submission_service.notify_submission_confirmed(
+            db, submission.id, form.title, current_user.email,
+            form_id=form_id,
+            submitted_by_username=current_user.username,
+            submission_data=submission.data,
+        )
+
+    logger.info("User %s submitted form id=%d, submission id=%d (confirmation=%s)",
+                current_user.username, form_id, submission.id, form.requires_confirmation)
     return {
         "message": "Form submitted successfully",
         "submission_id": submission.id,
@@ -148,11 +164,17 @@ def update_submission_status(
     
     if body.status == 'declined':
         submission_service.notify_submission_declined(
-            db, submission_id, form.title, result.submitted_by_email, body.comment or ""
+            db, submission_id, form.title, result.submitted_by_email, body.comment or "",
+            form_id=form_id,
+            submitted_by_username=result.submitted_by_username,
+            submission_data=result.data,
         )
     elif body.status == 'confirmed':
         submission_service.notify_submission_confirmed(
-            db, submission_id, form.title, result.submitted_by_email
+            db, submission_id, form.title, result.submitted_by_email,
+            form_id=form_id,
+            submitted_by_username=result.submitted_by_username,
+            submission_data=result.data,
         )
     
     logger.info("User %s updating submission id=%d status to %s", current_user.username, submission_id, body.status)

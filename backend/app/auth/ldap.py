@@ -1,17 +1,33 @@
 # app/auth/ldap.py
 
 import logging
-from ldap3 import Server, Connection, ALL, SIMPLE
+import ssl
+from ldap3 import Server, Connection, ALL, SIMPLE, Tls
 from ldap3.core.exceptions import LDAPException
 from app.config import settings
 
 logger = logging.getLogger(__name__)
 
 
+def _make_server() -> Server:
+    tls = None
+    if settings.LDAP_USE_SSL:
+        validate = ssl.CERT_REQUIRED if settings.LDAP_TLS_VERIFY else ssl.CERT_NONE
+        ca_certs = settings.LDAP_CA_CERT_PATH if settings.LDAP_TLS_VERIFY and settings.LDAP_CA_CERT_PATH else None
+        tls = Tls(validate=validate, ca_certs_file=ca_certs)
+    return Server(
+        settings.LDAP_HOST,
+        port=settings.LDAP_PORT,
+        use_ssl=settings.LDAP_USE_SSL,
+        tls=tls,
+        get_info=ALL,
+    )
+
+
 def ldap_authenticate(username: str, password: str) -> bool:
     """Tikrina ar username/password kombinacija teisinga per LDAP bind."""
     try:
-        server = Server(settings.LDAP_HOST, port=settings.LDAP_PORT, get_info=ALL)
+        server = _make_server()
         user_dn = f"uid={username},ou=users,{settings.ldap_base_dn}"
 
         conn = Connection(
@@ -60,11 +76,11 @@ def ldap_get_user_info(username: str) -> dict | None:
     Jei nerastas nei vienoje grupėje → None (negalima prisijungti)
     """
     try:
-        server = Server(settings.LDAP_HOST, port=settings.LDAP_PORT, get_info=ALL)
+        server = _make_server()
         conn = Connection(
             server,
-            user=settings.ldap_admin_dn,
-            password=settings.LDAP_ADMIN_PASSWORD,
+            user=settings.ldap_bind_dn,
+            password=settings.ldap_bind_password,
             authentication=SIMPLE,
             auto_bind=True,
         )
@@ -109,11 +125,11 @@ def ldap_get_all_users() -> list[dict]:
     Naudojamas background sync.
     """
     try:
-        server = Server(settings.LDAP_HOST, port=settings.LDAP_PORT, get_info=ALL)
+        server = _make_server()
         conn = Connection(
             server,
-            user=settings.ldap_admin_dn,
-            password=settings.LDAP_ADMIN_PASSWORD,
+            user=settings.ldap_bind_dn,
+            password=settings.ldap_bind_password,
             authentication=SIMPLE,
             auto_bind=True,
         )
@@ -156,11 +172,11 @@ def ldap_get_user_email(username: str) -> str | None:
     Naudojamas siunčiant notifications.
     """
     try:
-        server = Server(settings.LDAP_HOST, port=settings.LDAP_PORT, get_info=ALL)
+        server = _make_server()
         conn = Connection(
             server,
-            user=settings.ldap_admin_dn,
-            password=settings.LDAP_ADMIN_PASSWORD,
+            user=settings.ldap_bind_dn,
+            password=settings.ldap_bind_password,
             authentication=SIMPLE,
             auto_bind=True,
         )

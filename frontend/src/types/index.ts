@@ -31,6 +31,7 @@ export interface FormDefinition {
   description?: string;
   surveyjs_json: Record<string, unknown>;
   is_active: boolean;
+  requires_confirmation: boolean;
   created_at?: string;
   updated_at?: string;
 }

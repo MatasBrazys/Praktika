@@ -10,6 +10,28 @@ import type { Submission } from '../types'
 import '../styles/pages/public/form-list.css'
 import '../styles/pages/public/my-submissions.css'
 
+// ── Types & helpers ───────────────────────────────────────────────────────────
+
+type DateRange = 'all' | 'today' | '7d' | '30d' | '3m'
+
+function inRange(iso: string, range: DateRange): boolean {
+  if (range === 'all') return true
+  const d = new Date(iso)
+  if (range === 'today') return d.toDateString() === new Date().toDateString()
+  const cutoff = new Date()
+  if (range === '7d')  cutoff.setDate(cutoff.getDate() - 7)
+  if (range === '30d') cutoff.setDate(cutoff.getDate() - 30)
+  if (range === '3m')  cutoff.setMonth(cutoff.getMonth() - 3)
+  return d >= cutoff
+}
+
+function fmtDate(iso: string): string {
+  return new Date(iso).toLocaleString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
+
 function getLabel(data: Record<string, unknown>): string {
   for (const val of Object.values(data)) {
     if (typeof val === 'string' && val.trim()) return val.trim()
@@ -18,34 +40,54 @@ function getLabel(data: Record<string, unknown>): string {
   return ''
 }
 
-function StatusBadge({ status, comment }: { status: string; comment?: string }) {
-  const colors: Record<string, string> = {
-    pending: '#f59e0b',
-    confirmed: '#10b981',
-    declined: '#ef4444',
-  }
-  const labels: Record<string, string> = {
-    pending: 'Pending',
-    confirmed: 'Confirmed',
-    declined: 'Declined',
-  }
-  
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+const STATUS_COLORS: Record<string, string> = {
+  pending:   '#f59e0b',
+  confirmed: '#10b981',
+  declined:  '#ef4444',
+}
+
+function StatusPill({ status }: { status: string }) {
   return (
-    <div className="status-badge-wrapper">
-      <span 
-        className="status-badge" 
-        style={{ backgroundColor: colors[status] || '#6b7280' }}
-      >
-        {labels[status] || status}
-      </span>
-      {comment && (
-        <div className="decline-comment">
-          <strong>Reason:</strong> {comment}
+    <span className="ms-status-pill" style={{ background: STATUS_COLORS[status] ?? '#6b7280' }}>
+      {status}
+    </span>
+  )
+}
+
+function SubmissionTimeline({ sub }: { sub: Submission }) {
+  const processed = sub.updated_at && sub.updated_by_username && sub.status !== 'pending'
+  const actionLabel = sub.status === 'confirmed' ? 'Approved' : 'Declined'
+
+  return (
+    <div className="ms-timeline">
+      <div className="ms-timeline__event">
+        <span className="ms-timeline__dot ms-timeline__dot--submit" />
+        <span className="ms-timeline__text">
+          Submitted · <time dateTime={sub.created_at}>{fmtDate(sub.created_at)}</time>
+        </span>
+      </div>
+
+      {processed && (
+        <div className="ms-timeline__event">
+          <span className={`ms-timeline__dot ms-timeline__dot--${sub.status}`} />
+          <span className="ms-timeline__text">
+            {actionLabel} by <strong>{sub.updated_by_username}</strong>
+            {' · '}
+            <time dateTime={sub.updated_at!}>{fmtDate(sub.updated_at!)}</time>
+          </span>
         </div>
+      )}
+
+      {sub.status === 'declined' && sub.decline_comment && (
+        <div className="ms-timeline__reason">"{sub.decline_comment}"</div>
       )}
     </div>
   )
 }
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function MyFormSubmissions() {
   const { formId } = useParams<{ formId: string }>()
@@ -57,6 +99,7 @@ export default function MyFormSubmissions() {
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
+  const [dateRange, setDateRange] = useState<DateRange>('all')
 
   const load = useCallback(async () => {
     try {
@@ -77,13 +120,16 @@ export default function MyFormSubmissions() {
   useEffect(() => { load() }, [load])
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return submissions
-    const q = search.trim().toLowerCase()
-    return submissions.filter(s =>
-      JSON.stringify(s.data).toLowerCase().includes(q) ||
-      String(s.id).includes(q)
-    )
-  }, [submissions, search])
+    let result = submissions.filter(s => inRange(s.created_at, dateRange))
+    if (search.trim()) {
+      const q = search.trim().toLowerCase()
+      result = result.filter(s =>
+        JSON.stringify(s.data).toLowerCase().includes(q) ||
+        String(s.id).includes(q)
+      )
+    }
+    return result
+  }, [submissions, search, dateRange])
 
   if (loading) return (
     <div className="page-loading">
@@ -103,21 +149,33 @@ export default function MyFormSubmissions() {
         </div>
 
         {submissions.length > 0 && (
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search submissions…"
-            className="sub-search"
-            style={{ width: '100%', marginBottom: '16px' }}
-          />
+          <div className="ms-toolbar">
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search submissions…"
+              className="sub-search"
+            />
+            <select
+              className="ms-date-select"
+              value={dateRange}
+              onChange={e => setDateRange(e.target.value as DateRange)}
+            >
+              <option value="all">All time</option>
+              <option value="today">Today</option>
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+              <option value="3m">Last 3 months</option>
+            </select>
+          </div>
         )}
 
         {filtered.length === 0 ? (
           <div className="empty-state-simple">
             <div className="empty-icon">📭</div>
-            <h2>{search ? 'No results' : 'No submissions found'}</h2>
-            <p>{search ? 'Try a different search term' : 'This form has no submissions from your account'}</p>
+            <h2>{search || dateRange !== 'all' ? 'No results' : 'No submissions found'}</h2>
+            <p>{search || dateRange !== 'all' ? 'Try adjusting your filters' : 'This form has no submissions from your account'}</p>
           </div>
         ) : (
           <div className="ms-list">
@@ -129,22 +187,21 @@ export default function MyFormSubmissions() {
               return (
                 <div key={sub.id} className="ms-entry" style={{ animationDelay: `${idx * 40}ms` }}>
                   <div className="ms-entry__row">
+
                     <div className="ms-entry__id">#{sub.id}</div>
 
                     <div className="ms-entry__body">
-                      <h3 className="ms-entry__label">{label || `Submission #${sub.id}`}</h3>
-                      <StatusBadge status={sub.status} comment={sub.decline_comment} />
-                    </div>
-
-                    <div className="ms-entry__date">
-                      <span>{new Date(sub.created_at).toLocaleDateString()}</span>
-                      {sub.updated_at && <span className="ms-edited-pill">edited</span>}
+                      <div className="ms-entry__headline">
+                        <h3 className="ms-entry__label">{label || `Submission #${sub.id}`}</h3>
+                        <StatusPill status={sub.status} />
+                      </div>
+                      <SubmissionTimeline sub={sub} />
                     </div>
 
                     <div className="ms-entry__actions">
                       {canEdit && (
-                        <button 
-                          className="ms-btn-edit" 
+                        <button
+                          className="ms-btn-edit"
                           onClick={() => navigate(`/user/forms/${sub.form_id}/edit/${sub.id}`)}
                         >
                           Edit
