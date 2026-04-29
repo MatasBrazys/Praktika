@@ -27,6 +27,9 @@ const LOOKUP_PANEL_MARKER = '__lookup_panel__'
 // Session-scoped cache — avoids redundant API calls for identical queries.
 const cache = new Map<string, LookupResult[]>()
 
+// Picker results stored outside SurveyJS question objects — more reliable than __results.
+const pickerResultsStore = new Map<string, LookupResult[]>()
+
 export function attachLookupBehavior(
   surveyModel: Model,
   rawJson: Record<string, unknown>,
@@ -38,12 +41,17 @@ export function attachLookupBehavior(
   const counters: Record<string, number> = {}
   const searches: Record<string, (q: string) => void> = {}
   const pickerToPanel = new Map<string, LookupPanelConfig>()
+  // Tracks values set programmatically so the trigger's onValueChanged doesn't re-search.
+  const justFilled = new Map<string, string>()
+  // Tracks the last query string typed per trigger field, used to find the matching field
+  // value after selection (e.g. typed "CRM" → field "cf_CRM_ID" = "CRM001" wins).
+  const lastQueries = new Map<string, string>()
 
   for (const panel of panels) {
     states[panel.triggerFieldName] = 'idle'
     counters[panel.triggerFieldName] = 0
     searches[panel.triggerFieldName] = debounce(
-      (q: string) => doSearch(surveyModel, panel, q, states, counters),
+      (q: string) => doSearch(surveyModel, panel, q, states, counters, justFilled),
       600,
     )
     pickerToPanel.set(panel.pickerFieldName, panel)
@@ -67,15 +75,31 @@ export function attachLookupBehavior(
     const pickerPanel = pickerToPanel.get(opt.name)
     if (pickerPanel) {
       if (!opt.value) return
-      const pickerQ = surveyModel.getQuestionByName(opt.name) as any
-      const result = (pickerQ?.__results as LookupResult[] | undefined)
-        ?.find(r => r.value === opt.value)
+      const stored = pickerResultsStore.get(opt.name)
+      const result = stored?.find(r => String(r.value) === String(opt.value))
       if (!result) return
+
+      const lastQuery = lastQueries.get(pickerPanel.triggerFieldName) ?? ''
+      const newTriggerValue = resolveTriggerValue(result, lastQuery, pickerPanel)
+
+      // Set justFilled BEFORE fillFields — fillFields may synchronously fire onValueChanged
+      // for the trigger (when trigger is in fieldMappings), and the guard must be ready.
+      justFilled.set(pickerPanel.triggerFieldName, newTriggerValue)
+
       fillFields(surveyModel, pickerPanel, result.fields)
       clearPicker(surveyModel, pickerPanel)
       states[pickerPanel.triggerFieldName] = 'found'
       setDesc(surveyModel, pickerPanel.triggerFieldName, `✅ Found: ${result.display}`)
       clearErr(surveyModel, pickerPanel.triggerFieldName)
+
+      // If trigger is NOT in fieldMappings, fillFields won't touch it — update manually.
+      const triggerMapping = pickerPanel.fieldMappings.find(
+        m => m.fieldName === pickerPanel.triggerFieldName,
+      )
+      if (!triggerMapping) {
+        const triggerQ = getQ(surveyModel, pickerPanel.triggerFieldName)
+        if (triggerQ) triggerQ.value = newTriggerValue
+      }
       return
     }
 
@@ -84,6 +108,12 @@ export function attachLookupBehavior(
     if (!panel) return
 
     const q = (opt.value || '').trim()
+
+    // Skip re-search when the value was just set programmatically.
+    if (justFilled.get(panel.triggerFieldName) === q) {
+      justFilled.delete(panel.triggerFieldName)
+      return
+    }
 
     if (!q) {
       clearFields(surveyModel, panel)
@@ -95,12 +125,12 @@ export function attachLookupBehavior(
       return
     }
 
-    if (q.length < 5) {
+    if (q.length < 3) {
       clearFields(surveyModel, panel)
       clearPicker(surveyModel, panel)
       states[panel.triggerFieldName] = 'idle'
       counters[panel.triggerFieldName]++
-      setDesc(surveyModel, panel.triggerFieldName, 'Type at least 5 characters…')
+      setDesc(surveyModel, panel.triggerFieldName, 'Type at least 3 characters…')
       clearErr(surveyModel, panel.triggerFieldName)
       return
     }
@@ -110,8 +140,49 @@ export function attachLookupBehavior(
     states[panel.triggerFieldName] = 'searching'
     clearErr(surveyModel, panel.triggerFieldName)
     setDesc(surveyModel, panel.triggerFieldName, `🔍 Searching…`)
+    lastQueries.set(panel.triggerFieldName, q)
     searches[panel.triggerFieldName]?.(q)
   })
+}
+
+// ── Trigger value resolution ──────────────────────────────────────────────
+// Determines what the trigger field should display after a lookup selection.
+//
+// Priority:
+//   1. If the trigger field is explicitly in fieldMappings → use that API field value
+//      (e.g. trigger field "crm_id" mapped to key "cf_CRM_ID" → "CRM002")
+//   2. Find the result field whose value starts with what the user typed
+//      (e.g. typed "CRM" → "cf_CRM_ID"="CRM001" matches → "CRM001")
+//   3. Exact match in result fields (typed the full value)
+//   4. Fall back to display name
+
+function resolveTriggerValue(
+  result: LookupResult,
+  lastQuery: string,
+  panel: LookupPanelConfig,
+): string {
+  const triggerMapping = panel.fieldMappings.find(m => m.fieldName === panel.triggerFieldName)
+  if (triggerMapping && result.fields[triggerMapping.key]) {
+    return result.fields[triggerMapping.key]
+  }
+
+  if (lastQuery) {
+    const lq = lastQuery.toLowerCase()
+    const entries = Object.entries(result.fields).filter(([, v]) => v !== '')
+    const exact = entries.find(([, v]) => v.toLowerCase() === lq)
+    if (exact) return exact[1]
+    const sw = entries.find(([, v]) => v.toLowerCase().startsWith(lq))
+    if (sw) return sw[1]
+  }
+
+  return result.display
+}
+
+// ── Question lookup helper ────────────────────────────────────────────────
+// getQuestionByName sometimes misses questions nested inside panels.
+// getAllQuestions() is exhaustive.
+function getQ(model: Model, name: string): any {
+  return (model.getAllQuestions() as any[]).find((q: any) => q.name === name) ?? null
 }
 
 // ── Detection ─────────────────────────────────────────────────────────────
@@ -153,6 +224,7 @@ async function doSearch(
   query: string,
   states: Record<string, string>,
   counters: Record<string, number>,
+  justFilled: Map<string, string>,
 ): Promise<void> {
   const myId = ++counters[panel.triggerFieldName]
 
@@ -186,7 +258,7 @@ async function doSearch(
       return
     }
 
-    handleResults(model, panel, results, states)
+    handleResults(model, panel, results, states, justFilled, query)
 
   } catch {
     if (counters[panel.triggerFieldName] !== myId) return
@@ -201,9 +273,18 @@ function handleResults(
   panel: LookupPanelConfig,
   results: LookupResult[],
   states: Record<string, string>,
+  justFilled: Map<string, string>,
+  query: string,
 ): void {
   if (results.length === 1) {
+    const newTriggerValue = resolveTriggerValue(results[0], query, panel)
+    justFilled.set(panel.triggerFieldName, newTriggerValue)
     fillFields(model, panel, results[0].fields)
+    const triggerMapping = panel.fieldMappings.find(m => m.fieldName === panel.triggerFieldName)
+    if (!triggerMapping) {
+      const triggerQ = getQ(model, panel.triggerFieldName)
+      if (triggerQ) triggerQ.value = newTriggerValue
+    }
     states[panel.triggerFieldName] = 'found'
     clearErr(model, panel.triggerFieldName)
     setDesc(model, panel.triggerFieldName, `✅ Found: ${results[0].display}`)
@@ -219,7 +300,9 @@ function handleResults(
 
 function initFields(model: Model, panel: LookupPanelConfig): void {
   for (const m of panel.fieldMappings) {
-    const f = model.getQuestionByName(m.fieldName) as any
+    // Never hide the trigger field — it's the search input, always visible.
+    if (m.fieldName === panel.triggerFieldName) continue
+    const f = getQ(model, m.fieldName) as any
     if (f) f.visible = false
   }
   setDesc(model, panel.triggerFieldName, 'Type to search…')
@@ -227,14 +310,16 @@ function initFields(model: Model, panel: LookupPanelConfig): void {
 
 function fillFields(model: Model, panel: LookupPanelConfig, fields: Record<string, string>): void {
   for (const m of panel.fieldMappings) {
-    const f = model.getQuestionByName(m.fieldName) as any
+    const f = getQ(model, m.fieldName) as any
     if (f) { f.value = fields[m.key] ?? ''; f.visible = true }
   }
 }
 
 function clearFields(model: Model, panel: LookupPanelConfig): void {
   for (const m of panel.fieldMappings) {
-    const f = model.getQuestionByName(m.fieldName) as any
+    // Never clear/hide the trigger field — user is actively typing in it.
+    if (m.fieldName === panel.triggerFieldName) continue
+    const f = getQ(model, m.fieldName) as any
     if (f) { f.value = undefined; f.visible = false }
   }
 }
@@ -246,18 +331,18 @@ function initPicker(model: Model, panel: LookupPanelConfig): void {
 }
 
 function showPicker(model: Model, panel: LookupPanelConfig, results: LookupResult[]): void {
-  const q = model.getQuestionByName(panel.pickerFieldName) as any
+  const q = getQ(model, panel.pickerFieldName) as any
   if (!q) return
-  q.__results = results
+  pickerResultsStore.set(panel.pickerFieldName, results)
   q.choices = results.map(r => ({ value: r.value, text: r.display }))
   q.value = undefined
   q.visible = true
 }
 
 function clearPicker(model: Model, panel: LookupPanelConfig): void {
-  const q = model.getQuestionByName(panel.pickerFieldName) as any
+  const q = getQ(model, panel.pickerFieldName) as any
   if (!q) return
-  q.__results = undefined
+  pickerResultsStore.delete(panel.pickerFieldName)
   q.choices = []
   q.value = undefined
   q.visible = false
@@ -266,16 +351,16 @@ function clearPicker(model: Model, panel: LookupPanelConfig): void {
 // ── Desc / error helpers ──────────────────────────────────────────────────
 
 function setDesc(model: Model, name: string, text: string): void {
-  const f = model.getQuestionByName(name) as any
+  const f = getQ(model, name) as any
   if (f) f.description = text
 }
 
 function setErr(model: Model, name: string, msg: string): void {
-  const f = model.getQuestionByName(name) as any
+  const f = getQ(model, name) as any
   if (f) { f.description = ''; f.clearErrors?.(); f.addError?.(msg) }
 }
 
 function clearErr(model: Model, name: string): void {
-  const f = model.getQuestionByName(name) as any
+  const f = getQ(model, name) as any
   if (f) f.clearErrors?.()
 }

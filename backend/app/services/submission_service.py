@@ -38,6 +38,8 @@ def create(
     db.add(submission)
     db.commit()
     db.refresh(submission)
+    record_event(db, submission.id, 'submitted', submitted_by_username or 'unknown')
+    db.commit()
     logger.info("Submission created: id=%d form_id=%d by %s", submission.id, form_id, submitted_by_username or "unknown")
     return submission
 
@@ -65,12 +67,15 @@ def update(
     data: dict,
     updated_by_username: str | None = None,
     updated_by_email: str | None = None,
+    record_edit: bool = False,
 ) -> FormSubmission:
     submission = get_by_id(db, submission_id)
 
     submission.data = data
     submission.updated_by_username = updated_by_username
     submission.updated_by_email = updated_by_email
+    if record_edit:
+        record_event(db, submission_id, 'edited', updated_by_username or 'unknown')
     db.commit()
     db.refresh(submission)
     logger.info("Submission updated: id=%d by %s", submission_id, updated_by_username)
@@ -92,12 +97,17 @@ def update_status(
     submission.status = status
     submission.updated_by_username = updated_by_username
     submission.updated_by_email = updated_by_email
-    
+
     if status == 'declined' and comment:
         submission.decline_comment = comment
-    elif status in ('pending', 'confirmed'):
+        record_event(db, submission_id, 'declined', updated_by_username or 'unknown', comment=comment)
+    elif status == 'confirmed':
         submission.decline_comment = None
-    
+        record_event(db, submission_id, 'confirmed', updated_by_username or 'unknown')
+    elif status == 'pending':
+        submission.decline_comment = None
+        # 'pending' reset is recorded as 'resubmitted' by the resubmit() function — no event here
+
     db.commit()
     db.refresh(submission)
     logger.info("Submission status updated: id=%d status=%s by %s", submission_id, status, updated_by_username)
@@ -127,6 +137,52 @@ def get_by_form(db: Session, form_id: int, skip: int = 0, limit: int = 100) -> l
         .offset(skip).limit(limit).all()
     )
     return submissions
+
+
+def resubmit(
+    db: Session,
+    submission_id: int,
+    data: dict,
+    actor_username: str,
+    actor_email: str | None = None,
+) -> FormSubmission:
+    sub = get_by_id(db, submission_id)
+    sub.data = data
+    sub.status = 'pending'
+    sub.updated_by_username = actor_username
+    sub.updated_by_email = actor_email
+    sub.decline_comment = None
+    record_event(db, submission_id, 'resubmitted', actor_username)
+    db.commit()
+    db.refresh(sub)
+    logger.info("Submission resubmitted: id=%d by %s", submission_id, actor_username)
+    return sub
+
+
+def record_event(
+    db: Session,
+    submission_id: int,
+    event_type: str,
+    actor_username: str,
+    comment: str | None = None,
+) -> None:
+    from app.models.submission_event import SubmissionEvent
+    db.add(SubmissionEvent(
+        submission_id=submission_id,
+        event_type=event_type,
+        actor_username=actor_username,
+        comment=comment,
+    ))
+
+
+def get_events(db: Session, submission_id: int):
+    from app.models.submission_event import SubmissionEvent
+    return (
+        db.query(SubmissionEvent)
+        .filter(SubmissionEvent.submission_id == submission_id)
+        .order_by(SubmissionEvent.occurred_at)
+        .all()
+    )
 
 
 def get_confirmers_emails(db: Session) -> list[str]:

@@ -23,7 +23,7 @@ interface PageChangedOptions {
 export default function Form() {
   const { id, submissionId } = useParams<{ id: string; submissionId?: string }>()
 
-  const { form, surveyModel, bulkPanels, loading, error, isEditMode, submitting } = useFormLoader(id, submissionId)
+  const { form, surveyModel, bulkPanels, loading, error, isEditMode, isAdminEdit, submitting } = useFormLoader(id, submissionId)
 
   const [currentPageNo, setCurrentPageNo] = useState(0)
   const surveyWrapperRef = useRef<HTMLDivElement>(null)
@@ -104,8 +104,8 @@ export default function Form() {
       <div className="public-form-container">
         <div className={`form-header ${isEditMode ? 'form-header--edit' : ''}`}>
           <BackButton
-            to={isEditMode ? `/user/submissions/${form.id}` : '/user/forms'}
-            label={isEditMode ? 'Back to Submissions' : 'Back to Forms'}
+            to={isAdminEdit ? `/admin/forms/${form.id}/submissions` : isEditMode ? `/user/submissions/${form.id}` : '/user/forms'}
+            label={isAdminEdit ? 'Back to Submissions' : isEditMode ? 'Back to Submissions' : 'Back to Forms'}
           />
           {isEditMode && <span className="form-edit-badge">Editing submission</span>}
           <h1>{form.title}</h1>

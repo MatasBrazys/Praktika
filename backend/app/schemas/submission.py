@@ -46,6 +46,16 @@ class SubmissionCreate(BaseModel):
     data: dict
 
 
+class SubmissionEventResponse(BaseModel):
+    id: int
+    event_type: str
+    actor_username: str
+    comment: Optional[str] = None
+    occurred_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class SubmissionResponse(BaseModel):
     id: int
     form_id: int

@@ -119,7 +119,7 @@ async def proxy_query(db: Session, config_id: int, query: str) -> dict:
             results.append(LookupQueryResult(
                 value=str(_get_nested(item, config.value_field, "")),
                 display=str(_get_nested(item, config.display_field, "")),
-                fields=_map_fields(item, config.field_mappings or []),
+                fields=_flatten_all(item),
             ))
 
         return {"found": len(results) > 0, "results": [r.model_dump() for r in results]}
@@ -227,6 +227,19 @@ def _get_nested(obj: dict, path: str, default=""):
         else:
             return default
     return current if current is not None else default
+
+
+def _flatten_all(obj: dict, prefix: str = "") -> dict:
+    out: dict = {}
+    for key, value in obj.items():
+        path = f"{prefix}.{key}" if prefix else key
+        if isinstance(value, dict) and value:
+            out.update(_flatten_all(value, path))
+        elif value is None:
+            out[path] = ""
+        else:
+            out[path] = str(value)
+    return out
 
 
 def _map_fields(item: dict, field_mappings: list) -> dict:

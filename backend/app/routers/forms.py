@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas.form import FormDefinitionCreate, FormDefinitionUpdate, FormDefinitionResponse
-from app.schemas.submission import SubmissionRequest, SubmissionResponse, StatusUpdateRequest, SubmissionUpdateRequest
+from app.schemas.submission import SubmissionRequest, SubmissionResponse, StatusUpdateRequest, SubmissionUpdateRequest, SubmissionEventResponse
 from app.services import form_service, submission_service
 from app.auth.dependencies import get_current_user, require_admin, require_form_confirmer
 from app.models.user import User
@@ -189,32 +189,42 @@ def user_update_submission(
     current_user: User = Depends(get_current_user),
 ):
     submission = submission_service.get_by_id(db, submission_id)
-    
+
     if submission.submitted_by_username != current_user.username:
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="You can only edit your own submissions")
-    
+
     if submission.status not in ('declined', 'pending'):
         from fastapi import HTTPException
         raise HTTPException(status_code=400, detail="You can only edit declined or pending submissions")
-    
+
     logger.info("User %s editing submission id=%d (was %s)", current_user.username, submission_id, submission.status)
-    updated = submission_service.update(
+
+    if submission.status == 'declined':
+        return submission_service.resubmit(
+            db, submission_id, body.data,
+            actor_username=current_user.username,
+            actor_email=current_user.email,
+        )
+
+    return submission_service.update(
         db, submission_id, body.data,
         updated_by_username=current_user.username,
-        updated_by_email=current_user.email
+        updated_by_email=current_user.email,
     )
-    
-    if submission.status == 'declined':
-        submission_service.update_status(
-            db, submission_id, 'pending',
-            updated_by_username=current_user.username,
-            updated_by_email=current_user.email
-        )
-        updated.status = 'pending'
-        logger.info("Submission id=%d status changed from declined to pending", submission_id)
-    
-    return updated
+
+
+@router.get("/my-submissions/{submission_id}/events", response_model=List[SubmissionEventResponse])
+def get_my_submission_events(
+    submission_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from fastapi import HTTPException
+    sub = submission_service.get_by_id(db, submission_id)
+    if sub.submitted_by_username != current_user.username:
+        raise HTTPException(status_code=403, detail="Access denied")
+    return submission_service.get_events(db, submission_id)
 
 
 @router.delete("/{form_id}/submissions/{submission_id}")
@@ -233,6 +243,16 @@ def delete_submission(
     return {"message": "Submission deleted", "id": submission_id}
 
 
+@router.get("/{form_id}/submissions/{submission_id}/events", response_model=List[SubmissionEventResponse])
+def get_submission_events(
+    form_id: int,
+    submission_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_form_confirmer),
+):
+    return submission_service.get_events(db, submission_id)
+
+
 @router.put("/{form_id}/submissions/{submission_id}", response_model=SubmissionResponse)
 def admin_update_submission(
     form_id: int,
@@ -245,5 +265,6 @@ def admin_update_submission(
     return submission_service.update(
         db, submission_id, body.data,
         updated_by_username=current_user.username,
-        updated_by_email=current_user.email
+        updated_by_email=current_user.email,
+        record_edit=True,
     )

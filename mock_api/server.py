@@ -137,7 +137,7 @@ def list_tenants(
     results = TENANTS
     if cf_CRM_ID:
         q = cf_CRM_ID.strip().upper()
-        results = [t for t in results if t.get("cf_CRM_ID", "").upper() == q]
+        results = [t for t in results if t.get("cf_CRM_ID", "").upper().startswith(q)]
     elif name__ic:
         q = name__ic.lower()
         results = [t for t in results if q in t["name"].lower()]
