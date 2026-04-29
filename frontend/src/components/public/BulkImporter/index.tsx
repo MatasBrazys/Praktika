@@ -3,6 +3,7 @@
 // Parsing, validation and template generation are handled by ./utils/.
 
 import { useState, useRef, useCallback } from 'react'
+import { Download, FolderOpen, Trash2, Check, X, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react'
 import type { Model } from 'survey-core'
 import { parseCSV, resolveColumnMap } from './utils/csvParser'
 import { validateCell } from './utils/cellValidator'
@@ -143,9 +144,9 @@ export default function BulkImporter({ surveyModel, config }: Props) {
   return (
     <div className={`bi-wrapper ${open ? 'bi-wrapper--open' : ''}`}>
       <button className="bi-toggle" onClick={() => setOpen(v => !v)} type="button">
-        <span className="bi-toggle__icon">📥</span>
+        <span className="bi-toggle__icon"><Download size={15} strokeWidth={2} /></span>
         <span className="bi-toggle__label">Bulk Import — {config.questionName}</span>
-        {imported && <span className="bi-badge bi-badge--success">✓ {validRows.length} imported</span>}
+        {imported && <span className="bi-badge bi-badge--success"><Check size={11} strokeWidth={3} /> {validRows.length} imported</span>}
         {!imported && rows.length > 0 && <span className="bi-badge bi-badge--pending">{rows.length} rows</span>}
         <span className="bi-toggle__chevron">{open ? '▲' : '▼'}</span>
       </button>
@@ -170,7 +171,7 @@ export default function BulkImporter({ surveyModel, config }: Props) {
           <div className="bi-template-row">
             <span>Don't have a file yet?</span>
             <button className="bi-btn bi-btn--template" type="button" onClick={handleDownloadTemplate}>
-              ⬇ Download CSV template
+              <Download size={13} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 4 }} />Download CSV template
             </button>
           </div>
 
@@ -200,22 +201,22 @@ export default function BulkImporter({ surveyModel, config }: Props) {
                 className="bi-file-hidden"
                 onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = '' }}
               />
-              <button className="bi-btn bi-btn--file" type="button" onClick={() => fileRef.current?.click()}>📁 Upload</button>
-              <button className="bi-btn bi-btn--clear" type="button" onClick={handleClear} disabled={!text}>🗑 Clear</button>
+              <button className="bi-btn bi-btn--file" type="button" onClick={() => fileRef.current?.click()}><FolderOpen size={13} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 4 }} />Upload</button>
+              <button className="bi-btn bi-btn--clear" type="button" onClick={handleClear} disabled={!text}><Trash2 size={13} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 4 }} />Clear</button>
             </div>
           </div>
 
           {parseError && (
             <div className="bi-footer">
-              <p className="bi-footer__note bi-footer__note--error">❌ {parseError}</p>
+              <p className="bi-footer__note bi-footer__note--error"><XCircle size={13} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 4 }} />{parseError}</p>
             </div>
           )}
 
           {rows.length > 0 && !parseError && (
             <div className="bi-stats">
               <span className="bi-stat bi-stat--total">{rows.length} rows</span>
-              <span className="bi-stat bi-stat--valid">✅ {validRows.length} valid</span>
-              {invalidRows.length > 0 && <span className="bi-stat bi-stat--invalid">❌ {invalidRows.length} errors</span>}
+              <span className="bi-stat bi-stat--valid"><CheckCircle2 size={13} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 3 }} />{validRows.length} valid</span>
+              {invalidRows.length > 0 && <span className="bi-stat bi-stat--invalid"><XCircle size={13} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 3 }} />{invalidRows.length} errors</span>}
             </div>
           )}
 
@@ -243,7 +244,7 @@ export default function BulkImporter({ surveyModel, config }: Props) {
                         )
                       })}
                       <td className="bi-row__status">
-                        {row.valid ? <span className="bi-ok">✓</span> : <span className="bi-err">✕</span>}
+                        {row.valid ? <span className="bi-ok"><Check size={13} strokeWidth={3} /></span> : <span className="bi-err"><X size={13} strokeWidth={3} /></span>}
                       </td>
                     </tr>
                   ))}
@@ -255,7 +256,7 @@ export default function BulkImporter({ surveyModel, config }: Props) {
           {validRows.length > 0 && !parseError && (
             <div className="bi-footer">
               {invalidRows.length > 0 && (
-                <p className="bi-footer__note">⚠️ {invalidRows.length} invalid row{invalidRows.length > 1 ? 's' : ''} will be skipped.</p>
+                <p className="bi-footer__note"><AlertTriangle size={13} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 4 }} />{invalidRows.length} invalid row{invalidRows.length > 1 ? 's' : ''} will be skipped.</p>
               )}
               <button
                 className={`bi-btn bi-btn--import ${imported ? 'bi-btn--imported' : ''}`}
@@ -263,7 +264,7 @@ export default function BulkImporter({ surveyModel, config }: Props) {
                 onClick={handleImport}
               >
                 {imported
-                  ? `✓ Imported ${validRows.length} rows`
+                  ? <><Check size={14} strokeWidth={3} style={{ verticalAlign: 'middle', marginRight: 4 }} />Imported {validRows.length} rows</>
                   : `Import ${validRows.length} valid row${validRows.length > 1 ? 's' : ''} →`}
               </button>
             </div>
@@ -272,7 +273,7 @@ export default function BulkImporter({ surveyModel, config }: Props) {
           {rows.length > 0 && validRows.length === 0 && !parseError && (
             <div className="bi-footer">
               <p className="bi-footer__note bi-footer__note--error">
-                ❌ No valid rows. Columns must match: {bulkImportFields.map(f => f.name).join(', ')}
+                <XCircle size={13} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 4 }} />No valid rows. Columns must match: {bulkImportFields.map(f => f.name).join(', ')}
               </p>
             </div>
           )}

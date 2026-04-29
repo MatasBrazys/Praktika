@@ -138,7 +138,7 @@ export default function BasicTab({
       {config.type === 'paneldynamic' && (
         <div className="template-section">
           <div className="section-header">
-            <h3>🔁 Repeatable Group Fields</h3>
+            <h3>Repeatable Group Fields</h3>
             <button className="btn-add-small" onClick={onAddTemplateField}>+ Add Field</button>
           </div>
           <div className="form-row">

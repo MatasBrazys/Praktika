@@ -89,7 +89,7 @@ export function attachLookupBehavior(
       fillFields(surveyModel, pickerPanel, result.fields)
       clearPicker(surveyModel, pickerPanel)
       states[pickerPanel.triggerFieldName] = 'found'
-      setDesc(surveyModel, pickerPanel.triggerFieldName, `✅ Found: ${result.display}`)
+      setDesc(surveyModel, pickerPanel.triggerFieldName, `Found: ${result.display}`)
       clearErr(surveyModel, pickerPanel.triggerFieldName)
 
       // If trigger is NOT in fieldMappings, fillFields won't touch it — update manually.
@@ -139,7 +139,7 @@ export function attachLookupBehavior(
     clearPicker(surveyModel, panel)
     states[panel.triggerFieldName] = 'searching'
     clearErr(surveyModel, panel.triggerFieldName)
-    setDesc(surveyModel, panel.triggerFieldName, `🔍 Searching…`)
+    setDesc(surveyModel, panel.triggerFieldName, `Searching…`)
     lastQueries.set(panel.triggerFieldName, q)
     searches[panel.triggerFieldName]?.(q)
   })
@@ -254,7 +254,7 @@ async function doSearch(
       states[panel.triggerFieldName] = 'not_found'
       clearFields(model, panel)
       clearErr(model, panel.triggerFieldName)
-      setDesc(model, panel.triggerFieldName, `❌ Not found for "${query}"`)
+      setDesc(model, panel.triggerFieldName, `Not found for "${query}"`)
       return
     }
 
@@ -287,7 +287,7 @@ function handleResults(
     }
     states[panel.triggerFieldName] = 'found'
     clearErr(model, panel.triggerFieldName)
-    setDesc(model, panel.triggerFieldName, `✅ Found: ${results[0].display}`)
+    setDesc(model, panel.triggerFieldName, `Found: ${results[0].display}`)
   } else {
     states[panel.triggerFieldName] = 'awaiting_selection'
     showPicker(model, panel, results)

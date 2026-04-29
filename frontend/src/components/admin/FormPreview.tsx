@@ -2,6 +2,7 @@
 
 import { Model }  from 'survey-core'
 import { Survey } from 'survey-react-ui'
+import { FileText } from 'lucide-react'
 import 'survey-core/survey-core.min.css'
 import '../../styles/components/form-preview.css'
 
@@ -19,7 +20,7 @@ export default function FormPreview({ surveyJson, activePageIndex = 0 }: Props) 
   if (!elements.length) {
     return (
       <div className="preview-empty">
-        <div className="empty-icon">📝</div>
+        <div className="empty-icon"><FileText size={48} strokeWidth={1.5} /></div>
         <p>Add fields to see live preview</p>
       </div>
     )

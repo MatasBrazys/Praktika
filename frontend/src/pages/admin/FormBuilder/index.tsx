@@ -185,11 +185,11 @@ export default function FormBuilder() {
                         <div className="field-details">
                           <strong>{field.title}</strong>
                           <div className="field-meta">
-                            <span className="field-type-badge">{field.type === 'crmlookup' ? '🔍 CRM Lookup' : field.type}</span>
+                            <span className="field-type-badge">{field.type === 'crmlookup' ? 'Lookup (API)' : field.type}</span>
                             {field.isRequired && <span className="required-badge">Required</span>}
-                            {field.conditions?.length ? <span className="condition-badge">⚡ Conditional</span> : null}
-                            {field.validators?.length ? <span className="validator-badge">✓ Validated</span> : null}
-                            {field.allowBulkImport && <span className="condition-badge">📥 Bulk Import</span>}
+                            {field.conditions?.length ? <span className="condition-badge">Conditional</span> : null}
+                            {field.validators?.length ? <span className="validator-badge">Validated</span> : null}
+                            {field.allowBulkImport && <span className="condition-badge">Bulk Import</span>}
                           </div>
                         </div>
                       </div>

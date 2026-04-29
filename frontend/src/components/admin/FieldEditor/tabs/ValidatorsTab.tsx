@@ -49,10 +49,10 @@ export default function ValidatorsTab({ validators, comparableFields, onAdd, onA
         <div key={v._id ?? idx} className="validator-item">
           <div className="validator-header">
             <span className="validator-type-label">
-              {v.type === 'regex'      && '🔤 Regex'}
-              {v.type === 'numeric'    && '🔢 Numeric Range'}
-              {v.type === 'text'       && '📏 Text Length'}
-              {v.type === 'crossfield' && '🔗 Cross-Field'}
+              {v.type === 'regex'      && 'Regex'}
+              {v.type === 'numeric'    && 'Numeric Range'}
+              {v.type === 'text'       && 'Text Length'}
+              {v.type === 'crossfield' && 'Cross-Field'}
             </span>
             <button className="btn-delete-small" onClick={() => onDelete(idx)}>×</button>
           </div>

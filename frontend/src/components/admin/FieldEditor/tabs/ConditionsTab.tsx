@@ -34,7 +34,7 @@ export default function ConditionsTab({
       {conditions.length === 0 && (
         <div className="empty-conditions">
           <p>No conditions — field is always visible.</p>
-          {allFields.length === 0 && <small>⚠️ Add other fields first to create conditions.</small>}
+          {allFields.length === 0 && <small>Add other fields first to create conditions.</small>}
         </div>
       )}
 

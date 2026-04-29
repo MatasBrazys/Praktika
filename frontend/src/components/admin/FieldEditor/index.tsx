@@ -169,9 +169,9 @@ export default function FieldEditor({ field, allFields, onSave, onCancel }: Prop
             if (tab === 'validators' && isLookup) return null
             return (
               <button key={tab} className={`tab-btn ${activeTab === tab ? 'active' : ''}`} onClick={() => setActiveTab(tab)}>
-                {tab === 'basic'      && '⚙️ Basic'}
-                {tab === 'validators' && `✓ Validators${validators.length ? ` (${validators.length})` : ''}`}
-                {tab === 'conditions' && `⚡ Conditions${conditions.length ? ` (${conditions.length})` : ''}`}
+                {tab === 'basic'      && 'Basic'}
+                {tab === 'validators' && `Validators${validators.length ? ` (${validators.length})` : ''}`}
+                {tab === 'conditions' && `Conditions${conditions.length ? ` (${conditions.length})` : ''}`}
               </button>
             )
           })}

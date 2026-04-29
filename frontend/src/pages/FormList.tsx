@@ -6,6 +6,7 @@ import { formAPI } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { extractErrorMessage } from '../lib/apiClient'
 
+import { ClipboardList, FileText } from 'lucide-react'
 import type { FormDefinition } from '../types'
 import '../styles/pages/public/form-list.css'
 
@@ -53,7 +54,7 @@ export default function FormList() {
 
         {forms.length === 0 ? (
           <div className="empty-state-simple">
-            <div className="empty-icon">📋</div>
+            <div className="empty-icon"><ClipboardList size={52} strokeWidth={1.5} /></div>
             <h2>No forms available</h2>
             <p>Please contact your administrator</p>
           </div>
@@ -69,7 +70,7 @@ export default function FormList() {
                   {form.description ?? 'Click to fill out this form'}
                 </p>
                 <div className="form-item-meta">
-                  <span>📝 {getFieldCount(form)} fields</span>
+                  <span><FileText size={13} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 4 }} />{getFieldCount(form)} fields</span>
                 </div>
               </Link>
             ))}

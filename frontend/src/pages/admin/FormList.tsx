@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { formAPI } from '../../services/api'
 import { useToast } from '../../contexts/ToastContext'
 import { extractErrorMessage } from '../../lib/apiClient'
+import { ClipboardList, FileText, Calendar } from 'lucide-react'
 import type { FormDefinition } from '../../types'
 import '../../styles/pages/admin/form-list.css'
 
@@ -189,7 +190,7 @@ export default function FormList() {
 
           {forms.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">📋</div>
+              <div className="empty-icon"><ClipboardList size={52} strokeWidth={1.5} /></div>
               <h2>No forms yet</h2>
               <p>Create your first form to get started</p>
               <button className="btn-create" onClick={() => navigate('/admin/form-builder')}>
@@ -208,8 +209,8 @@ export default function FormList() {
                   </div>
                   <p className="card-description">{form.description ?? 'No description provided'}</p>
                   <div className="card-meta">
-                    <span>📝 {getFieldCount(form)} fields</span>
-                    <span>📅 {new Date(form.created_at!).toLocaleDateString()}</span>
+                    <span><FileText size={13} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 4 }} />{getFieldCount(form)} fields</span>
+                    <span><Calendar size={13} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 4 }} />{new Date(form.created_at!).toLocaleDateString()}</span>
                   </div>
                   <div className="card-actions">
                     <button className="btn-edit" onClick={() => navigate(`/admin/form-builder/${form.id}`)}>Edit</button>

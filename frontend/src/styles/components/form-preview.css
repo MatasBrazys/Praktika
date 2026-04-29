@@ -20,7 +20,7 @@
   gap: var(--sp-3);
 }
 
-.preview-empty .empty-icon { font-size: 40px; opacity: 0.4; }
+.preview-empty .empty-icon { display: flex; justify-content: center; color: var(--gray-300); }
 .preview-empty p { font-size: var(--text-base); }
 
 

@@ -163,7 +163,7 @@ export default function TemplateFieldRow({
                 {v.type === 'crossfield' && (
                   <>
                     <div className="validator-header">
-                      <span className="validator-type-label">🔗 Cross-Field</span>
+                      <span className="validator-type-label">Cross-Field</span>
                       <button className="btn-delete-small" onClick={() => onDeleteValidator(idx, vIdx)}>×</button>
                     </div>
                     <div className="form-group">

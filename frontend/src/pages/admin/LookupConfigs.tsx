@@ -8,6 +8,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useToast } from '../../contexts/ToastContext'
 import { extractErrorMessage } from '../../lib/apiClient'
+import { Link2 } from 'lucide-react'
 import { lookupAPI } from '../../services/api'
 import type { LookupConfigResponse, LookupFieldMapping } from '../../services/api'
 import '../../styles/pages/admin/form-list.css'
@@ -267,7 +268,7 @@ export default function LookupConfigs() {
           {/* ── Config list ── */}
           {configs.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">🔗</div>
+              <div className="empty-icon"><Link2 size={52} strokeWidth={1.5} /></div>
               <h2>No lookup configs</h2>
               <p>Create a config to connect forms with external APIs</p>
               <button className="btn-create" onClick={openCreate}>Create First Config</button>
@@ -288,7 +289,7 @@ export default function LookupConfigs() {
 
                   <div className="lookup-card__meta">
                     <code>{config.search_method} {config.base_url}{config.search_endpoint}</code>
-                    <span>Auth: {config.auth_type}{config.has_token ? ' ✓' : ''}</span>
+                    <span>Auth: {config.auth_type}{config.has_token ? ' (token set)' : ''}</span>
                     <span>{config.field_mappings.length} mapping{config.field_mappings.length !== 1 ? 's' : ''}</span>
                   </div>
 
@@ -421,7 +422,7 @@ export default function LookupConfigs() {
                 <h3 className="lookup-section-title">Auto-fill Fields</h3>
                 {editing && (
                   <button className="btn-discover" onClick={handleDiscover} disabled={discovering}>
-                    {discovering ? '🔍 Discovering…' : '🔍 Discover Fields'}
+                    {discovering ? 'Discovering…' : 'Discover Fields'}
                   </button>
                 )}
                 {creating && <small className="lookup-discover-note">Save first, then use Discover Fields</small>}

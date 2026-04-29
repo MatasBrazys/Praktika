@@ -7,6 +7,7 @@ import { useToast } from '../contexts/ToastContext'
 import { extractErrorMessage } from '../lib/apiClient'
 import BackButton from '../components/shared/BackButton'
 import SubmissionLogs from '../components/shared/SubmissionLogs'
+import { Inbox } from 'lucide-react'
 import type { Submission } from '../types'
 import '../styles/pages/public/form-list.css'
 import '../styles/pages/public/my-submissions.css'
@@ -151,7 +152,7 @@ export default function MyFormSubmissions() {
 
         {filtered.length === 0 ? (
           <div className="empty-state-simple">
-            <div className="empty-icon">📭</div>
+            <div className="empty-icon"><Inbox size={52} strokeWidth={1.5} /></div>
             <h2>{search || dateRange !== 'all' ? 'No results' : 'No submissions found'}</h2>
             <p>{search || dateRange !== 'all' ? 'Try adjusting your filters' : 'This form has no submissions from your account'}</p>
           </div>
