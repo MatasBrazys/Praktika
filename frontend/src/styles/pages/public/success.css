@@ -29,9 +29,10 @@
 
 
 .success-icon {
-  font-size: 72px;
   margin-bottom: var(--sp-5);
-  display: block;
+  display: flex;
+  justify-content: center;
+  color: var(--color-success);
   animation: bounceIn 500ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both;
 }
 

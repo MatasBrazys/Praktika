@@ -1,16 +1,17 @@
 // src/pages/user/Profile/index.tsx
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
+import { User, BarChart2 } from 'lucide-react'
 import ProfileTab from './tabs/ProfileTab'
 import StatsTab   from './tabs/StatsTab'
 import './profile.css'
 
 type Tab = 'profile' | 'stats'
 
-const TABS: { id: Tab; label: string; icon: string }[] = [
-  { id: 'profile', label: 'Profile',    icon: '👤' },
-  { id: 'stats',   label: 'Statistics', icon: '📊' },
+const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
+  { id: 'profile', label: 'Profile',    icon: <User size={16} strokeWidth={2} /> },
+  { id: 'stats',   label: 'Statistics', icon: <BarChart2 size={16} strokeWidth={2} /> },
 ]
 
 export default function ProfilePage() {

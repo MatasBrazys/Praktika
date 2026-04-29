@@ -24,10 +24,10 @@
 }
 
 .eb-fullpage__icon {
-  font-size: 48px;
   margin-bottom: var(--sp-5);
   color: var(--color-warning);
-  display: block;
+  display: flex;
+  justify-content: center;
 }
 
 .eb-fullpage__title {

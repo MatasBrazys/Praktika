@@ -9,6 +9,7 @@
 //   Sentry.captureException(error, { extra: { errorInfo } })
 
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { AlertTriangle } from 'lucide-react'
 
 interface Props {
   children:  ReactNode
@@ -63,7 +64,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     return (
       <div className="eb-fullpage">
         <div className="eb-fullpage__card">
-          <div className="eb-fullpage__icon">⚠</div>
+          <div className="eb-fullpage__icon"><AlertTriangle size={48} strokeWidth={1.5} /></div>
           <h1 className="eb-fullpage__title">Something went wrong</h1>
           <p className="eb-fullpage__desc">
             An unexpected error occurred. You can try reloading the page.

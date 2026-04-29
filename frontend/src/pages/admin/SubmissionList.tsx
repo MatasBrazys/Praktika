@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { Check, X, Inbox } from 'lucide-react'
 import { formAPI } from '../../services/api'
 import { useToast } from '../../contexts/ToastContext'
 import { extractErrorMessage } from '../../lib/apiClient'
@@ -289,7 +290,7 @@ export default function SubmissionList() {
 
         {filtered.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📭</div>
+            <div className="empty-icon"><Inbox size={52} strokeWidth={1.5} /></div>
             <h2>{search || filterStatus !== 'all' ? 'No results' : 'No submissions yet'}</h2>
           </div>
         ) : (
@@ -324,14 +325,14 @@ export default function SubmissionList() {
                             onClick={() => handleConfirm(sub.id)}
                             disabled={processingId === sub.id}
                           >
-                            {processingId === sub.id ? '…' : '✓ Approve'}
+                            {processingId === sub.id ? '…' : <><Check size={13} strokeWidth={3} style={{ verticalAlign: 'middle', marginRight: 3 }} />Approve</>}
                           </button>
                           <button
                             className="sub-btn sub-btn--decline"
                             onClick={() => setShowDeclineModal(sub.id)}
                             disabled={processingId === sub.id}
                           >
-                            ✗ Decline
+                            <X size={13} strokeWidth={3} style={{ verticalAlign: 'middle', marginRight: 3 }} />Decline
                           </button>
                         </>
                       )}

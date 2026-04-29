@@ -65,7 +65,7 @@ export default function LookupFieldConfig({ config, onConfigChange }: Props) {
   if (!configs.length) {
     return (
       <div className="crm-section">
-        <h3>🔍 Lookup Configuration</h3>
+        <h3>Lookup Configuration</h3>
         <p>No active lookup configs found. Create one in <strong>Admin → Lookup Configs</strong> first.</p>
       </div>
     )
@@ -73,7 +73,7 @@ export default function LookupFieldConfig({ config, onConfigChange }: Props) {
 
   return (
     <div className="crm-section">
-      <h3>🔍 Lookup Configuration</h3>
+      <h3>Lookup Configuration</h3>
       <p>Select an API config. When a user searches, matched fields will auto-fill.</p>
 
       {isStale && (
@@ -81,7 +81,7 @@ export default function LookupFieldConfig({ config, onConfigChange }: Props) {
           className="info-box"
           style={{ borderColor: 'var(--amber-200)', background: 'var(--amber-50)', color: 'var(--amber-800)' }}
         >
-          <p>⚠️ This config's fields have changed since the form was last saved.</p>
+          <p>This config's fields have changed since the form was last saved.</p>
           <button
             className="btn-primary"
             style={{ marginTop: 'var(--sp-2)' }}

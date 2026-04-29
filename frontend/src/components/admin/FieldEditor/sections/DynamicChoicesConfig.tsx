@@ -69,7 +69,7 @@ export default function DynamicChoicesConfig({ _source, allFields, onChange }: P
              <select value={_source?.fieldName ?? ''} onChange={e => handleSourceChange(e.target.value)}>
                {sourceFields.map(f => (
                  <option key={f.name} value={f.name}>
-                   {f.title} ({f.type === 'paneldynamic' ? '🔁 Group' : '☑️ Checkbox'})
+                   {f.title} ({f.type === 'paneldynamic' ? 'Group' : 'Checkbox'})
                  </option>
                ))}
              </select>

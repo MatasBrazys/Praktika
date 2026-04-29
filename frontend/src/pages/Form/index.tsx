@@ -10,6 +10,7 @@ import 'survey-core/survey-core.min.css'
 import BulkImporter  from '../../components/public/BulkImporter'
 import BackButton    from '../../components/shared/BackButton'
 import ErrorBoundary from '../../components/shared/ErrorBoundary'
+import { XCircle } from 'lucide-react'
 import { useFormLoader } from './hooks/useFormLoader'
 import '../../styles/pages/public/form.css'
 import '../../styles/components/bulk-importer.css'
@@ -88,7 +89,7 @@ export default function Form() {
   if (error) return (
     <div className="public-page">
       <div className="error-box">
-        <h2>❌ {error}</h2>
+        <h2><XCircle size={20} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 6 }} />{error}</h2>
         <p>Please contact support if you believe this is an error.</p>
       </div>
     </div>

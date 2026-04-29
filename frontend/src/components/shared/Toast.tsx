@@ -4,15 +4,17 @@
 // Placed once in App.tsx, reads from ToastContext.
 // Accessible: role="alert" for screen readers on errors.
 
+import type React from 'react';
+import { CheckCircle2, XCircle, AlertTriangle, Info } from 'lucide-react';
 import { useToast } from '../../contexts/ToastContext';
 import type { Toast } from '../../types';
 import '../../styles/components/toast.css';
 
-const ICONS: Record<Toast['type'], string> = {
-  success: '✓',
-  error:   '✕',
-  warning: '⚠',
-  info:    'ℹ',
+const ICONS: Record<Toast['type'], React.ReactNode> = {
+  success: <CheckCircle2 size={18} strokeWidth={2.5} />,
+  error:   <XCircle     size={18} strokeWidth={2.5} />,
+  warning: <AlertTriangle size={18} strokeWidth={2.5} />,
+  info:    <Info          size={18} strokeWidth={2.5} />,
 };
 
 function ToastItem({ toast }: { toast: Toast }) {

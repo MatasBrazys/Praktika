@@ -6,6 +6,7 @@ import { formAPI } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { extractErrorMessage } from '../lib/apiClient'
+import { ClipboardList, FileText, Calendar, Download, Clock, Check } from 'lucide-react'
 import type { FormDefinition } from '../types'
 import '../styles/pages/admin/form-list.css'
 
@@ -77,7 +78,7 @@ export default function FormConfirmerList() {
 
         {items.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">📋</div>
+            <div className="empty-icon"><ClipboardList size={52} strokeWidth={1.5} /></div>
             <h2>No active forms</h2>
             <p>Active forms will appear here once created by an administrator.</p>
           </div>
@@ -88,17 +89,17 @@ export default function FormConfirmerList() {
                 <div className="card-header">
                   <h3>{form.title}</h3>
                   {pending > 0
-                    ? <span className="status inactive">⏳ {pending} pending</span>
-                    : <span className="status active">✓ All reviewed</span>
+                    ? <span className="status inactive"><Clock size={12} strokeWidth={2.5} style={{ verticalAlign: 'middle', marginRight: 3 }} />{pending} pending</span>
+                    : <span className="status active"><Check size={12} strokeWidth={2.5} style={{ verticalAlign: 'middle', marginRight: 3 }} />All reviewed</span>
                   }
                 </div>
                 <p className="card-description">
                   {form.description ?? 'No description provided'}
                 </p>
                 <div className="card-meta">
-                  <span>📝 {getFieldCount(form)} fields</span>
-                  <span>📥 {total} submissions</span>
-                  <span>📅 {new Date(form.created_at!).toLocaleDateString()}</span>
+                  <span><FileText size={13} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 4 }} />{getFieldCount(form)} fields</span>
+                  <span><Download size={13} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 4 }} />{total} submissions</span>
+                  <span><Calendar size={13} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 4 }} />{new Date(form.created_at!).toLocaleDateString()}</span>
                 </div>
                 <div className="card-actions" style={{ gridTemplateColumns: '1fr' }}>
                   <button

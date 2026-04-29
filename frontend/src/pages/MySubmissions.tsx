@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { submissionAPI } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { extractErrorMessage } from '../lib/apiClient'
+import { ClipboardList } from 'lucide-react'
 import type { Submission } from '../types'
 import '../styles/pages/public/form-list.css'
 import '../styles/pages/public/my-submissions.css'
@@ -81,7 +82,7 @@ export default function MySubmissions() {
 
         {groups.length === 0 ? (
           <div className="empty-state-simple">
-            <div className="empty-icon">📋</div>
+            <div className="empty-icon"><ClipboardList size={52} strokeWidth={1.5} /></div>
             <h2>No submissions yet</h2>
             <p>Once you fill out a form, it will appear here</p>
           </div>

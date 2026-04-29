@@ -1,6 +1,7 @@
 // src/pages/user/Profile/tabs/SettingsTab.tsx
 
 import { useState, useEffect } from 'react'
+import { Sun, Moon, AlignJustify, LayoutList } from 'lucide-react'
 
 type Theme   = 'light' | 'dark'
 type Density = 'comfortable' | 'compact'
@@ -39,7 +40,7 @@ export default function SettingsTab() {
               className={`settings-option-btn ${theme === t ? 'active' : ''}`}
               onClick={() => setTheme(t)}
             >
-              {t === 'light' ? '☀️ Light' : '🌙 Dark'}
+              {t === 'light' ? <><Sun size={14} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 5 }} />Light</> : <><Moon size={14} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 5 }} />Dark</>}
             </button>
           ))}
         </div>
@@ -54,7 +55,7 @@ export default function SettingsTab() {
               className={`settings-option-btn ${density === d ? 'active' : ''}`}
               onClick={() => setDensity(d)}
             >
-              {d === 'comfortable' ? '📐 Comfortable' : '📦 Compact'}
+              {d === 'comfortable' ? <><AlignJustify size={14} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 5 }} />Comfortable</> : <><LayoutList size={14} strokeWidth={2} style={{ verticalAlign: 'middle', marginRight: 5 }} />Compact</>}
             </button>
           ))}
         </div>
