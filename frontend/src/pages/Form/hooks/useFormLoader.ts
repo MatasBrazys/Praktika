@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { Model } from 'survey-core'
 import { formAPI, submissionAPI } from '../../../services/api'
 import { useToast } from '../../../contexts/ToastContext'
+import { useAuth } from '../../../contexts/AuthContext'
 import { attachRealtimeValidation } from '../utils/realtimeValidation'
 import { attachLookupBehavior } from '../utils/lookupBehavior'
 import { attachDynamicChoicesBehavior } from '../utils/dynamicChoicesBehavior'
@@ -23,6 +24,7 @@ interface UseFormLoaderResult {
   loading: boolean
   error: string
   isEditMode: boolean
+  isAdminEdit: boolean
   submitting: boolean
 }
 
@@ -32,6 +34,7 @@ export function useFormLoader(
 ): UseFormLoaderResult {
   const navigate = useNavigate()
   const { toast } = useToast()
+  const { user } = useAuth()
 
   const [form, setForm] = useState<FormDefinition | null>(null)
   const [surveyModel, setSurveyModel] = useState<Model | null>(null)
@@ -41,6 +44,7 @@ export function useFormLoader(
   const [submitting, setSubmitting] = useState(false)
 
   const isEditMode = !!submissionId
+  const isAdminEdit = isEditMode && user?.role === 'admin'
 
   useEffect(() => {
     if (!formId) return
@@ -102,9 +106,15 @@ export function useFormLoader(
             }
 
             if (submissionId) {
-              await formAPI.updateMySubmission(Number(submissionId), survey.data)
-              toast.success('Submission updated', 'Your changes have been saved.')
-              navigate(`/user/submissions/${formData.id}`)
+              if (isAdminEdit) {
+                await formAPI.adminUpdateSubmission(formData.id!, Number(submissionId), survey.data)
+                toast.success('Submission updated', 'Changes saved.')
+                navigate(`/admin/forms/${formData.id}/submissions`)
+              } else {
+                await formAPI.updateMySubmission(Number(submissionId), survey.data)
+                toast.success('Submission updated', 'Your changes have been saved.')
+                navigate(`/user/submissions/${formData.id}`)
+              }
             } else {
               await formAPI.submitForm(formData.id, formData.title, survey.data)
               navigate(`/user/forms/${id}/success`, {
@@ -130,5 +140,5 @@ export function useFormLoader(
     loadForm(Number(formId))
   }, [formId, submissionId, navigate, toast])
 
-  return { form, surveyModel, bulkPanels, loading, error, isEditMode, submitting }
+  return { form, surveyModel, bulkPanels, loading, error, isEditMode, isAdminEdit, submitting }
 }

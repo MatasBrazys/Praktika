@@ -6,6 +6,7 @@ import { submissionAPI, formAPI } from '../services/api'
 import { useToast } from '../contexts/ToastContext'
 import { extractErrorMessage } from '../lib/apiClient'
 import BackButton from '../components/shared/BackButton'
+import SubmissionLogs from '../components/shared/SubmissionLogs'
 import type { Submission } from '../types'
 import '../styles/pages/public/form-list.css'
 import '../styles/pages/public/my-submissions.css'
@@ -13,6 +14,7 @@ import '../styles/pages/public/my-submissions.css'
 // ── Types & helpers ───────────────────────────────────────────────────────────
 
 type DateRange = 'all' | 'today' | '7d' | '30d' | '3m'
+
 
 function inRange(iso: string, range: DateRange): boolean {
   if (range === 'all') return true
@@ -23,13 +25,6 @@ function inRange(iso: string, range: DateRange): boolean {
   if (range === '30d') cutoff.setDate(cutoff.getDate() - 30)
   if (range === '3m')  cutoff.setMonth(cutoff.getMonth() - 3)
   return d >= cutoff
-}
-
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleString('en-GB', {
-    day: 'numeric', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  })
 }
 
 function getLabel(data: Record<string, unknown>): string {
@@ -56,37 +51,6 @@ function StatusPill({ status }: { status: string }) {
   )
 }
 
-function SubmissionTimeline({ sub }: { sub: Submission }) {
-  const processed = sub.updated_at && sub.updated_by_username && sub.status !== 'pending'
-  const actionLabel = sub.status === 'confirmed' ? 'Approved' : 'Declined'
-
-  return (
-    <div className="ms-timeline">
-      <div className="ms-timeline__event">
-        <span className="ms-timeline__dot ms-timeline__dot--submit" />
-        <span className="ms-timeline__text">
-          Submitted · <time dateTime={sub.created_at}>{fmtDate(sub.created_at)}</time>
-        </span>
-      </div>
-
-      {processed && (
-        <div className="ms-timeline__event">
-          <span className={`ms-timeline__dot ms-timeline__dot--${sub.status}`} />
-          <span className="ms-timeline__text">
-            {actionLabel} by <strong>{sub.updated_by_username}</strong>
-            {' · '}
-            <time dateTime={sub.updated_at!}>{fmtDate(sub.updated_at!)}</time>
-          </span>
-        </div>
-      )}
-
-      {sub.status === 'declined' && sub.decline_comment && (
-        <div className="ms-timeline__reason">"{sub.decline_comment}"</div>
-      )}
-    </div>
-  )
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function MyFormSubmissions() {
@@ -98,6 +62,7 @@ export default function MyFormSubmissions() {
   const [formType, setFormType] = useState('')
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [logsOpenId, setLogsOpenId] = useState<number | null>(null)
   const [deletingId, setDeletingId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
   const [dateRange, setDateRange] = useState<DateRange>('all')
@@ -208,7 +173,9 @@ export default function MyFormSubmissions() {
                         <h3 className="ms-entry__label">{label || `Submission #${sub.id}`}</h3>
                         <StatusPill status={sub.status} />
                       </div>
-                      <SubmissionTimeline sub={sub} />
+                      <span className="ms-entry__dates">
+                        received {new Date(sub.created_at).toLocaleString()}
+                      </span>
                     </div>
 
                     <div className="ms-entry__actions">
@@ -242,6 +209,12 @@ export default function MyFormSubmissions() {
                       >
                         {isOpen ? 'Hide' : 'Data'}
                       </button>
+                      <button
+                        className={`ms-btn-data ${logsOpenId === sub.id ? 'ms-btn-data--open' : ''}`}
+                        onClick={() => setLogsOpenId(logsOpenId === sub.id ? null : sub.id)}
+                      >
+                        Logs
+                      </button>
                     </div>
                   </div>
 
@@ -249,6 +222,9 @@ export default function MyFormSubmissions() {
                     <div className="ms-entry__expand">
                       <pre>{JSON.stringify(sub.data, null, 2)}</pre>
                     </div>
+                  )}
+                  {logsOpenId === sub.id && (
+                    <SubmissionLogs submissionId={sub.id} />
                   )}
                 </div>
               )

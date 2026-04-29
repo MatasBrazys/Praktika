@@ -5,6 +5,7 @@ import type {
   FormDefinition,
   Submission,
   SubmissionStatus,
+  SubmissionEvent,
   User,
   TokenResponse,
   LoginRequest,
@@ -97,6 +98,18 @@ export const formAPI = {
   // Admin or submitter: delete a declined submission
   deleteSubmission: async (formId: number, submissionId: number): Promise<void> => {
     await apiClient.delete(`/api/forms/${formId}/submissions/${submissionId}`);
+  },
+
+  // Admin/confirmer: get event log for a submission
+  getSubmissionEvents: async (formId: number, submissionId: number): Promise<SubmissionEvent[]> => {
+    const res = await apiClient.get<SubmissionEvent[]>(`/api/forms/${formId}/submissions/${submissionId}/events`);
+    return res.data;
+  },
+
+  // User: get event log for own submission
+  getMySubmissionEvents: async (submissionId: number): Promise<SubmissionEvent[]> => {
+    const res = await apiClient.get<SubmissionEvent[]>(`/api/forms/my-submissions/${submissionId}/events`);
+    return res.data;
   },
 };
 

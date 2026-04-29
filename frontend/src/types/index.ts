@@ -55,6 +55,14 @@ export interface Submission {
   updated_at?: string;
 }
 
+export interface SubmissionEvent {
+  id: number
+  event_type: 'submitted' | 'declined' | 'confirmed' | 'edited' | 'resubmitted'
+  actor_username: string
+  comment?: string
+  occurred_at: string
+}
+
 // ── Toast (UI) ─────────────────────────────────────────────────────────────
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';

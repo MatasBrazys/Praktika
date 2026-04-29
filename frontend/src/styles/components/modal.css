@@ -77,7 +77,8 @@
   flex-shrink: 0;
 }
 
-.modal-header h2 {
+.modal-header h2,
+.modal-header h3 {
   margin: 0;
   font-size: var(--text-xl);
   font-weight: var(--fw-bold);

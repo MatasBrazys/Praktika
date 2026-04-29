@@ -6,6 +6,7 @@ import { formAPI } from '../../services/api'
 import { useToast } from '../../contexts/ToastContext'
 import { extractErrorMessage } from '../../lib/apiClient'
 import BackButton from '../../components/shared/BackButton'
+import SubmissionLogs from '../../components/shared/SubmissionLogs'
 import type { Submission, SubmissionStatus } from '../../types'
 import '../../styles/pages/admin/submission-list.css'
 import '../../styles/components/modal.css'
@@ -67,6 +68,7 @@ export default function SubmissionList() {
   const [formTitle, setFormTitle] = useState('')
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [logsOpenId, setLogsOpenId] = useState<number | null>(null)
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState<SubmissionStatus | 'all'>('pending')
   const [dateRange,    setDateRange]    = useState<'all' | 'today' | '7d' | '30d' | '3m'>('all')
@@ -310,13 +312,7 @@ export default function SubmissionList() {
                         {sub.submitted_by_username ?? 'Unknown'}
                       </span>
                       <span className="sub-entry__dates">
-                        <span title="Submitted">{new Date(sub.created_at).toLocaleString()}</span>
-                        {sub.updated_at && sub.updated_by_username && (
-                          <span className="sub-entry__edited" title={`Processed by ${sub.updated_by_username}`}>
-                            · {status === 'confirmed' ? 'approved' : 'declined'} {new Date(sub.updated_at).toLocaleString()}
-                            {` by ${sub.updated_by_username}`}
-                          </span>
-                        )}
+                        received {new Date(sub.created_at).toLocaleString()}
                       </span>
                     </div>
 
@@ -375,6 +371,12 @@ export default function SubmissionList() {
                       >
                         {isOpen ? 'Hide' : 'View'}
                       </button>
+                      <button
+                        className={`sub-btn sub-btn--data ${logsOpenId === sub.id ? 'active' : ''}`}
+                        onClick={() => setLogsOpenId(logsOpenId === sub.id ? null : sub.id)}
+                      >
+                        Logs
+                      </button>
                     </div>
                   </div>
 
@@ -382,6 +384,9 @@ export default function SubmissionList() {
                     <div className="sub-entry__body">
                       <DataDisplay data={sub.data} />
                     </div>
+                  )}
+                  {logsOpenId === sub.id && (
+                    <SubmissionLogs submissionId={sub.id} formId={Number(id)} />
                   )}
                 </div>
               )

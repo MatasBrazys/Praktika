@@ -47,6 +47,7 @@
 .ms-entry__body { flex: 1; min-width: 0; }
 .ms-entry__label { font-size: var(--text-base); font-weight: var(--fw-semibold); color: var(--color-text); margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ms-entry__field { font-size: var(--text-xs); color: var(--color-text-muted); text-transform: capitalize; }
+.ms-entry__dates { font-size: var(--text-xs); color: var(--color-text-muted); display: block; margin-top: 2px; }
 
 .ms-entry__date { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex-shrink: 0; font-size: var(--text-sm); color: var(--color-text-secondary); }
 

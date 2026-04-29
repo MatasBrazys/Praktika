@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { formAPI } from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { extractErrorMessage } from '../lib/apiClient'
 import type { FormDefinition } from '../types'
@@ -24,7 +25,9 @@ interface FormWithCounts {
 
 export default function FormConfirmerList() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { toast } = useToast()
+  const isAdmin = user?.role === 'admin'
   const [items, setItems] = useState<FormWithCounts[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -100,7 +103,11 @@ export default function FormConfirmerList() {
                 <div className="card-actions" style={{ gridTemplateColumns: '1fr' }}>
                   <button
                     className={pending > 0 ? 'btn-edit' : 'btn-view'}
-                    onClick={() => navigate(`/form-confirmations/submissions/${form.id}`)}
+                    onClick={() => navigate(
+                      isAdmin
+                        ? `/admin/forms/${form.id}/submissions`
+                        : `/form-confirmations/submissions/${form.id}`
+                    )}
                   >
                     {pending > 0 ? `Review ${pending} pending` : 'View submissions'}
                   </button>
